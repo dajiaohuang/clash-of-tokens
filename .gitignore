@@ -1,0 +1,17 @@
+.clash-tokens/
+dist/
+*.test
+*.prof
+coverage.out
+.env
+config.local.json
+config.json
+*.local.json
+.env.*
+!.env.example
+awesome-2api/
+.tmp_*
+*.pprof
+*.har
+*.log
+__pycache__/

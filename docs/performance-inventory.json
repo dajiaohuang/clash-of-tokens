@@ -1,0 +1,3195 @@
+{
+  "scope": "All production Go files in internal, cmd and catalog; reference clones and tests excluded.",
+  "interpretation": "Static occurrence inventory, not proof of runtime cost or exhaustive semantic review. See PERFORMANCE_AUDIT.md for measured decisions.",
+  "files": 121,
+  "lines": 36192,
+  "entries": [
+    {
+      "file": "internal/api/dashboard.go",
+      "lines": 9,
+      "review_leads": {}
+    },
+    {
+      "file": "internal/api/listener.go",
+      "lines": 44,
+      "review_leads": {
+        "allocation_copy": [
+          18
+        ],
+        "synchronization": [
+          14,
+          40
+        ]
+      }
+    },
+    {
+      "file": "internal/api/server.go",
+      "lines": 452,
+      "review_leads": {
+        "json_encode": [
+          82,
+          86
+        ],
+        "json_decode_validate": [
+          438
+        ],
+        "allocation_copy": [
+          55,
+          56,
+          340,
+          344,
+          345,
+          367,
+          400,
+          406,
+          410
+        ],
+        "buffered_read": [
+          178
+        ],
+        "synchronization": [
+          33,
+          36,
+          162,
+          168,
+          173,
+          189,
+          193,
+          195,
+          213,
+          243,
+          256,
+          306,
+          309,
+          311,
+          326
+        ]
+      }
+    },
+    {
+      "file": "internal/chatgptweb/driver.go",
+      "lines": 420,
+      "review_leads": {
+        "json_encode": [
+          73,
+          321
+        ],
+        "json_decode_validate": [
+          99
+        ],
+        "allocation_copy": [
+          299,
+          306
+        ],
+        "timers_polling": [
+          185,
+          247,
+          281,
+          347,
+          416
+        ],
+        "synchronization": [
+          408
+        ],
+        "http_browser_process": [
+          45,
+          46,
+          76,
+          159,
+          168,
+          217,
+          404
+        ]
+      }
+    },
+    {
+      "file": "internal/chatgptweb/events.go",
+      "lines": 82,
+      "review_leads": {
+        "json_encode": [
+          36
+        ]
+      }
+    },
+    {
+      "file": "internal/chatgptweb/page.go",
+      "lines": 67,
+      "review_leads": {}
+    },
+    {
+      "file": "internal/chatgptweb/request.go",
+      "lines": 124,
+      "review_leads": {
+        "json_decode_validate": [
+          23,
+          75,
+          107
+        ],
+        "allocation_copy": [
+          57,
+          94
+        ]
+      }
+    },
+    {
+      "file": "internal/chatgptweb/session.go",
+      "lines": 143,
+      "review_leads": {
+        "json_encode": [
+          65,
+          121
+        ],
+        "json_decode_validate": [
+          52
+        ],
+        "synchronization": [
+          32,
+          70,
+          71,
+          95,
+          96
+        ],
+        "filesystem": [
+          40,
+          118,
+          125,
+          133,
+          142
+        ]
+      }
+    },
+    {
+      "file": "internal/config/config.go",
+      "lines": 377,
+      "review_leads": {
+        "json_decode_validate": [
+          95
+        ],
+        "filesystem": [
+          90
+        ]
+      }
+    },
+    {
+      "file": "internal/protocol/request.go",
+      "lines": 233,
+      "review_leads": {
+        "json_decode_validate": [
+          22,
+          48,
+          58,
+          105,
+          161
+        ],
+        "allocation_copy": [
+          228,
+          229,
+          231
+        ]
+      }
+    },
+    {
+      "file": "internal/protocol/sse.go",
+      "lines": 76,
+      "review_leads": {
+        "allocation_copy": [
+          29,
+          65,
+          66,
+          70,
+          71
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/businessweb/aistudio.go",
+      "lines": 273,
+      "review_leads": {
+        "json_encode": [
+          128
+        ],
+        "json_decode_validate": [
+          167
+        ],
+        "allocation_copy": [
+          97,
+          98,
+          112,
+          117,
+          188
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/businessweb/aistudio_build.go",
+      "lines": 442,
+      "review_leads": {
+        "json_encode": [
+          140,
+          306,
+          307,
+          308
+        ],
+        "json_decode_validate": [
+          317,
+          342
+        ],
+        "allocation_copy": [
+          113,
+          114,
+          128,
+          247,
+          330,
+          427
+        ],
+        "buffered_read": [
+          333
+        ],
+        "timers_polling": [
+          190,
+          228,
+          272
+        ],
+        "http_browser_process": [
+          157,
+          158,
+          167,
+          175,
+          190,
+          191,
+          192,
+          193,
+          199,
+          211,
+          219,
+          237,
+          241
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/businessweb/common.go",
+      "lines": 502,
+      "review_leads": {
+        "json_encode": [
+          404,
+          417
+        ],
+        "json_decode_validate": [
+          173,
+          187,
+          197,
+          206,
+          218,
+          236,
+          241,
+          284,
+          459
+        ],
+        "allocation_copy": [
+          221,
+          232,
+          256,
+          418,
+          421,
+          422,
+          423,
+          441
+        ],
+        "buffered_read": [
+          388,
+          447
+        ],
+        "synchronization": [
+          61,
+          112,
+          114,
+          136,
+          138
+        ],
+        "http_browser_process": [
+          93
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/businessweb/copilot.go",
+      "lines": 449,
+      "review_leads": {
+        "json_encode": [
+          95,
+          97,
+          186
+        ],
+        "json_decode_validate": [
+          83,
+          138
+        ],
+        "allocation_copy": [
+          98,
+          128,
+          190,
+          344
+        ],
+        "buffered_read": [
+          234
+        ],
+        "synchronization": [
+          66,
+          89
+        ],
+        "http_browser_process": [
+          53
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/businessweb/gemini.go",
+      "lines": 291,
+      "review_leads": {
+        "json_encode": [
+          76,
+          120
+        ],
+        "json_decode_validate": [
+          218,
+          244
+        ],
+        "allocation_copy": [
+          59,
+          153,
+          208,
+          250
+        ],
+        "buffered_read": [
+          183,
+          193
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/businessweb/promptql.go",
+      "lines": 334,
+      "review_leads": {
+        "json_encode": [
+          106
+        ],
+        "json_decode_validate": [
+          121,
+          215,
+          235,
+          308
+        ],
+        "allocation_copy": [
+          192
+        ],
+        "timers_polling": [
+          178
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/china/adapters.go",
+      "lines": 584,
+      "review_leads": {
+        "json_encode": [
+          63,
+          158,
+          181,
+          262,
+          423,
+          469
+        ],
+        "json_decode_validate": [
+          123,
+          212,
+          325,
+          394,
+          502,
+          554
+        ],
+        "allocation_copy": [
+          46,
+          67,
+          72
+        ],
+        "buffered_read": [
+          202,
+          313,
+          489
+        ],
+        "synchronization": [
+          35,
+          37,
+          96,
+          98,
+          104,
+          110,
+          172,
+          174,
+          230,
+          232,
+          285,
+          288,
+          291,
+          328,
+          333,
+          334,
+          369,
+          371,
+          377,
+          383
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/china/client.go",
+      "lines": 523,
+      "review_leads": {
+        "json_decode_validate": [
+          288,
+          292,
+          304,
+          318,
+          323,
+          357,
+          361,
+          369,
+          376,
+          379,
+          396,
+          404
+        ],
+        "allocation_copy": [
+          143,
+          405,
+          479
+        ],
+        "synchronization": [
+          82,
+          84,
+          93,
+          105,
+          148,
+          150,
+          170,
+          172,
+          192,
+          198,
+          258,
+          259,
+          482
+        ],
+        "http_browser_process": [
+          126
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/china/convert.go",
+      "lines": 494,
+      "review_leads": {
+        "json_encode": [
+          450,
+          464,
+          488
+        ],
+        "json_decode_validate": [
+          132,
+          178
+        ],
+        "allocation_copy": [
+          154,
+          155,
+          162,
+          237,
+          281,
+          286
+        ],
+        "synchronization": [
+          265,
+          267,
+          351,
+          353,
+          385,
+          387,
+          393,
+          395
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/chinafinal/client.go",
+      "lines": 419,
+      "review_leads": {
+        "json_encode": [
+          177
+        ],
+        "json_decode_validate": [
+          256,
+          271,
+          277,
+          282,
+          286,
+          291,
+          300
+        ],
+        "synchronization": [
+          55,
+          111,
+          113,
+          140,
+          142,
+          156,
+          162,
+          216,
+          238,
+          376,
+          401
+        ],
+        "http_browser_process": [
+          78
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/chinafinal/response.go",
+      "lines": 274,
+      "review_leads": {
+        "json_encode": [
+          86,
+          152
+        ],
+        "json_decode_validate": [
+          20
+        ],
+        "allocation_copy": [
+          198,
+          258
+        ],
+        "buffered_read": [
+          71
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/chinamore/client.go",
+      "lines": 548,
+      "review_leads": {
+        "json_decode_validate": [
+          307,
+          311,
+          320,
+          333,
+          338,
+          366,
+          374,
+          447
+        ],
+        "allocation_copy": [
+          161,
+          162,
+          163,
+          423,
+          495,
+          536
+        ],
+        "buffered_read": [
+          440,
+          545
+        ],
+        "synchronization": [
+          76,
+          80,
+          82,
+          88,
+          97,
+          107,
+          168,
+          170,
+          189,
+          191,
+          210,
+          216,
+          278,
+          279,
+          426
+        ],
+        "http_browser_process": [
+          144
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/chinamore/mimo.go",
+      "lines": 133,
+      "review_leads": {
+        "json_encode": [
+          69,
+          98
+        ],
+        "json_decode_validate": [
+          26
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/chinamore/minimax.go",
+      "lines": 414,
+      "review_leads": {
+        "json_encode": [
+          242,
+          335
+        ],
+        "json_decode_validate": [
+          47,
+          88
+        ],
+        "allocation_copy": [
+          105,
+          109,
+          111
+        ],
+        "timers_polling": [
+          327
+        ],
+        "synchronization": [
+          122,
+          124,
+          127,
+          179,
+          180,
+          182,
+          230,
+          232,
+          272,
+          274
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/chinamore/step.go",
+      "lines": 217,
+      "review_leads": {
+        "json_encode": [
+          152,
+          210
+        ],
+        "allocation_copy": [
+          200,
+          202
+        ],
+        "synchronization": [
+          49,
+          51,
+          54,
+          93,
+          94,
+          96
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/chinamore/stream.go",
+      "lines": 398,
+      "review_leads": {
+        "json_encode": [
+          40,
+          53,
+          89
+        ],
+        "json_decode_validate": [
+          222,
+          372
+        ],
+        "allocation_copy": [
+          44,
+          60,
+          106,
+          113,
+          131,
+          257,
+          270,
+          281,
+          289
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/chinanext/adapters.go",
+      "lines": 457,
+      "review_leads": {
+        "json_encode": [
+          140,
+          186,
+          283
+        ],
+        "json_decode_validate": [
+          222,
+          342,
+          378,
+          409,
+          420,
+          445
+        ],
+        "allocation_copy": [
+          57
+        ],
+        "buffered_read": [
+          449
+        ],
+        "synchronization": [
+          97,
+          99,
+          102,
+          104,
+          163,
+          165,
+          171,
+          173,
+          256,
+          258,
+          264,
+          266,
+          298,
+          301,
+          304,
+          345,
+          346,
+          347
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/chinanext/client.go",
+      "lines": 471,
+      "review_leads": {
+        "json_decode_validate": [
+          180,
+          296,
+          300,
+          309,
+          321,
+          326,
+          353,
+          360,
+          365,
+          369,
+          372,
+          389,
+          393
+        ],
+        "allocation_copy": [
+          142,
+          396,
+          450
+        ],
+        "synchronization": [
+          80,
+          83,
+          92,
+          102,
+          147,
+          149,
+          165,
+          167,
+          208,
+          214,
+          268,
+          269,
+          453
+        ],
+        "http_browser_process": [
+          125
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/chinanext/doubao.go",
+      "lines": 346,
+      "review_leads": {
+        "json_encode": [
+          90
+        ],
+        "json_decode_validate": [
+          124,
+          152
+        ],
+        "allocation_copy": [
+          161,
+          167,
+          316,
+          326,
+          345
+        ],
+        "timers_polling": [
+          202,
+          204
+        ],
+        "synchronization": [
+          55,
+          58
+        ],
+        "http_browser_process": [
+          60,
+          65,
+          67,
+          76,
+          86,
+          97,
+          104,
+          108,
+          194,
+          208,
+          238,
+          280
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/chinanext/pow.go",
+      "lines": 155,
+      "review_leads": {
+        "json_encode": [
+          28
+        ],
+        "allocation_copy": [
+          48,
+          141,
+          142
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/chinanext/stream.go",
+      "lines": 420,
+      "review_leads": {
+        "json_encode": [
+          381,
+          401,
+          419
+        ],
+        "json_decode_validate": [
+          113,
+          160,
+          203
+        ],
+        "allocation_copy": [
+          215
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/chinaremaining/client.go",
+      "lines": 984,
+      "review_leads": {
+        "json_encode": [
+          504,
+          765,
+          855,
+          867
+        ],
+        "json_decode_validate": [
+          262,
+          302,
+          315,
+          319,
+          324,
+          344,
+          608,
+          885,
+          897,
+          913,
+          937
+        ],
+        "allocation_copy": [
+          547,
+          558,
+          740,
+          766,
+          767,
+          768,
+          769,
+          856,
+          857,
+          858,
+          859,
+          860,
+          954,
+          974
+        ],
+        "buffered_read": [
+          596
+        ],
+        "synchronization": [
+          89,
+          128,
+          130,
+          169,
+          171,
+          188,
+          194,
+          674,
+          690,
+          957
+        ],
+        "http_browser_process": [
+          108
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/chinaremaining/metaso.go",
+      "lines": 185,
+      "review_leads": {
+        "json_encode": [
+          125
+        ],
+        "json_decode_validate": [
+          35
+        ],
+        "buffered_read": [
+          112
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/chinaremaining/metaso_browser.go",
+      "lines": 132,
+      "review_leads": {
+        "json_encode": [
+          61
+        ],
+        "synchronization": [
+          76,
+          118
+        ],
+        "http_browser_process": [
+          39,
+          42,
+          47,
+          50,
+          53,
+          58,
+          72,
+          92
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/chinaremaining/qwen.go",
+      "lines": 138,
+      "review_leads": {
+        "json_encode": [
+          104,
+          122
+        ],
+        "json_decode_validate": [
+          38
+        ],
+        "allocation_copy": [
+          112,
+          115
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/coding/antigravity.go",
+      "lines": 240,
+      "review_leads": {
+        "json_encode": [
+          88,
+          103,
+          109,
+          126,
+          129,
+          132,
+          135
+        ],
+        "json_decode_validate": [
+          209
+        ],
+        "allocation_copy": [
+          79,
+          150,
+          152,
+          192,
+          213,
+          228,
+          229,
+          230,
+          232
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/coding/coding.go",
+      "lines": 189,
+      "review_leads": {
+        "http_browser_process": [
+          53
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/coding/iflow.go",
+      "lines": 430,
+      "review_leads": {
+        "json_encode": [
+          114,
+          115,
+          118,
+          133,
+          135,
+          180,
+          181,
+          184,
+          216,
+          285,
+          295,
+          386,
+          399,
+          408
+        ],
+        "json_decode_validate": [
+          130,
+          173,
+          193,
+          224,
+          230,
+          248,
+          274,
+          332,
+          377,
+          401
+        ],
+        "allocation_copy": [
+          134,
+          176,
+          182,
+          335,
+          336,
+          338,
+          372,
+          387,
+          388,
+          389,
+          409,
+          410,
+          411,
+          415
+        ],
+        "buffered_read": [
+          244
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/coding/kiro.go",
+      "lines": 545,
+      "review_leads": {
+        "json_encode": [
+          131,
+          233,
+          238,
+          304,
+          305,
+          324,
+          330,
+          343,
+          344
+        ],
+        "json_decode_validate": [
+          88,
+          137,
+          188,
+          196,
+          202,
+          206,
+          399
+        ],
+        "allocation_copy": [
+          94,
+          103,
+          105,
+          140,
+          156,
+          181,
+          209,
+          291,
+          307,
+          308,
+          309,
+          310,
+          311,
+          312,
+          315,
+          316,
+          317,
+          318,
+          319,
+          325,
+          326,
+          327,
+          331,
+          332,
+          333,
+          339,
+          340,
+          345,
+          346,
+          347,
+          348,
+          349,
+          357,
+          456,
+          460,
+          474,
+          478
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/coding/validate.go",
+      "lines": 505,
+      "review_leads": {
+        "json_decode_validate": [
+          15,
+          37,
+          51,
+          111,
+          116,
+          132,
+          136,
+          189,
+          193,
+          235,
+          244,
+          306,
+          325,
+          352,
+          360,
+          369,
+          462,
+          482
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/codingfinal/client.go",
+      "lines": 1058,
+      "review_leads": {
+        "json_encode": [
+          855,
+          988
+        ],
+        "json_decode_validate": [
+          480,
+          489,
+          495,
+          499,
+          515,
+          533,
+          537,
+          547,
+          553,
+          557,
+          562,
+          566,
+          570,
+          580,
+          586,
+          590,
+          594,
+          598,
+          601,
+          604,
+          611,
+          623,
+          627,
+          638,
+          642,
+          654,
+          762
+        ],
+        "allocation_copy": [
+          164,
+          190,
+          442,
+          523,
+          550,
+          573,
+          583,
+          614,
+          630,
+          651,
+          734,
+          736,
+          737,
+          903,
+          1031
+        ],
+        "synchronization": [
+          81,
+          92,
+          103,
+          129,
+          130,
+          149,
+          151,
+          154,
+          169,
+          171,
+          196,
+          198,
+          234,
+          236,
+          274,
+          280,
+          420,
+          421
+        ],
+        "http_browser_process": [
+          181
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/codingfinal/cursor.go",
+      "lines": 402,
+      "review_leads": {
+        "json_encode": [
+          398
+        ],
+        "json_decode_validate": [
+          58
+        ],
+        "allocation_copy": [
+          79,
+          139,
+          140,
+          144,
+          148,
+          155,
+          161,
+          165,
+          168,
+          171,
+          174
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/codingfinal/qoder.go",
+      "lines": 440,
+      "review_leads": {
+        "json_encode": [
+          62,
+          104,
+          428
+        ],
+        "json_decode_validate": [
+          72,
+          93,
+          154,
+          164,
+          291,
+          295,
+          300
+        ],
+        "allocation_copy": [
+          124,
+          133,
+          136,
+          253,
+          257,
+          261,
+          359,
+          369
+        ],
+        "buffered_read": [
+          80
+        ],
+        "timers_polling": [
+          373
+        ],
+        "http_browser_process": [
+          344
+        ],
+        "filesystem": [
+          200
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/codingfinal/trae.go",
+      "lines": 389,
+      "review_leads": {
+        "json_encode": [
+          74,
+          95,
+          123
+        ],
+        "json_decode_validate": [
+          45,
+          195,
+          257
+        ],
+        "allocation_copy": [
+          111,
+          116,
+          118,
+          120,
+          223,
+          228,
+          280
+        ],
+        "buffered_read": [
+          180
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/codingfinal/v0.go",
+      "lines": 179,
+      "review_leads": {
+        "json_encode": [
+          61,
+          162,
+          172
+        ],
+        "json_decode_validate": [
+          44,
+          50,
+          146
+        ],
+        "allocation_copy": [
+          54,
+          59
+        ],
+        "buffered_read": [
+          131
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/codingfinal/warp.go",
+      "lines": 433,
+      "review_leads": {
+        "json_decode_validate": [
+          59
+        ],
+        "allocation_copy": [
+          84,
+          90,
+          91,
+          130,
+          132
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/codingfinal/windsurf.go",
+      "lines": 382,
+      "review_leads": {
+        "json_encode": [
+          115
+        ],
+        "json_decode_validate": [
+          72
+        ],
+        "allocation_copy": [
+          48,
+          76,
+          93,
+          95,
+          97,
+          99,
+          101,
+          103,
+          104,
+          108,
+          109,
+          111,
+          113,
+          116,
+          119,
+          122,
+          124,
+          125,
+          126
+        ],
+        "buffered_read": [
+          175
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/codingfinal/wire.go",
+      "lines": 221,
+      "review_leads": {
+        "json_decode_validate": [
+          214
+        ],
+        "allocation_copy": [
+          64,
+          76,
+          94,
+          100,
+          108,
+          114,
+          151,
+          154,
+          175
+        ],
+        "buffered_read": [
+          199
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/codingfinal/zcode.go",
+      "lines": 838,
+      "review_leads": {
+        "json_encode": [
+          242,
+          481,
+          494,
+          804
+        ],
+        "json_decode_validate": [
+          91,
+          97,
+          155,
+          238,
+          540
+        ],
+        "allocation_copy": [
+          101,
+          117,
+          220,
+          245,
+          249,
+          298,
+          305,
+          318,
+          338,
+          403,
+          453,
+          455,
+          457,
+          463,
+          470,
+          475,
+          477,
+          479,
+          490,
+          507,
+          511,
+          514,
+          537,
+          550,
+          556,
+          654
+        ],
+        "buffered_read": [
+          785
+        ],
+        "timers_polling": [
+          408,
+          764
+        ],
+        "synchronization": [
+          755
+        ],
+        "http_browser_process": [
+          184
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/codingmore/augment.go",
+      "lines": 492,
+      "review_leads": {
+        "json_encode": [
+          102,
+          151,
+          386
+        ],
+        "json_decode_validate": [
+          181,
+          195,
+          201,
+          206,
+          212,
+          221,
+          248,
+          252,
+          263,
+          267,
+          412,
+          422,
+          427
+        ],
+        "allocation_copy": [
+          209,
+          237,
+          255,
+          279,
+          282,
+          363,
+          382,
+          387,
+          388,
+          389,
+          450,
+          462
+        ],
+        "synchronization": [
+          84,
+          90
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/codingmore/client.go",
+      "lines": 438,
+      "review_leads": {
+        "json_encode": [
+          254,
+          296
+        ],
+        "allocation_copy": [
+          145,
+          359
+        ],
+        "synchronization": [
+          83,
+          95,
+          155,
+          157,
+          190,
+          192,
+          236,
+          242,
+          340,
+          341
+        ],
+        "http_browser_process": [
+          123
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/codingmore/devin.go",
+      "lines": 635,
+      "review_leads": {
+        "json_encode": [
+          306,
+          595,
+          603
+        ],
+        "json_decode_validate": [
+          100,
+          116,
+          122,
+          127,
+          133,
+          144,
+          153,
+          162,
+          192,
+          196,
+          202,
+          206,
+          211,
+          353,
+          365,
+          392,
+          401,
+          455,
+          484,
+          556
+        ],
+        "allocation_copy": [
+          130,
+          178,
+          199,
+          242,
+          246,
+          250,
+          293,
+          310,
+          333,
+          440,
+          537
+        ],
+        "timers_polling": [
+          298
+        ],
+        "http_browser_process": [
+          256
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/codingmore/eventstream.go",
+      "lines": 466,
+      "review_leads": {
+        "json_encode": [
+          382
+        ],
+        "json_decode_validate": [
+          69,
+          188,
+          197,
+          207,
+          226,
+          232,
+          245,
+          270
+        ],
+        "allocation_copy": [
+          49,
+          53,
+          79,
+          343,
+          378,
+          383,
+          384,
+          385,
+          395,
+          396
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/codingmore/request.go",
+      "lines": 237,
+      "review_leads": {
+        "json_decode_validate": [
+          25,
+          44,
+          53,
+          58,
+          67,
+          76,
+          80,
+          152,
+          160
+        ],
+        "allocation_copy": [
+          61,
+          64,
+          91,
+          102,
+          206,
+          210,
+          214
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/codingnext/client.go",
+      "lines": 346,
+      "review_leads": {
+        "allocation_copy": [
+          141,
+          328
+        ],
+        "buffered_read": [
+          338
+        ],
+        "synchronization": [
+          83,
+          95,
+          146,
+          148,
+          167,
+          169,
+          185,
+          191,
+          260,
+          261,
+          331
+        ],
+        "http_browser_process": [
+          119
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/codingnext/openai.go",
+      "lines": 468,
+      "review_leads": {
+        "json_encode": [
+          66,
+          218,
+          406
+        ],
+        "json_decode_validate": [
+          26,
+          29,
+          126
+        ],
+        "allocation_copy": [
+          58,
+          90,
+          91,
+          284
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/codingnext/providers.go",
+      "lines": 244,
+      "review_leads": {
+        "json_encode": [
+          54,
+          171
+        ],
+        "json_decode_validate": [
+          143,
+          164
+        ],
+        "allocation_copy": [
+          189,
+          191,
+          202
+        ],
+        "synchronization": [
+          119
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/codingnext/stream.go",
+      "lines": 459,
+      "review_leads": {
+        "json_encode": [
+          400
+        ],
+        "json_decode_validate": [
+          64,
+          123
+        ],
+        "allocation_copy": [
+          19,
+          20,
+          267,
+          380,
+          447
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/codingnext/zed.go",
+      "lines": 454,
+      "review_leads": {
+        "json_encode": [
+          59
+        ],
+        "json_decode_validate": [
+          400
+        ],
+        "allocation_copy": [
+          183,
+          195,
+          222,
+          224,
+          233,
+          235,
+          243,
+          257,
+          285,
+          295
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/embedded/client.go",
+      "lines": 596,
+      "review_leads": {
+        "json_encode": [
+          342,
+          354
+        ],
+        "json_decode_validate": [
+          131,
+          140,
+          153,
+          229,
+          245,
+          249,
+          255,
+          565
+        ],
+        "allocation_copy": [
+          252,
+          268,
+          272,
+          275,
+          277,
+          311,
+          314,
+          324,
+          334,
+          343,
+          381,
+          427,
+          470,
+          529,
+          530,
+          546
+        ],
+        "buffered_read": [
+          579
+        ],
+        "synchronization": [
+          53,
+          206,
+          364,
+          370,
+          377,
+          378,
+          413,
+          415
+        ],
+        "http_browser_process": [
+          65
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/embedded/fanzha.go",
+      "lines": 140,
+      "review_leads": {
+        "json_encode": [
+          47
+        ],
+        "json_decode_validate": [
+          104,
+          133
+        ],
+        "buffered_read": [
+          100
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/embedded/notion.go",
+      "lines": 382,
+      "review_leads": {
+        "json_encode": [
+          138,
+          207
+        ],
+        "json_decode_validate": [
+          217
+        ],
+        "allocation_copy": [
+          179,
+          184,
+          189,
+          226,
+          243,
+          249,
+          256,
+          334,
+          357
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/embedded/tabbit.go",
+      "lines": 329,
+      "review_leads": {
+        "json_encode": [
+          74,
+          88
+        ],
+        "json_decode_validate": [
+          166,
+          305
+        ],
+        "allocation_copy": [
+          210
+        ],
+        "buffered_read": [
+          159,
+          283
+        ],
+        "synchronization": [
+          252,
+          253,
+          291,
+          293
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/embedded/wordpress.go",
+      "lines": 155,
+      "review_leads": {
+        "json_decode_validate": [
+          34,
+          99,
+          137
+        ],
+        "buffered_read": [
+          88
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/enterpriseweb/client.go",
+      "lines": 486,
+      "review_leads": {
+        "json_encode": [
+          388,
+          393
+        ],
+        "json_decode_validate": [
+          177,
+          190,
+          225
+        ],
+        "allocation_copy": [
+          317,
+          374,
+          479
+        ],
+        "buffered_read": [
+          412
+        ],
+        "synchronization": [
+          61,
+          121,
+          123,
+          145,
+          147,
+          297,
+          298
+        ],
+        "http_browser_process": [
+          104
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/enterpriseweb/google.go",
+      "lines": 298,
+      "review_leads": {
+        "allocation_copy": [
+          213,
+          251
+        ],
+        "buffered_read": [
+          51
+        ],
+        "timers_polling": [
+          151,
+          165,
+          210,
+          244
+        ],
+        "http_browser_process": [
+          80,
+          81,
+          95,
+          104,
+          113,
+          126,
+          130,
+          135,
+          176,
+          235
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/enterpriseweb/maxai.go",
+      "lines": 147,
+      "review_leads": {
+        "json_encode": [
+          74
+        ],
+        "json_decode_validate": [
+          125
+        ],
+        "allocation_copy": [
+          98,
+          105,
+          108,
+          110,
+          111,
+          113
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/enterpriseweb/maxai_sign.go",
+      "lines": 179,
+      "review_leads": {
+        "allocation_copy": [
+          77,
+          78,
+          80,
+          81,
+          86,
+          94,
+          108,
+          109,
+          162
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/enterpriseweb/notion.go",
+      "lines": 384,
+      "review_leads": {
+        "json_encode": [
+          99
+        ],
+        "json_decode_validate": [
+          145
+        ],
+        "allocation_copy": [
+          86,
+          88,
+          345,
+          358
+        ],
+        "buffered_read": [
+          106
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/enterpriseweb/opera.go",
+      "lines": 226,
+      "review_leads": {
+        "json_encode": [
+          128
+        ],
+        "json_decode_validate": [
+          104,
+          195
+        ],
+        "allocation_copy": [
+          133,
+          147
+        ],
+        "buffered_read": [
+          99
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/majorweb/adapta.go",
+      "lines": 165,
+      "review_leads": {
+        "json_encode": [
+          119
+        ],
+        "json_decode_validate": [
+          56,
+          96,
+          149
+        ],
+        "synchronization": [
+          29,
+          32,
+          130,
+          134
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/majorweb/apps.go",
+      "lines": 209,
+      "review_leads": {
+        "json_encode": [
+          30,
+          55,
+          131
+        ],
+        "json_decode_validate": [
+          101,
+          185
+        ],
+        "allocation_copy": [
+          23,
+          24,
+          73,
+          149
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/majorweb/arena.go",
+      "lines": 161,
+      "review_leads": {
+        "json_encode": [
+          52,
+          72
+        ],
+        "json_decode_validate": [
+          101,
+          117,
+          122,
+          140,
+          149
+        ],
+        "allocation_copy": [
+          69,
+          70,
+          74,
+          87,
+          88
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/majorweb/blackbox.go",
+      "lines": 156,
+      "review_leads": {
+        "json_encode": [
+          18,
+          109
+        ],
+        "json_decode_validate": [
+          33
+        ],
+        "allocation_copy": [
+          142,
+          143,
+          144,
+          148
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/majorweb/claude.go",
+      "lines": 204,
+      "review_leads": {
+        "json_encode": [
+          59,
+          139
+        ],
+        "json_decode_validate": [
+          114,
+          159,
+          186
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/majorweb/client.go",
+      "lines": 876,
+      "review_leads": {
+        "json_encode": [
+          598,
+          611
+        ],
+        "json_decode_validate": [
+          345,
+          349,
+          479,
+          488,
+          498,
+          502,
+          510,
+          519,
+          521,
+          530,
+          533,
+          789,
+          868
+        ],
+        "allocation_copy": [
+          577,
+          578,
+          599,
+          634,
+          747,
+          817,
+          848
+        ],
+        "buffered_read": [
+          435
+        ],
+        "synchronization": [
+          119,
+          164,
+          166,
+          179,
+          181,
+          421,
+          616,
+          624,
+          632,
+          636,
+          643,
+          646,
+          650,
+          656,
+          658,
+          663,
+          674,
+          684,
+          688,
+          693,
+          696
+        ],
+        "http_browser_process": [
+          133
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/majorweb/conol.go",
+      "lines": 234,
+      "review_leads": {
+        "json_encode": [
+          41
+        ],
+        "json_decode_validate": [
+          58,
+          144
+        ],
+        "allocation_copy": [
+          106,
+          107,
+          111,
+          125,
+          212
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/majorweb/copilot.go",
+      "lines": 206,
+      "review_leads": {
+        "json_encode": [
+          39
+        ],
+        "json_decode_validate": [
+          57,
+          121
+        ],
+        "allocation_copy": [
+          99,
+          190,
+          192,
+          193,
+          194,
+          198
+        ],
+        "http_browser_process": [
+          74
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/majorweb/dpop.go",
+      "lines": 194,
+      "review_leads": {
+        "json_encode": [
+          79,
+          180,
+          181
+        ],
+        "json_decode_validate": [
+          114
+        ],
+        "allocation_copy": [
+          76,
+          77,
+          148,
+          157,
+          190
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/majorweb/duck.go",
+      "lines": 170,
+      "review_leads": {
+        "json_encode": [
+          54
+        ],
+        "json_decode_validate": [
+          153,
+          162
+        ],
+        "allocation_copy": [
+          111,
+          112,
+          116,
+          132
+        ],
+        "timers_polling": [
+          66,
+          74
+        ],
+        "http_browser_process": [
+          32,
+          34,
+          51,
+          57,
+          63,
+          66,
+          71,
+          84
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/majorweb/easemate.go",
+      "lines": 196,
+      "review_leads": {
+        "json_encode": [
+          53
+        ],
+        "json_decode_validate": [
+          178,
+          187
+        ],
+        "allocation_copy": [
+          133,
+          134,
+          135,
+          139,
+          162
+        ],
+        "timers_polling": [
+          61,
+          63,
+          98
+        ],
+        "http_browser_process": [
+          35,
+          37,
+          50,
+          57,
+          67,
+          84,
+          91,
+          95,
+          108
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/majorweb/gemini.go",
+      "lines": 310,
+      "review_leads": {
+        "json_encode": [
+          76,
+          84
+        ],
+        "json_decode_validate": [
+          176,
+          180,
+          190,
+          246,
+          250,
+          274,
+          278,
+          282,
+          286,
+          292
+        ],
+        "allocation_copy": [
+          135,
+          136,
+          137,
+          141,
+          223,
+          253,
+          289
+        ],
+        "timers_polling": [
+          96
+        ],
+        "http_browser_process": [
+          39,
+          41,
+          59,
+          60,
+          61,
+          66,
+          79,
+          86,
+          87,
+          106
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/majorweb/genspark.go",
+      "lines": 98,
+      "review_leads": {
+        "json_encode": [
+          42
+        ],
+        "json_decode_validate": [
+          82
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/majorweb/gigachat.go",
+      "lines": 343,
+      "review_leads": {
+        "json_encode": [
+          84,
+          91
+        ],
+        "json_decode_validate": [
+          229,
+          303,
+          328
+        ],
+        "allocation_copy": [
+          149,
+          150,
+          151,
+          155,
+          204,
+          331
+        ],
+        "timers_polling": [
+          101,
+          109
+        ],
+        "http_browser_process": [
+          46,
+          48,
+          65,
+          66,
+          67,
+          73,
+          86,
+          93,
+          104,
+          119
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/majorweb/grok.go",
+      "lines": 697,
+      "review_leads": {
+        "json_encode": [
+          44,
+          670
+        ],
+        "json_decode_validate": [
+          107,
+          142,
+          192,
+          264,
+          291,
+          567
+        ],
+        "allocation_copy": [
+          152,
+          246,
+          329,
+          445,
+          456,
+          514,
+          600
+        ],
+        "buffered_read": [
+          649
+        ],
+        "synchronization": [
+          509
+        ],
+        "http_browser_process": [
+          376
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/majorweb/huggingchat.go",
+      "lines": 174,
+      "review_leads": {
+        "json_encode": [
+          55,
+          84
+        ],
+        "json_decode_validate": [
+          50,
+          61,
+          73,
+          141
+        ],
+        "allocation_copy": [
+          165
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/majorweb/hyperagent.go",
+      "lines": 140,
+      "review_leads": {
+        "json_encode": [
+          69,
+          89
+        ],
+        "json_decode_validate": [
+          51,
+          117
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/majorweb/innerai.go",
+      "lines": 151,
+      "review_leads": {
+        "json_encode": [
+          106
+        ],
+        "json_decode_validate": [
+          30,
+          77,
+          79,
+          84,
+          127
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/majorweb/meta.go",
+      "lines": 122,
+      "review_leads": {
+        "json_encode": [
+          40,
+          88
+        ],
+        "allocation_copy": [
+          60,
+          61,
+          65
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/majorweb/monica.go",
+      "lines": 96,
+      "review_leads": {
+        "json_encode": [
+          38
+        ],
+        "json_decode_validate": [
+          85
+        ],
+        "allocation_copy": [
+          56
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/majorweb/perplexity.go",
+      "lines": 326,
+      "review_leads": {
+        "json_encode": [
+          36
+        ],
+        "json_decode_validate": [
+          79,
+          90,
+          97,
+          112,
+          290,
+          316
+        ],
+        "allocation_copy": [
+          226,
+          233,
+          252,
+          266
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/majorweb/pireka.go",
+      "lines": 182,
+      "review_leads": {
+        "json_encode": [
+          142
+        ],
+        "json_decode_validate": [
+          129,
+          161
+        ],
+        "allocation_copy": [
+          38
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/majorweb/poe.go",
+      "lines": 369,
+      "review_leads": {
+        "json_encode": [
+          25
+        ],
+        "json_decode_validate": [
+          53,
+          133,
+          214,
+          230,
+          285,
+          300,
+          321
+        ],
+        "allocation_copy": [
+          33,
+          171,
+          265,
+          266,
+          270
+        ],
+        "http_browser_process": [
+          148
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/majorweb/raycast.go",
+      "lines": 151,
+      "review_leads": {
+        "json_encode": [
+          88
+        ],
+        "json_decode_validate": [
+          73,
+          137
+        ],
+        "allocation_copy": [
+          109
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/majorweb/t3.go",
+      "lines": 181,
+      "review_leads": {
+        "json_encode": [
+          45
+        ],
+        "json_decode_validate": [
+          64,
+          165
+        ],
+        "allocation_copy": [
+          84,
+          85,
+          89,
+          145
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/majorweb/tinycms.go",
+      "lines": 217,
+      "review_leads": {
+        "json_encode": [
+          57,
+          129,
+          217
+        ],
+        "json_decode_validate": [
+          95,
+          179
+        ],
+        "allocation_copy": [
+          145,
+          203,
+          204,
+          208
+        ],
+        "http_browser_process": [
+          49,
+          51,
+          59
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/majorweb/uc.go",
+      "lines": 186,
+      "review_leads": {
+        "json_decode_validate": [
+          60,
+          158
+        ],
+        "allocation_copy": [
+          116,
+          118,
+          119,
+          120,
+          124,
+          135
+        ],
+        "http_browser_process": [
+          77
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/majorweb/you.go",
+      "lines": 126,
+      "review_leads": {
+        "json_decode_validate": [
+          102,
+          111
+        ],
+        "allocation_copy": [
+          59,
+          60,
+          64,
+          78
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/majorweb/zenmux.go",
+      "lines": 166,
+      "review_leads": {
+        "json_encode": [
+          50,
+          162
+        ],
+        "json_decode_validate": [
+          102
+        ],
+        "allocation_copy": [
+          141
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/playground/browser.go",
+      "lines": 111,
+      "review_leads": {
+        "json_encode": [
+          41
+        ],
+        "synchronization": [
+          18
+        ],
+        "http_browser_process": [
+          24,
+          25,
+          33,
+          38,
+          44,
+          60
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/playground/client.go",
+      "lines": 272,
+      "review_leads": {
+        "json_encode": [
+          144,
+          152
+        ],
+        "json_decode_validate": [
+          61,
+          70,
+          81,
+          91,
+          204,
+          222,
+          234
+        ],
+        "allocation_copy": [
+          73,
+          84,
+          128
+        ],
+        "synchronization": [
+          174
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/webhttp/client.go",
+      "lines": 445,
+      "review_leads": {
+        "json_encode": [
+          187,
+          408,
+          439
+        ],
+        "json_decode_validate": [
+          65,
+          79,
+          86,
+          214,
+          293
+        ],
+        "allocation_copy": [
+          144,
+          146,
+          242,
+          395,
+          415
+        ],
+        "buffered_read": [
+          206
+        ],
+        "http_browser_process": [
+          48
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/webhttp/producttext.go",
+      "lines": 184,
+      "review_leads": {
+        "json_encode": [
+          126
+        ],
+        "json_decode_validate": [
+          108
+        ],
+        "allocation_copy": [
+          150,
+          151,
+          159,
+          172
+        ],
+        "buffered_read": [
+          74,
+          98
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/webhttp/toolbaz.go",
+      "lines": 53,
+      "review_leads": {
+        "json_decode_validate": [
+          22
+        ],
+        "buffered_read": [
+          44
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/webnext/client.go",
+      "lines": 430,
+      "review_leads": {
+        "json_encode": [
+          403
+        ],
+        "json_decode_validate": [
+          240,
+          314,
+          339
+        ],
+        "synchronization": [
+          66,
+          156,
+          158,
+          184,
+          186
+        ],
+        "http_browser_process": [
+          130
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/webnext/langfast.go",
+      "lines": 434,
+      "review_leads": {
+        "json_encode": [
+          429
+        ],
+        "json_decode_validate": [
+          120,
+          321,
+          325,
+          339,
+          344
+        ],
+        "allocation_copy": [
+          68,
+          199
+        ],
+        "buffered_read": [
+          417
+        ],
+        "synchronization": [
+          148,
+          195
+        ],
+        "http_browser_process": [
+          131
+        ]
+      }
+    },
+    {
+      "file": "internal/providers/webnext/providers.go",
+      "lines": 195,
+      "review_leads": {}
+    },
+    {
+      "file": "internal/providers/webnext/stream.go",
+      "lines": 353,
+      "review_leads": {
+        "json_encode": [
+          138,
+          153
+        ],
+        "json_decode_validate": [
+          242,
+          256,
+          257,
+          260,
+          309
+        ],
+        "allocation_copy": [
+          29,
+          117,
+          142,
+          178
+        ],
+        "synchronization": [
+          93,
+          95
+        ]
+      }
+    },
+    {
+      "file": "internal/providerutil/gate.go",
+      "lines": 28,
+      "review_leads": {
+        "allocation_copy": [
+          18
+        ],
+        "synchronization": [
+          13
+        ]
+      }
+    },
+    {
+      "file": "internal/routing/router.go",
+      "lines": 437,
+      "review_leads": {
+        "allocation_copy": [
+          71,
+          78,
+          80,
+          84,
+          92,
+          93,
+          96,
+          283,
+          404,
+          406
+        ],
+        "timers_polling": [
+          292
+        ],
+        "synchronization": [
+          45,
+          66,
+          249,
+          250,
+          296,
+          303,
+          341,
+          342,
+          355,
+          368,
+          375,
+          376,
+          402,
+          403,
+          417,
+          418
+        ]
+      }
+    },
+    {
+      "file": "internal/secrets/vault.go",
+      "lines": 74,
+      "review_leads": {
+        "json_encode": [
+          48
+        ],
+        "json_decode_validate": [
+          39
+        ],
+        "allocation_copy": [
+          20
+        ],
+        "buffered_read": [
+          30
+        ],
+        "filesystem": [
+          27,
+          53,
+          56,
+          64
+        ]
+      }
+    },
+    {
+      "file": "internal/secrets/vault_unix.go",
+      "lines": 8,
+      "review_leads": {}
+    },
+    {
+      "file": "internal/secrets/vault_windows.go",
+      "lines": 31,
+      "review_leads": {
+        "allocation_copy": [
+          18,
+          30
+        ]
+      }
+    },
+    {
+      "file": "internal/upstream/client.go",
+      "lines": 327,
+      "review_leads": {
+        "json_decode_validate": [
+          317
+        ],
+        "allocation_copy": [
+          283
+        ],
+        "synchronization": [
+          244,
+          250,
+          251,
+          257,
+          260,
+          268,
+          271,
+          275,
+          284,
+          286,
+          292,
+          326
+        ],
+        "http_browser_process": [
+          102
+        ]
+      }
+    },
+    {
+      "file": "internal/upstream/cloudcode.go",
+      "lines": 80,
+      "review_leads": {
+        "json_encode": [
+          13
+        ],
+        "json_decode_validate": [
+          24
+        ],
+        "allocation_copy": [
+          56,
+          57,
+          58,
+          59,
+          61
+        ],
+        "buffered_read": [
+          71
+        ]
+      }
+    },
+    {
+      "file": "cmd/clash-tokens/browser.go",
+      "lines": 62,
+      "review_leads": {
+        "http_browser_process": [
+          54
+        ],
+        "filesystem": [
+          51
+        ]
+      }
+    },
+    {
+      "file": "cmd/clash-tokens/main.go",
+      "lines": 150,
+      "review_leads": {
+        "json_encode": [
+          72,
+          101,
+          117
+        ],
+        "allocation_copy": [
+          59,
+          127
+        ],
+        "filesystem": [
+          67
+        ]
+      }
+    },
+    {
+      "file": "cmd/cot-bench/main.go",
+      "lines": 163,
+      "review_leads": {
+        "json_encode": [
+          79
+        ],
+        "allocation_copy": [
+          92,
+          93,
+          94,
+          95,
+          142,
+          152
+        ],
+        "timers_polling": [
+          53
+        ],
+        "synchronization": [
+          96,
+          99
+        ],
+        "http_browser_process": [
+          89
+        ]
+      }
+    },
+    {
+      "file": "cmd/cot-browser-inspect/main.go",
+      "lines": 30,
+      "review_leads": {
+        "http_browser_process": [
+          16,
+          18,
+          23,
+          29
+        ]
+      }
+    },
+    {
+      "file": "catalog/catalog.go",
+      "lines": 97,
+      "review_leads": {
+        "json_decode_validate": [
+          32
+        ]
+      }
+    }
+  ]
+}

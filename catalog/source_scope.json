@@ -1,0 +1,374 @@
+[
+  {
+    "id": "adapta-web",
+    "inventory_number": 1
+  },
+  {
+    "id": "arena",
+    "inventory_number": 2
+  },
+  {
+    "id": "blackbox",
+    "inventory_number": 3
+  },
+  {
+    "id": "chatgpt-web",
+    "inventory_number": 4
+  },
+  {
+    "id": "claude-web",
+    "inventory_number": 5
+  },
+  {
+    "id": "conol-web",
+    "inventory_number": 6
+  },
+  {
+    "id": "duck-ai",
+    "inventory_number": 7
+  },
+  {
+    "id": "gemini-web",
+    "inventory_number": 8
+  },
+  {
+    "id": "genspark",
+    "inventory_number": 9
+  },
+  {
+    "id": "gigachat-web",
+    "inventory_number": 10
+  },
+  {
+    "id": "grok-console",
+    "inventory_number": 11
+  },
+  {
+    "id": "grok-web",
+    "inventory_number": 12
+  },
+  {
+    "id": "huggingchat",
+    "inventory_number": 13
+  },
+  {
+    "id": "hyperagent",
+    "inventory_number": 14
+  },
+  {
+    "id": "inner-ai",
+    "inventory_number": 15
+  },
+  {
+    "id": "meta-ai",
+    "inventory_number": 16
+  },
+  {
+    "id": "copilot-web",
+    "inventory_number": 17
+  },
+  {
+    "id": "perplexity-web",
+    "inventory_number": 18
+  },
+  {
+    "id": "phind",
+    "inventory_number": 19
+  },
+  {
+    "id": "pi",
+    "inventory_number": 20
+  },
+  {
+    "id": "poe-web",
+    "inventory_number": 21
+  },
+  {
+    "id": "reka-web",
+    "inventory_number": 22
+  },
+  {
+    "id": "t3-web",
+    "inventory_number": 23
+  },
+  {
+    "id": "tinycms-web",
+    "inventory_number": 24
+  },
+  {
+    "id": "uc-web",
+    "inventory_number": 25
+  },
+  {
+    "id": "venice-web",
+    "inventory_number": 26
+  },
+  {
+    "id": "whiterabbitneo",
+    "inventory_number": 27
+  },
+  {
+    "id": "you",
+    "inventory_number": 28
+  },
+  {
+    "id": "zenmux-web",
+    "inventory_number": 29
+  },
+  {
+    "id": "deepseek-web",
+    "inventory_number": 30
+  },
+  {
+    "id": "dola-web",
+    "inventory_number": 31
+  },
+  {
+    "id": "kimi-web",
+    "inventory_number": 32
+  },
+  {
+    "id": "minimax-web",
+    "inventory_number": 33
+  },
+  {
+    "id": "qwen-web-intl",
+    "inventory_number": 34
+  },
+  {
+    "id": "zai-web",
+    "inventory_number": 35
+  },
+  {
+    "id": "mimo",
+    "inventory_number": 36
+  },
+  {
+    "id": "glm-web",
+    "inventory_number": 37
+  },
+  {
+    "id": "metaso",
+    "inventory_number": 38
+  },
+  {
+    "id": "emohaa",
+    "inventory_number": 39
+  },
+  {
+    "id": "tencent-aistudio-web",
+    "inventory_number": 40
+  },
+  {
+    "id": "yuanbao",
+    "inventory_number": 41
+  },
+  {
+    "id": "spark-web",
+    "inventory_number": 42
+  },
+  {
+    "id": "doubao",
+    "inventory_number": 43
+  },
+  {
+    "id": "stepchat",
+    "inventory_number": 44
+  },
+  {
+    "id": "qwen-web-cn",
+    "inventory_number": 45
+  },
+  {
+    "id": "fanzha",
+    "inventory_number": 46
+  },
+  {
+    "id": "tabbit",
+    "inventory_number": 47
+  },
+  {
+    "id": "aifreeforever",
+    "inventory_number": 48
+  },
+  {
+    "id": "chataigpt",
+    "inventory_number": 49
+  },
+  {
+    "id": "chatgptfree",
+    "inventory_number": 50
+  },
+  {
+    "id": "easemate",
+    "inventory_number": 51
+  },
+  {
+    "id": "flowith",
+    "inventory_number": 52
+  },
+  {
+    "id": "gptanon",
+    "inventory_number": 53
+  },
+  {
+    "id": "inkeep",
+    "inventory_number": 54
+  },
+  {
+    "id": "langfast",
+    "inventory_number": 55
+  },
+  {
+    "id": "liaobots",
+    "inventory_number": 56
+  },
+  {
+    "id": "perfectassistant",
+    "inventory_number": 57
+  },
+  {
+    "id": "toolbaz",
+    "inventory_number": 58
+  },
+  {
+    "id": "amazon-q",
+    "inventory_number": 59
+  },
+  {
+    "id": "antigravity",
+    "inventory_number": 60
+  },
+  {
+    "id": "augment",
+    "inventory_number": 61
+  },
+  {
+    "id": "claude-code",
+    "inventory_number": 62
+  },
+  {
+    "id": "codebuddy",
+    "inventory_number": 63
+  },
+  {
+    "id": "codex",
+    "inventory_number": 64
+  },
+  {
+    "id": "cursor",
+    "inventory_number": 65
+  },
+  {
+    "id": "devin-cli",
+    "inventory_number": 66
+  },
+  {
+    "id": "freebuff",
+    "inventory_number": 67
+  },
+  {
+    "id": "gemini-cli",
+    "inventory_number": 68
+  },
+  {
+    "id": "copilot",
+    "inventory_number": 69
+  },
+  {
+    "id": "grok-build",
+    "inventory_number": 70
+  },
+  {
+    "id": "kiro",
+    "inventory_number": 71
+  },
+  {
+    "id": "qoder",
+    "inventory_number": 72
+  },
+  {
+    "id": "qwen-code",
+    "inventory_number": 73
+  },
+  {
+    "id": "trae",
+    "inventory_number": 74
+  },
+  {
+    "id": "v0-web",
+    "inventory_number": 75
+  },
+  {
+    "id": "warp",
+    "inventory_number": 76
+  },
+  {
+    "id": "windsurf",
+    "inventory_number": 77
+  },
+  {
+    "id": "zcode",
+    "inventory_number": 78
+  },
+  {
+    "id": "zed-hosted",
+    "inventory_number": 79
+  },
+  {
+    "id": "cloudflare-playground",
+    "inventory_number": 80
+  },
+  {
+    "id": "gemini-business",
+    "inventory_number": 81
+  },
+  {
+    "id": "aistudio-build",
+    "inventory_number": 82
+  },
+  {
+    "id": "aistudio-playground",
+    "inventory_number": 83
+  },
+  {
+    "id": "google-ai-mode",
+    "inventory_number": 84
+  },
+  {
+    "id": "maxai",
+    "inventory_number": 85
+  },
+  {
+    "id": "merlin",
+    "inventory_number": 86
+  },
+  {
+    "id": "copilot-m365",
+    "inventory_number": 87
+  },
+  {
+    "id": "monica",
+    "inventory_number": 88
+  },
+  {
+    "id": "notion-web",
+    "inventory_number": 89
+  },
+  {
+    "id": "opera-aria",
+    "inventory_number": 90
+  },
+  {
+    "id": "promptql",
+    "inventory_number": 91
+  },
+  {
+    "id": "raycast",
+    "inventory_number": 92
+  },
+  {
+    "id": "sider",
+    "inventory_number": 93
+  }
+]

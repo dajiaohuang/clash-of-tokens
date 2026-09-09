@@ -1,0 +1,7 @@
+# HyperAgent
+
+Native Go implementation of the [pinned product thread protocol](https://github.com/OmniRoute/OmniRoute/blob/ba597b631d22d85e56db6982f24b7d1ebe238df9/open-sse/executors/hyperagent.ts). Set `KeyEnv` to your own complete Cookie string. Each single-user text request creates a new thread, applies its model through PATCH, then submits chat with a null initial session ID. The supported exact model IDs come from the reference `hyperagentModels.ts`; these are product wire labels and have not been verified against actual underlying models.
+
+The reference's agent feature flags, execution mode and empty integration list are preserved. This can invoke the upstream product's built-in browsing, media or sandbox capabilities and consume account credits; only text events are exposed by this adapter. Local OpenAI tool calls and media output are not implemented. Threads remain in the account. History, continuation and other unsupported fields return 422.
+
+SSE text frames are converted incrementally; `[DONE]` or `type:done` terminates immediately. Missing termination, in-band errors or a differing `thread_runtime_latched` model fail. Contract tests exercise creation/configuration/chat order, credential isolation, still-open terminal stream, truncation, errors and model mismatch. No live account test, browser login, redirect-based legacy thread creation or TLS impersonation is claimed.

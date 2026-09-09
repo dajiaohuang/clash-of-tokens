@@ -1,0 +1,7 @@
+# Perplexity web
+
+Native Go implementation of the [pinned private query protocol](https://github.com/OmniRoute/OmniRoute/blob/ba597b631d22d85e56db6982f24b7d1ebe238df9/open-sse/executors/perplexity-web/protocol.ts). Set `KeyEnv` to your own full Cookie header or `__Secure-next-auth.session-token` value. Requests use schema version `2.18`, `mode:copilot`, an incognito fresh query and the reference's supported block flags. Configure an exact `model_preference` wire value such as `pplx_pro` or `turbo`; no historical version aliases are synthesized.
+
+One user text is supported. Responses buffer markdown/workflow patch state so replacements are coherent. Only workflow items with answer variant are included; reasoning/search widgets are excluded. COMPLETED/final or end_of_stream terminates, and FAILED/error/upsell, model mismatch, missing text or premature EOF fail. Nested patch depth, arrays, cumulative allocation slots, track counts and wire bytes are bounded. No fabricated token usage is returned.
+
+Local contract tests verify request schema, own-cookie isolation, multi-event workflow reconstruction, reasoning exclusion, event-only end marker on an open connection, nested final text, sparse allocation limits and error/truncation behavior. Live account availability is unverified. Browser TLS impersonation and session refresh are not implemented; direct Go HTTPS may be rejected by the service edge.

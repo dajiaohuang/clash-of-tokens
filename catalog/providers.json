@@ -1,0 +1,1810 @@
+[
+  {
+    "id": "openai",
+    "adapter": "openai",
+    "base_url": "https://api.openai.com/v1",
+    "protocols": [
+      "chat",
+      "responses"
+    ],
+    "kind": "api",
+    "reference": "https://platform.openai.com/docs/api-reference",
+    "notes": "",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "anthropic",
+    "adapter": "anthropic",
+    "base_url": "https://api.anthropic.com/v1",
+    "protocols": [
+      "messages"
+    ],
+    "kind": "api",
+    "reference": "https://docs.anthropic.com/en/api/messages",
+    "notes": "",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "gemini",
+    "adapter": "gemini",
+    "base_url": "https://generativelanguage.googleapis.com/v1beta",
+    "protocols": [
+      "gemini"
+    ],
+    "kind": "api",
+    "reference": "https://ai.google.dev/api/generate-content",
+    "notes": "",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "gemini-openai",
+    "adapter": "openai",
+    "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "api",
+    "reference": "https://ai.google.dev/gemini-api/docs/openai",
+    "notes": "Compatibility layer has a narrower feature set than native Gemini.",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "deepseek",
+    "adapter": "openai",
+    "base_url": "https://api.deepseek.com",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "api",
+    "reference": "https://api-docs.deepseek.com/",
+    "notes": "",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "moonshot",
+    "adapter": "openai",
+    "base_url": "https://api.moonshot.ai/v1",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "api",
+    "reference": "https://github.com/MoonshotAI/kimi-code/blob/main/docs/en/configuration/providers.md",
+    "notes": "",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "moonshot-cn",
+    "adapter": "openai",
+    "base_url": "https://api.moonshot.cn/v1",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "api",
+    "reference": "https://platform.moonshot.cn/docs/guide/start-using-kimi-api",
+    "notes": "China region endpoint; shares capacity when configured with the same quota_domain.",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "bigmodel",
+    "adapter": "openai",
+    "base_url": "https://open.bigmodel.cn/api/paas/v4",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "api",
+    "reference": "https://docs.bigmodel.cn/cn/guide/develop/http/introduction",
+    "notes": "",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "zai",
+    "adapter": "openai",
+    "base_url": "https://api.z.ai/api/paas/v4",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "api",
+    "reference": "https://docs.z.ai/guides/overview/quick-start",
+    "notes": "",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "minimax",
+    "adapter": "openai",
+    "base_url": "https://api.minimax.io/v1",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "api",
+    "reference": "https://platform.minimax.io/docs/api-reference/text-openai-api",
+    "notes": "",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "mistral",
+    "adapter": "openai",
+    "base_url": "https://api.mistral.ai/v1",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "api",
+    "reference": "https://docs.mistral.ai/api",
+    "notes": "",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "groq",
+    "adapter": "openai",
+    "base_url": "https://api.groq.com/openai/v1",
+    "protocols": [
+      "chat",
+      "responses"
+    ],
+    "kind": "api",
+    "reference": "https://console.groq.com/docs/overview",
+    "notes": "Model-specific Responses support must be checked.",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "cerebras",
+    "adapter": "openai",
+    "base_url": "https://api.cerebras.ai/v1",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "api",
+    "reference": "https://inference-docs.cerebras.ai/integrations/browser-use",
+    "notes": "",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "together",
+    "adapter": "openai",
+    "base_url": "https://api.together.ai/v1",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "api",
+    "reference": "https://docs.together.ai/docs/inference/openai-compatibility",
+    "notes": "",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "fireworks",
+    "adapter": "openai",
+    "base_url": "https://api.fireworks.ai/inference/v1",
+    "protocols": [
+      "chat",
+      "responses"
+    ],
+    "kind": "api",
+    "reference": "https://docs.fireworks.ai/api-reference/post-responses",
+    "notes": "",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "nvidia",
+    "adapter": "openai",
+    "base_url": "https://integrate.api.nvidia.com/v1",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "api",
+    "reference": "https://docs.nvidia.com/openshell/sandboxes/manage-providers",
+    "notes": "",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "openrouter",
+    "adapter": "openai",
+    "base_url": "https://openrouter.ai/api/v1",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "aggregator",
+    "reference": "https://openrouter.ai/docs/quickstart",
+    "notes": "This is an aggregator, not an additional independent underlying quota.",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "poe-api",
+    "adapter": "openai",
+    "base_url": "https://api.poe.com/v1",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "subscription",
+    "reference": "https://creator.poe.com/docs/external-applications/external-application-guide",
+    "notes": "Official Poe API; subscription/points eligibility depends on the account.",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "perplexity-api",
+    "adapter": "openai",
+    "base_url": "https://api.perplexity.ai",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "api",
+    "reference": "https://docs.perplexity.ai/docs/sonar/quickstart",
+    "notes": "",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "siliconflow",
+    "adapter": "openai",
+    "base_url": "https://api.siliconflow.cn/v1",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "api",
+    "reference": "https://docs.siliconflow.cn/docs/api/chat-completions-post",
+    "notes": "",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "dashscope",
+    "adapter": "openai",
+    "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "api",
+    "reference": "https://help.aliyun.com/zh/model-studio/text-generation",
+    "notes": "Some workspaces require a workspace-specific endpoint; override base_url.",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "sambanova",
+    "adapter": "openai",
+    "base_url": "https://api.sambanova.ai/v1",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "api",
+    "reference": "https://github.com/sambanova/sambanova-ai-provider",
+    "notes": "",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "nebius",
+    "adapter": "openai",
+    "base_url": "https://api.tokenfactory.nebius.com",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "api",
+    "reference": "https://nebius.com/services/studio-inference-service",
+    "notes": "Verify regional account endpoint.",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "huggingface",
+    "adapter": "openai",
+    "base_url": "https://router.huggingface.co/v1",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "aggregator",
+    "reference": "https://huggingface.co/docs/inference-providers/en/index",
+    "notes": "Routed provider capacity is not counted as independent duplicate capacity.",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "venice",
+    "adapter": "openai",
+    "base_url": "https://api.venice.ai/api/v1",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "api",
+    "reference": "https://docs.venice.ai/api-reference/api-spec",
+    "notes": "",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "cohere",
+    "adapter": "openai",
+    "base_url": "https://api.cohere.ai/compatibility/v1",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "api",
+    "reference": "https://docs.cohere.com/docs/compatibility-api",
+    "notes": "",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "xai",
+    "adapter": "openai",
+    "base_url": "https://api.x.ai/v1",
+    "protocols": [
+      "chat",
+      "responses"
+    ],
+    "kind": "api",
+    "reference": "https://docs.x.ai/developers/rest-api-reference/inference/responses",
+    "notes": "",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "copilot",
+    "adapter": "copilot",
+    "base_url": "https://api.githubcopilot.com",
+    "protocols": [
+      "chat",
+      "responses",
+      "messages"
+    ],
+    "kind": "subscription",
+    "reference": "https://github.com/messense/copilot-api-proxy/tree/abedc7179b1c67c9d1a4306f4ccf1441c7aca22e",
+    "notes": "GitHub access token exchange; endpoint is validated from the exchange response. Native Messages only for models supporting it.",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "codex",
+    "adapter": "codex",
+    "base_url": "https://chatgpt.com/backend-api/codex",
+    "protocols": [
+      "responses"
+    ],
+    "kind": "subscription",
+    "reference": "https://github.com/router-for-me/CLIProxyAPI/tree/7fac6b15bcfe5ea55c18c9eaec8e5b7e6457d974",
+    "notes": "Streaming only. Supply an authorized access token and optional account_id_env; caller must send Codex-compatible Responses payload.",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "claude-code",
+    "adapter": "claude-code",
+    "base_url": "https://api.anthropic.com/v1",
+    "protocols": [
+      "messages"
+    ],
+    "kind": "subscription",
+    "reference": "https://github.com/router-for-me/CLIProxyAPI/tree/7fac6b15bcfe5ea55c18c9eaec8e5b7e6457d974",
+    "notes": "OAuth access token; reauthenticate externally on expiry. Account eligibility is not assumed.",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "gemini-cli",
+    "adapter": "gemini-cli",
+    "base_url": "https://cloudcode-pa.googleapis.com/v1internal",
+    "protocols": [
+      "gemini"
+    ],
+    "kind": "subscription",
+    "reference": "https://github.com/google-gemini/gemini-cli/blob/main/packages/core/src/code_assist/server.ts",
+    "notes": "Requires explicit project and OAuth access token. Native Code Assist envelope handling.",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "qwen-code",
+    "adapter": "qwen-code",
+    "base_url": "https://portal.qwen.ai/v1",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "subscription",
+    "reference": "https://github.com/QwenLM/qwen-code/blob/main/packages/core/src/qwen/qwenContentGenerator.ts",
+    "notes": "Set base_url to the resource_url returned by your authorized OAuth flow; no refresh credentials are harvested.",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "kimi-code",
+    "adapter": "kimi-code",
+    "base_url": "https://api.kimi.com/coding/v1",
+    "protocols": [
+      "chat",
+      "messages"
+    ],
+    "kind": "subscription",
+    "reference": "https://github.com/MoonshotAI/kimi-code/blob/main/docs/en/configuration/providers.md",
+    "notes": "Coding subscription endpoint; verify account model and protocol access.",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "ollama",
+    "adapter": "openai",
+    "base_url": "http://127.0.0.1:11434/v1",
+    "protocols": [
+      "chat",
+      "responses"
+    ],
+    "kind": "local",
+    "reference": "https://docs.ollama.com/api/openai-compatibility",
+    "notes": "Local model server must already be running.",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "lmstudio",
+    "adapter": "openai",
+    "base_url": "http://127.0.0.1:1234/v1",
+    "protocols": [
+      "chat",
+      "responses"
+    ],
+    "kind": "local",
+    "reference": "https://lmstudio.ai/docs/developer/openai-compat",
+    "notes": "",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "vllm",
+    "adapter": "openai",
+    "base_url": "http://127.0.0.1:8000/v1",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "local",
+    "reference": "https://docs.vllm.ai/en/latest/serving/openai_compatible_server.html",
+    "notes": "",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "llamacpp",
+    "adapter": "openai",
+    "base_url": "http://127.0.0.1:8080/v1",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "local",
+    "reference": "https://github.com/ggml-org/llama.cpp/tree/master/tools/server",
+    "notes": "",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "sglang",
+    "adapter": "openai",
+    "base_url": "http://127.0.0.1:30000/v1",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "local",
+    "reference": "https://docs.sglang.ai/basic_usage/openai_api.html",
+    "notes": "",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "chatgpt-web",
+    "kind": "web",
+    "adapter": "chatgpt-web",
+    "base_url": "https://chatgpt.com",
+    "protocols": [
+      "chat",
+      "responses"
+    ],
+    "implementation": "native_browser",
+    "reference": "https://github.com/Octo-Lex/ChatGPT-Web2API/tree/497527dceabfa3f95961e23c291e618c5570f1ac",
+    "notes": "Native browser adapter. Live Responses text and previous_response_id continuation verified 2026-09-09. User-signed-in dedicated Chrome; no tool or vision support.",
+    "live_verified": true
+  },
+  {
+    "id": "claude-web",
+    "kind": "web",
+    "implementation": "native_http",
+    "reference": "https://github.com/yushangxiao/claude2api",
+    "notes": "Single user text turn; explicit credentials. Contract tests only. See docs/providers/majorweb.md.",
+    "live_verified": false,
+    "adapter": "claude-web",
+    "base_url": "https://claude.ai",
+    "protocols": [
+      "chat"
+    ],
+    "text_only": true
+  },
+  {
+    "id": "gemini-web",
+    "kind": "web",
+    "implementation": "native_browser",
+    "reference": "https://github.com/diegosouzapw/OmniRoute/blob/ba597b631d22d85e56db6982f24b7d1ebe238df9/open-sse/executors/gemini-web.ts",
+    "notes": "Go Chrome CDP drives the authenticated /app UI and captures the page StreamGenerate response; existing Chrome profile supplies auth, no cookie extraction. Single user turn, pseudo-streamed after the cumulative response is complete. Based on OmniRoute commit ba597b631d22d85e56db6982f24b7d1ebe238df9; see docs/providers/gemini-web.md.",
+    "live_verified": false,
+    "adapter": "gemini-web",
+    "base_url": "https://gemini.google.com",
+    "protocols": [
+      "chat"
+    ],
+    "text_only": true
+  },
+  {
+    "id": "gigachat-web",
+    "kind": "web",
+    "implementation": "native_browser",
+    "reference": "https://giga.chat/portal",
+    "notes": "Go Chrome CDP drives the authenticated GigaChat page and captures its same-origin /api/v0/sessions/*/request SSE stream; existing Chrome profile supplies auth, no cookie extraction. Single user turn, pseudo-streamed after READY. Build 0.9.4 route and protocol evidence are documented in docs/providers/gigachat-web.md; live account verification remains pending.",
+    "live_verified": false,
+    "adapter": "gigachat-web",
+    "base_url": "https://giga.chat",
+    "protocols": [
+      "chat"
+    ],
+    "text_only": true
+  },
+  {
+    "id": "grok-web",
+    "kind": "web",
+    "implementation": "native_http",
+    "reference": "https://github.com/chenyme/grok2api",
+    "notes": "Single user text turn; explicit credentials. Contract tests only. See docs/providers/majorweb.md.",
+    "live_verified": false,
+    "adapter": "grok-web",
+    "base_url": "https://grok.com",
+    "protocols": [
+      "chat"
+    ],
+    "text_only": true
+  },
+  {
+    "id": "cursor",
+    "adapter": "cursor",
+    "base_url": "https://api2.cursor.sh",
+    "reference": "https://github.com/OmniRoute/OmniRoute/blob/ba597b631d22d85e56db6982f24b7d1ebe238df9/open-sse/executors/cursor.ts",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "subscription",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Source-backed native private protocol; explicit product credential required. Buffered delivery, no gateway session continuation. Contract tests, not live verified. docs/providers/codingfinal.md."
+  },
+  {
+    "id": "windsurf",
+    "adapter": "windsurf",
+    "base_url": "https://server.codeium.com",
+    "reference": "https://github.com/OmniRoute/OmniRoute/blob/ba597b631d22d85e56db6982f24b7d1ebe238df9/open-sse/executors/devin-desktop.ts",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "subscription",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Source-backed native private protocol; explicit product credential required. Buffered delivery, no gateway session continuation. Contract tests, not live verified. docs/providers/codingfinal.md."
+  },
+  {
+    "id": "iflow",
+    "kind": "research",
+    "implementation": "not_implemented",
+    "reference": "https://github.com/router-for-me/CLIProxyAPI",
+    "notes": "Current endpoint and account eligibility need verification.",
+    "live_verified": false
+  },
+  {
+    "id": "devin-cli",
+    "adapter": "devin-cli",
+    "base_url": "devin://acp/stdio",
+    "reference": "https://github.com/diegosouzapw/OmniRoute/blob/release/v3.8.51/open-sse/executors/devin-cli.ts",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "local",
+    "implementation": "native_cli",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Official Devin CLI ACP JSON-RPC over stdio in summarizer mode; local Devin profile or optional WINDSURF_API_KEY supplies authentication. CLI must be installed and reachable; contract tests only. See docs/providers/codingmore.md."
+  },
+  {
+    "id": "qoder",
+    "kind": "subscription",
+    "implementation": "native_cli",
+    "reference": "https://github.com/OmniRoute/OmniRoute/blob/ba597b631d22d85e56db6982f24b7d1ebe238df9/open-sse/executors/qoder.ts",
+    "notes": "Qoder pt-* PAT runs the official qodercli companion with tools disabled, restricted child environment, bounded process and strict result envelope. Other credentials select API compatibility fallback. Contract-tested; not live verified. docs/providers/codingfinal.md.",
+    "live_verified": false,
+    "adapter": "qoder",
+    "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "protocols": [
+      "chat"
+    ],
+    "text_only": true
+  },
+  {
+    "id": "doubao",
+    "kind": "web",
+    "implementation": "native_browser",
+    "reference": "https://www.doubao.com",
+    "notes": "CDP drives the authenticated /chat/ UI and captures the page POST /samantha/chat/completion SSE; requires browser.enabled and an exact UI model. See docs/providers/chinanext.md.",
+    "live_verified": false,
+    "adapter": "doubao",
+    "base_url": "https://www.doubao.com",
+    "protocols": [
+      "chat"
+    ],
+    "text_only": true
+  },
+  {
+    "id": "wenxin",
+    "kind": "research",
+    "implementation": "not_implemented",
+    "reference": "https://yiyan.baidu.com",
+    "notes": "Native web fixtures needed.",
+    "live_verified": false
+  },
+  {
+    "id": "poe-web",
+    "adapter": "poe-web",
+    "base_url": "https://poe.com",
+    "reference": "https://github.com/snowby666/poe-api-wrapper/blob/bbb6831eb1ccbc2bed7bae89cfbd29a106bdd707/poe_api_wrapper/api.py",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Signed GraphQL + tchannel WebSocket, own p-b/p-lat Cookie and formkey. One text turn, buffered complete answer; source-backed fixtures, not live verified. docs/providers/poe.md."
+  },
+  {
+    "id": "genspark",
+    "kind": "web",
+    "implementation": "native_http",
+    "reference": "https://github.com/deanxv/genspark2api",
+    "notes": "Single user text turn; explicit credentials. Contract tests only. See docs/providers/majorweb.md.",
+    "live_verified": false,
+    "adapter": "genspark",
+    "base_url": "https://www.genspark.ai",
+    "protocols": [
+      "chat"
+    ],
+    "text_only": true
+  },
+  {
+    "id": "aistudio-build",
+    "kind": "web",
+    "implementation": "native_browser",
+    "reference": "https://github.com/iBUHub/AIStudioToAPI",
+    "notes": "Source-backed native private protocol; explicit own product login/configuration required. Buffered text completion, no unverified continuation. Local contract tests; not live verified. docs/providers/businessweb.md.",
+    "live_verified": false,
+    "adapter": "aistudio-build",
+    "base_url": "",
+    "protocols": [
+      "chat"
+    ],
+    "text_only": true
+  },
+  {
+    "id": "aistudio-playground",
+    "kind": "web",
+    "implementation": "native_http",
+    "reference": "https://github.com/Mag1cFall/AIStudio2API",
+    "notes": "Source-backed private web RPC. Explicit browser credential bundle required. Text chat, buffered delivery, strict response framing, no gateway continuation. Contract tests only; not live verified. docs/providers/businessweb.md.",
+    "live_verified": false,
+    "adapter": "aistudio-playground",
+    "base_url": "https://alkalimakersuite-pa.clients6.google.com/$rpc/google.internal.alkali.applications.makersuite.v1.MakerSuiteService",
+    "protocols": [
+      "chat"
+    ],
+    "text_only": true
+  },
+  {
+    "id": "notebooklm",
+    "kind": "research",
+    "implementation": "not_implemented",
+    "reference": "https://notebooklm.google.com",
+    "notes": "Notebook binding and citations need a separate target contract.",
+    "live_verified": false
+  },
+  {
+    "id": "meta-ai",
+    "adapter": "meta-ai",
+    "base_url": "https://www.meta.ai",
+    "reference": "https://github.com/xtekky/gpt4free/blob/502b0e2e8d82292a39d2c3d9da07125322870583/g4f/Provider/needs_auth/MetaAI.py",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Signed-in GraphQL path with own cookie, lsd, fb_dtsg. Single user, model meta-ai, buffered authoritative snippet. No guest signup, image generation, or source-list lookup. docs/providers/meta.md."
+  },
+  {
+    "id": "duck-ai",
+    "kind": "web",
+    "implementation": "native_browser",
+    "reference": "https://github.com/diegosouzapw/OmniRoute/blob/ba597b631d22d85e56db6982f24b7d1ebe238df9/open-sse/executors/duckduckgo-web.ts",
+    "notes": "Configured Chrome, model web, one user; capture page request and actual model, strict SSE DONE. docs/providers/duck.md.",
+    "live_verified": false,
+    "adapter": "duckduckgo-web",
+    "base_url": "https://duck.ai",
+    "protocols": [
+      "chat"
+    ],
+    "text_only": true
+  },
+  {
+    "id": "character-ai",
+    "kind": "research",
+    "implementation": "not_implemented",
+    "reference": "https://github.com/kramcat/CharacterAI",
+    "notes": "Role/session target support and WebSocket correlation required.",
+    "live_verified": false
+  },
+  {
+    "id": "discord-bot",
+    "kind": "research",
+    "implementation": "not_implemented",
+    "reference": "https://discord.com/developers/docs",
+    "notes": "Requires authorized bot, explicit thread/message correlation, and async contract.",
+    "live_verified": false
+  },
+  {
+    "id": "telegram-bot",
+    "kind": "research",
+    "implementation": "not_implemented",
+    "reference": "https://core.telegram.org/bots/api",
+    "notes": "Requires explicit bot and update correlation; not arbitrary bot access.",
+    "live_verified": false
+  },
+  {
+    "id": "slack-bot",
+    "kind": "research",
+    "implementation": "not_implemented",
+    "reference": "https://api.slack.com",
+    "notes": "Requires authorized app scope and thread/event correlation.",
+    "live_verified": false
+  },
+  {
+    "id": "midjourney",
+    "kind": "research",
+    "implementation": "not_implemented",
+    "reference": "https://github.com/novicezk/midjourney-proxy",
+    "notes": "Separate async media contract and authorized account protocol required.",
+    "live_verified": false
+  },
+  {
+    "id": "trae",
+    "adapter": "trae",
+    "base_url": "https://core-normal.trae.ai/api/remote/v1",
+    "reference": "https://github.com/OmniRoute/OmniRoute/blob/ba597b631d22d85e56db6982f24b7d1ebe238df9/open-sse/executors/trae.ts",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "subscription",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Source-backed native private protocol; explicit product credential required. Buffered delivery, no gateway session continuation. Contract tests, not live verified. docs/providers/codingfinal.md."
+  },
+  {
+    "id": "you",
+    "adapter": "you",
+    "base_url": "https://you.com",
+    "reference": "https://github.com/xtekky/gpt4free/blob/502b0e2e8d82292a39d2c3d9da07125322870583/g4f/Provider/needs_auth/You.py",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Pinned reference marks working=False. Source-migrated text protocol, current upstream compatibility unverified. Own cookie, one user message, buffered SSE. docs/providers/you.md."
+  },
+  {
+    "id": "phind",
+    "kind": "web",
+    "implementation": "native_http",
+    "reference": "https://github.com/xtekky/gpt4free",
+    "notes": "Only default model alias. Phind inventory entry is PhindAi at phindai.org, not phind.com. See docs/providers/producttext.md.",
+    "live_verified": false,
+    "adapter": "phindai",
+    "base_url": "https://phindai.org",
+    "anonymous": true,
+    "protocols": [
+      "chat"
+    ],
+    "text_only": true
+  },
+  {
+    "id": "arena",
+    "kind": "web",
+    "implementation": "native_http",
+    "reference": "https://github.com/diegosouzapw/OmniRoute/blob/ba597b631d22d85e56db6982f24b7d1ebe238df9/open-sse/executors/lmarena.ts",
+    "notes": "Exact model UUID, own cookie and optional recaptchaV3Token. Buffered participant-A text only. Native Go TLS; Cloudflare compatibility unverified. docs/providers/arena.md.",
+    "live_verified": false,
+    "adapter": "arena",
+    "base_url": "https://arena.ai",
+    "protocols": [
+      "chat"
+    ],
+    "text_only": true
+  },
+  {
+    "id": "venice-web",
+    "adapter": "venice-web",
+    "base_url": "https://venice.ai",
+    "reference": "https://github.com/diegosouzapw/OmniRoute",
+    "anonymous": false,
+    "text_only": true,
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "live_verified": false,
+    "notes": "Reference contract tested. See docs/providers/webhttp.md for exact semantics and limitations."
+  },
+  {
+    "id": "inkeep",
+    "adapter": "inkeep",
+    "base_url": "https://api.inkeep.com",
+    "reference": "https://github.com/lza6/inkeep-2api",
+    "anonymous": false,
+    "text_only": true,
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "live_verified": false,
+    "notes": "Reference contract tested. See docs/providers/webhttp.md for exact semantics and limitations."
+  },
+  {
+    "id": "gptanon",
+    "adapter": "gptanon",
+    "base_url": "https://www.gptanon.com",
+    "reference": "https://github.com/lza6/gptanon-2api-cfwork",
+    "anonymous": true,
+    "text_only": true,
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "live_verified": false,
+    "notes": "Reference contract tested. See docs/providers/webhttp.md for exact semantics and limitations."
+  },
+  {
+    "id": "perfectassistant",
+    "adapter": "perfectassistant",
+    "base_url": "https://perfectassistant.ai",
+    "reference": "https://github.com/lza6/perfectassistant-2api-cfwork",
+    "anonymous": true,
+    "text_only": true,
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "live_verified": false,
+    "notes": "Reference contract tested. See docs/providers/webhttp.md for exact semantics and limitations."
+  },
+  {
+    "id": "tabbit",
+    "adapter": "tabbit",
+    "base_url": "https://web.tabbit.ai",
+    "reference": "https://github.com/hoinata/tabbit2api",
+    "text_only": true,
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "live_verified": false,
+    "notes": "Single user text only; explicit credentials. Contract tested, no live validation. See docs/providers/embedded.md."
+  },
+  {
+    "id": "fanzha",
+    "adapter": "fanzha",
+    "base_url": "https://xzfzznt.gaj.sh.gov.cn",
+    "reference": "https://github.com/lfzk550/fanzha-ai-proxy",
+    "text_only": true,
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "live_verified": false,
+    "notes": "Single user text only; explicit credentials. Contract tested, no live validation. See docs/providers/embedded.md."
+  },
+  {
+    "id": "kimi-web",
+    "adapter": "kimi-web",
+    "base_url": "https://www.kimi.com",
+    "reference": "https://github.com/xiaoY233/Chat2API",
+    "text_only": true,
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "live_verified": false,
+    "notes": "Single user turn; explicit session header for continuity. Contract tested only. See docs/providers/china.md."
+  },
+  {
+    "id": "qwen-web-intl",
+    "adapter": "qwen-web-intl",
+    "base_url": "https://chat.qwen.ai",
+    "reference": "https://github.com/xiaoY233/Chat2API",
+    "text_only": true,
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "live_verified": false,
+    "notes": "Single user turn; explicit session header for continuity. Contract tested only. See docs/providers/china.md."
+  },
+  {
+    "id": "glm-web",
+    "adapter": "glm-web",
+    "base_url": "https://chatglm.cn/chatglm",
+    "reference": "https://github.com/xiaoY233/Chat2API",
+    "text_only": true,
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "live_verified": false,
+    "notes": "Single user turn; explicit session header for continuity. Contract tested only. See docs/providers/china.md."
+  },
+  {
+    "id": "zai-web",
+    "adapter": "zai-web",
+    "base_url": "https://chat.z.ai",
+    "reference": "https://github.com/xiaoY233/Chat2API",
+    "text_only": true,
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "live_verified": false,
+    "notes": "Single user turn; explicit session header for continuity. Contract tested only. See docs/providers/china.md."
+  },
+  {
+    "id": "chataigpt",
+    "adapter": "chataigpt",
+    "base_url": "https://chataigpt.net",
+    "reference": "https://github.com/lza6/Chataigpt-2api",
+    "text_only": true,
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "live_verified": false,
+    "notes": "Explicit credentials required. Contract tested only; see docs/providers/wordpress.md and webhttp.md."
+  },
+  {
+    "id": "chatgptfree",
+    "adapter": "chatgptfree",
+    "base_url": "https://chatgptfree.ai",
+    "reference": "https://github.com/lza6/FreeAIchat-2api",
+    "text_only": true,
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "live_verified": false,
+    "notes": "Explicit credentials required. Contract tested only; see docs/providers/wordpress.md and webhttp.md."
+  },
+  {
+    "id": "aifreeforever",
+    "adapter": "aifreeforever",
+    "base_url": "https://chat.aifreeforever.com",
+    "reference": "https://github.com/lza6/Aifreeforever-2api",
+    "text_only": true,
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "live_verified": false,
+    "notes": "Explicit credentials required. Contract tested only; see docs/providers/wordpress.md and webhttp.md."
+  },
+  {
+    "id": "toolbaz",
+    "adapter": "toolbaz",
+    "base_url": "https://data.toolbaz.com",
+    "reference": "https://github.com/lza6/toolbaz-2api-docker",
+    "text_only": true,
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "live_verified": false,
+    "notes": "Requires existing user-issued writing token/session JSON. No automatic challenge handling. Buffered output; local tests only."
+  },
+  {
+    "id": "kiro",
+    "adapter": "kiro",
+    "base_url": "https://codewhisperer.us-east-1.amazonaws.com",
+    "reference": "https://github.com/caidaoli/kiro2api",
+    "text_only": true,
+    "protocols": [
+      "chat",
+      "messages"
+    ],
+    "kind": "subscription",
+    "implementation": "native_http",
+    "live_verified": false,
+    "notes": "Native AWS Event Stream; limited request semantics; no native tools. Local fixtures only. See docs/providers/coding.md."
+  },
+  {
+    "id": "antigravity",
+    "adapter": "antigravity",
+    "base_url": "https://cloudcode-pa.googleapis.com",
+    "reference": "https://github.com/router-for-me/CLIProxyAPI",
+    "protocols": [
+      "gemini"
+    ],
+    "kind": "subscription",
+    "implementation": "native_http",
+    "live_verified": false,
+    "notes": "Native Cloud Code Assist envelope; explicit project and access token. Local fixtures only. See docs/providers/coding.md."
+  },
+  {
+    "id": "dola-web",
+    "adapter": "dola-web",
+    "base_url": "https://www.dola.com",
+    "reference": "https://github.com/diegosouzapw/OmniRoute",
+    "text_only": true,
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "live_verified": false,
+    "notes": "Single user turn. Dola/DeepSeek continuation unsupported. Explicit credentials; no live tests. See docs/providers/chinanext.md."
+  },
+  {
+    "id": "yuanbao",
+    "adapter": "yuanbao",
+    "base_url": "https://yuanbao.tencent.com",
+    "reference": "https://github.com/diegosouzapw/OmniRoute",
+    "text_only": true,
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "live_verified": false,
+    "notes": "Single user turn. Dola/DeepSeek continuation unsupported. Explicit credentials; no live tests. See docs/providers/chinanext.md."
+  },
+  {
+    "id": "deepseek-web",
+    "adapter": "deepseek-web",
+    "base_url": "https://chat.deepseek.com",
+    "reference": "https://github.com/diegosouzapw/OmniRoute",
+    "text_only": true,
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "live_verified": false,
+    "notes": "Single user turn. Dola/DeepSeek continuation unsupported. Explicit credentials; no live tests. See docs/providers/chinanext.md."
+  },
+  {
+    "id": "grok-build",
+    "adapter": "grok-build",
+    "base_url": "https://cli-chat-proxy.grok.com/v1",
+    "reference": "https://github.com/chenyme/grok2api",
+    "protocols": [
+      "chat",
+      "responses"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Single user text turn; explicit credentials. Contract tests only. See docs/providers/majorweb.md."
+  },
+  {
+    "id": "grok-console",
+    "adapter": "grok-console",
+    "base_url": "https://console.x.ai",
+    "reference": "https://github.com/chenyme/grok2api",
+    "protocols": [
+      "chat",
+      "responses"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Single user text turn; explicit credentials. Contract tests only. See docs/providers/majorweb.md."
+  },
+  {
+    "id": "whiterabbitneo",
+    "adapter": "whiterabbitneo",
+    "base_url": "https://www.whiterabbitneo.com",
+    "anonymous": false,
+    "reference": "https://github.com/xtekky/gpt4free",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Only default model alias; see docs/providers/producttext.md."
+  },
+  {
+    "id": "cloudflare-playground",
+    "adapter": "cloudflare-playground",
+    "base_url": "https://playground.ai.cloudflare.com",
+    "anonymous": true,
+    "reference": "https://github.com/diegosouzapw/OmniRoute",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_browser",
+    "text_only": true,
+    "live_verified": true,
+    "notes": "Requires configured running Chrome; bounded browser WebSocket protocol. See docs/providers/playground.md."
+  },
+  {
+    "id": "amazon-q",
+    "adapter": "amazon-q",
+    "base_url": "https://codewhisperer.us-east-1.amazonaws.com",
+    "reference": "https://github.com/diegosouzapw/OmniRoute",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "subscription",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Shared CodeWhisperer protocol, separate Amazon Q credentials; source region explicit. Contract tests only. See docs/providers/codingmore.md."
+  },
+  {
+    "id": "minimax-web",
+    "adapter": "minimax-web",
+    "base_url": "https://agent.minimaxi.com",
+    "reference": "https://github.com/xiaoY233/Chat2API",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "One user text turn; X-COT-Session unsupported. MiniMax/Step use default model alias. Explicit credentials; contract tests only. See docs/providers/chinamore.md."
+  },
+  {
+    "id": "mimo",
+    "adapter": "mimo",
+    "base_url": "https://aistudio.xiaomimimo.com",
+    "reference": "https://github.com/xiaoY233/Chat2API",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "One user text turn; X-COT-Session unsupported. MiniMax/Step use default model alias. Explicit credentials; contract tests only. See docs/providers/chinamore.md."
+  },
+  {
+    "id": "stepchat",
+    "adapter": "stepchat",
+    "base_url": "https://stepchat.cn",
+    "reference": "https://github.com/jonnyquan/step-free-api",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "One user text turn; X-COT-Session unsupported. MiniMax/Step use default model alias. Explicit credentials; contract tests only. See docs/providers/chinamore.md."
+  },
+  {
+    "id": "zenmux-web",
+    "adapter": "zenmux-web",
+    "base_url": "https://zenmux.ai",
+    "reference": "https://github.com/diegosouzapw/OmniRoute",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Cookie ctoken; one user text turn, 4096 output token cap. Contract tests only; docs/providers/zenmux.md."
+  },
+  {
+    "id": "augment",
+    "adapter": "augment",
+    "base_url": "",
+    "reference": "https://github.com/linqiu919/augment2api",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "subscription",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Set base_url to the tenant URL paired with your own token. Only default CHAT model; contract tests only. See docs/providers/codingmore.md."
+  },
+  {
+    "id": "blackbox",
+    "adapter": "blackbox",
+    "base_url": "https://app.blackbox.ai",
+    "reference": "https://github.com/diegosouzapw/OmniRoute",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Own credential JSON cookie + validated required; actual session/subscription queried. Single user turn, buffered response, 1024 output token cap. Contract tests only; docs/providers/blackbox.md."
+  },
+  {
+    "id": "freebuff",
+    "adapter": "freebuff",
+    "base_url": "https://www.codebuff.com/api/v1",
+    "reference": "https://github.com/diegosouzapw/OmniRoute",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "subscription",
+    "implementation": "native_http",
+    "text_only": false,
+    "live_verified": false,
+    "notes": "Explicit own product token; contract tests only. CodeBuddy is China route; Zed requires LLM token. See docs/providers/codingnext.md."
+  },
+  {
+    "id": "codebuddy",
+    "adapter": "codebuddy-cn",
+    "base_url": "https://copilot.tencent.com/v2/chat/completions",
+    "reference": "https://github.com/diegosouzapw/OmniRoute",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "subscription",
+    "implementation": "native_http",
+    "text_only": false,
+    "live_verified": false,
+    "notes": "Explicit own product token; contract tests only. CodeBuddy is China route; Zed requires LLM token. See docs/providers/codingnext.md."
+  },
+  {
+    "id": "zed-hosted",
+    "adapter": "zed-hosted",
+    "base_url": "https://cloud.zed.dev/completions",
+    "reference": "https://github.com/diegosouzapw/OmniRoute",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "subscription",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Explicit own product token; contract tests only. CodeBuddy is China route; Zed requires LLM token. See docs/providers/codingnext.md."
+  },
+  {
+    "id": "conol-web",
+    "adapter": "conol-web",
+    "base_url": "https://conol.ai",
+    "reference": "https://github.com/diegosouzapw/OmniRoute",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "One user turn in new session; explicit model pin acknowledged before submission. Buffered response. Contract tests only; docs/providers/conol.md."
+  },
+  {
+    "id": "flowith",
+    "adapter": "flowith",
+    "base_url": "https://edge.flowith.net",
+    "reference": "https://github.com/lzA6/flowith-2api",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Own explicit credentials. LangFast requires project prompt ID + token + supabase_anon_key; LiaoBots authCode + cookie. No session continuation. Contract tests only; docs/providers/webnext.md."
+  },
+  {
+    "id": "langfast",
+    "adapter": "langfast",
+    "base_url": "https://yzaaxwkjukajpwqflndu.supabase.co",
+    "reference": "https://github.com/lzA6/langfast-2api",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Own explicit credentials. LangFast requires project prompt ID + token + supabase_anon_key; LiaoBots authCode + cookie. No session continuation. Contract tests only; docs/providers/webnext.md."
+  },
+  {
+    "id": "liaobots",
+    "adapter": "liaobots",
+    "base_url": "https://liaobots.work",
+    "reference": "https://github.com/lzA6/liaobots-2api-cfwork",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Own explicit credentials. LangFast requires project prompt ID + token + supabase_anon_key; LiaoBots authCode + cookie. No session continuation. Contract tests only; docs/providers/webnext.md."
+  },
+  {
+    "id": "tencent-aistudio-web",
+    "adapter": "tencent-aistudio-web",
+    "base_url": "https://aistudio.tencent.ai",
+    "reference": "https://github.com/diegosouzapw/OmniRoute",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Own Cookie, hy3-g/hunyuan-default or hunyuan-3d product route. Text only, no X-COT-Session. Contract tests only; docs/providers/chinafinal.md."
+  },
+  {
+    "id": "adapta-web",
+    "adapter": "adapta-web",
+    "base_url": "https://agent.adapta.one",
+    "reference": "https://github.com/diegosouzapw/OmniRoute",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Own Clerk __client cookie; short-lived session token exchange/cache. adapta-one/default auto model only, single user text. Contract tests only; docs/providers/adapta.md."
+  },
+  {
+    "id": "pi",
+    "adapter": "pi",
+    "base_url": "https://pi.ai",
+    "reference": "https://github.com/xtekky/gpt4free/blob/502b0e2e8d82292a39d2c3d9da07125322870583/g4f/Provider/needs_auth/Pi.py",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Single user text. Pi own Cookie; Reka own bearer, reference working=false. Clean HTTP EOF text protocol. Contract tests only; docs/providers/pireka.md."
+  },
+  {
+    "id": "reka-web",
+    "adapter": "reka-web",
+    "base_url": "https://space.reka.ai",
+    "reference": "https://github.com/xtekky/gpt4free/blob/502b0e2e8d82292a39d2c3d9da07125322870583/g4f/Provider/needs_auth/Reka.py",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Single user text. Pi own Cookie; Reka own bearer, reference working=false. Clean HTTP EOF text protocol. Contract tests only; docs/providers/pireka.md."
+  },
+  {
+    "id": "huggingchat",
+    "adapter": "huggingchat",
+    "base_url": "https://huggingface.co",
+    "reference": "https://github.com/xtekky/gpt4free/blob/502b0e2e8d82292a39d2c3d9da07125322870583/g4f/Provider/needs_auth/hf/HuggingChat.py",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Single user text, explicit product model ID and own Cookie. Creates conversation, fetches parent message, multipart NDJSON with finalAnswer. Contract tests only; docs/providers/huggingchat.md."
+  },
+  {
+    "id": "hyperagent",
+    "adapter": "hyperagent",
+    "base_url": "https://hyperagent.com",
+    "reference": "https://github.com/OmniRoute/OmniRoute/blob/ba597b631d22d85e56db6982f24b7d1ebe238df9/open-sse/executors/hyperagent.ts",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Own Cookie, fresh thread creation then PATCH model and POST chat SSE. Single user text; product model IDs are source-derived unverified labels. Source agent feature flags preserved; docs/providers/hyperagent.md."
+  },
+  {
+    "id": "maxai",
+    "adapter": "maxai",
+    "base_url": "https://api.maxai.me",
+    "reference": "https://github.com/OmniRoute/OmniRoute/blob/ba597b631d22d85e56db6982f24b7d1ebe238df9/open-sse/executors/maxai/protocol.ts",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Own credential required. Text-only private product protocol. Source-backed contract tests, not live verification; docs/providers/enterpriseweb.md."
+  },
+  {
+    "id": "notion-web",
+    "adapter": "notion-web",
+    "base_url": "https://app.notion.com",
+    "reference": "https://github.com/OmniRoute/OmniRoute/blob/ba597b631d22d85e56db6982f24b7d1ebe238df9/open-sse/executors/notion-web.ts",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Own credential required. Text-only private product protocol. Source-backed contract tests, not live verification; docs/providers/enterpriseweb.md."
+  },
+  {
+    "id": "opera-aria",
+    "adapter": "opera-aria",
+    "base_url": "https://composer.opera-api.com",
+    "reference": "https://github.com/xtekky/gpt4free/blob/502b0e2e8d82292a39d2c3d9da07125322870583/g4f/Provider/OperaAria.py",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Own credential required. Text-only private product protocol. Source-backed contract tests, not live verification; docs/providers/enterpriseweb.md."
+  },
+  {
+    "id": "inner-ai",
+    "adapter": "inner-ai",
+    "base_url": "https://chatapi.innerai.com",
+    "reference": "https://github.com/OmniRoute/OmniRoute/blob/ba597b631d22d85e56db6982f24b7d1ebe238df9/open-sse/executors/inner-ai.ts",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Own token/email/device_id. Exact dynamic account-model lookup then temporary no-context chat SSE. One user text; docs/providers/innerai.md; contract tests only."
+  },
+  {
+    "id": "uc-web",
+    "adapter": "uc-web",
+    "base_url": "https://internal-6.pubyar.com",
+    "reference": "https://github.com/OmniRoute/OmniRoute/blob/ba597b631d22d85e56db6982f24b7d1ebe238df9/open-sse/executors/uc.ts",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "UC persona WebSocket; explicit own Clerk cookie/sid/uid; buffered authoritative answer. docs/providers/uc.md Contract tests only; no live account validation."
+  },
+  {
+    "id": "emohaa",
+    "adapter": "emohaa",
+    "base_url": "https://ai-role.cn",
+    "reference": "https://gitee.com/llm-red-team/emohaa-free-api/tree/809fe6e83ef3a853a08494fcbb77cf8cafbdf507",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Own token; exact emohaa selector; temporary conversation cleanup. docs/providers/chinaremaining.md Contract tests only; no live account validation."
+  },
+  {
+    "id": "spark-web",
+    "adapter": "spark-web",
+    "base_url": "https://xinghuo.xfyun.cn",
+    "reference": "https://gitee.com/llm-red-team/spark-free-api/tree/ec2c4c4042fe096c9ffb98e2aa3d3d724eab488c",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Own sso_session_id AND gt_token; exact spark selector. docs/providers/chinaremaining.md Contract tests only; no live account validation."
+  },
+  {
+    "id": "qwen-web-cn",
+    "adapter": "qwen-web-cn",
+    "base_url": "https://api.tongyi.com",
+    "reference": "https://github.com/lza6/Qwen-2api/blob/4f793ac52a3e9e22fc9af17795aba492d5be2723/app/providers/text_provider.py",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Own cookie and xsrf_token; mainland product protocol. docs/providers/chinaremaining.md Contract tests only; no live account validation."
+  },
+  {
+    "id": "metaso",
+    "adapter": "metaso",
+    "base_url": "https://metaso.cn",
+    "reference": "https://gitee.com/llm-red-team/metaso-free-api/tree/53e886172ee0563d50bf7f7277cc45e97d552b04",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Own uid-sid token, meta-token/session/search; optional Go CDP. Single user and exact search mode. docs/providers/chinaremaining.md Contract tests only; no live account validation."
+  },
+  {
+    "id": "easemate",
+    "adapter": "easemate",
+    "base_url": "https://www.easemate.ai",
+    "reference": "https://github.com/lza6/easemate-2api/blob/eb9713e7988243eb7a87076cab54c050bb4fbcf0/app/providers/easemate_provider.py",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_browser",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Go Chrome CDP, exact UI model label, one user turn. Captures own-page fetch/XHR response, no token extraction. Local browser fixtures passed; docs/providers/easemate.md."
+  },
+  {
+    "id": "copilot-web",
+    "adapter": "copilot-web",
+    "base_url": "https://copilot.microsoft.com",
+    "reference": "https://github.com/OmniRoute/OmniRoute/blob/ba597b631d22d85e56db6982f24b7d1ebe238df9/open-sse/executors/copilot-web.ts",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Own access token, product mode selectors, fresh conversation, native WebSocket+bounded hashcash; buffered replacements. docs/providers/copilotweb.md. Contract tests only."
+  },
+  {
+    "id": "perplexity-web",
+    "adapter": "perplexity-web",
+    "base_url": "https://www.perplexity.ai",
+    "reference": "https://github.com/OmniRoute/OmniRoute/blob/ba597b631d22d85e56db6982f24b7d1ebe238df9/open-sse/executors/perplexity-web/protocol.ts",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Own next-auth cookie, exact model_preference, source schema2.18, bounded markdown/workflow patches, buffered final answer. No browser TLS impersonation; contract tests only. docs/providers/perplexity.md."
+  },
+  {
+    "id": "google-ai-mode",
+    "adapter": "google-ai-mode",
+    "base_url": "https://google.com",
+    "reference": "https://github.com/xtekky/gpt4free/blob/502b0e2e8d82292a39d2c3d9da07125322870583/g4f/Provider/search/GoogleAiMode.py",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_browser",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Configured Chrome CDP required; model ai-mode, single user query, buffered delivery. DOM fixture verified, no live verification. docs/providers/enterpriseweb.md."
+  },
+  {
+    "id": "t3-web",
+    "adapter": "t3-web",
+    "base_url": "https://t3.chat",
+    "reference": "https://github.com/OmniRoute/OmniRoute/blob/ba597b631d22d85e56db6982f24b7d1ebe238df9/open-sse/executors/t3-chat-web.ts",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Experimental pinned /api/chat path only. Deployment-specific TanStack server-function discovery and framed TSS are NOT implemented; current product compatibility unverified. docs/providers/t3.md."
+  },
+  {
+    "id": "v0-web",
+    "adapter": "v0-web",
+    "base_url": "https://v0.dev/api/chat",
+    "reference": "https://github.com/OmniRoute/OmniRoute/blob/ba597b631d22d85e56db6982f24b7d1ebe238df9/open-sse/executors/v0-vercel-web.ts",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "subscription",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Source-backed native private protocol; explicit product credential required. Buffered delivery, no gateway session continuation. Contract tests, not live verified. docs/providers/codingfinal.md."
+  },
+  {
+    "id": "tinycms-web",
+    "adapter": "tinycms-web",
+    "base_url": "https://gov.freegpt.win",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_browser",
+    "text_only": true,
+    "live_verified": false,
+    "reference": "https://github.com/diegosouzapw/OmniRoute/blob/ba597b631d22d85e56db6982f24b7d1ebe238df9/open-sse/executors/tinycms.ts",
+    "notes": "Own R-prefixed device identity and explicit client_ip. Chrome executes pinned WASM signer; native HTTP challenge/chat. Difficulty capped at16. One user, buffered completion. docs/providers/tinycms.md."
+  },
+  {
+    "id": "merlin",
+    "adapter": "merlin",
+    "base_url": "https://arcane.getmerlin.in",
+    "implementation": "native_http",
+    "reference": "https://github.com/cchking/merlin2api/blob/24e6f382bfb02c25dabc9056f564fa3936dbe1f0/app.py",
+    "notes": "Own bearer only; no token generator. Single user, buffered SSE with clean-EOF completion. docs/providers/apps.md.",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "text_only": true,
+    "live_verified": false
+  },
+  {
+    "id": "sider",
+    "adapter": "sider",
+    "base_url": "https://sider.ai",
+    "implementation": "native_http",
+    "reference": "https://github.com/yeuxuan/sider2api/blob/7801bb982aaf28a3efdb69c119e2e6b40749ef03/src/utils/sider-client.ts",
+    "notes": "Own bearer, exact Sider model; fresh conversation, one user, tools disabled, strict SSE DONE. docs/providers/apps.md.",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "text_only": true,
+    "live_verified": false
+  },
+  {
+    "id": "monica",
+    "adapter": "monica",
+    "base_url": "https://api.monica.im",
+    "implementation": "native_http",
+    "reference": "https://github.com/SimonUTD/monica2api/blob/d56170796e8081de4ee47b49f09e058769779f8b/internal/types/monica.go",
+    "notes": "Own cookie; supported model-to-bot mapping, welcome and user item chain, buffered finished/DONE. No custom bot publication or uploads. docs/providers/apps.md.",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "text_only": true,
+    "live_verified": false
+  },
+  {
+    "id": "raycast",
+    "adapter": "raycast",
+    "base_url": "https://backend.raycast.com",
+    "implementation": "native_http",
+    "reference": "https://github.com/xxxbrian/raycast2api/blob/8e9442ca5d3c8cf6438a8582d0cdadfc5de173db/src/utils.ts",
+    "notes": "Own bearer, device_id, signature_secret; exact account model registry and signed native chat. No bundled secret/default model substitution. docs/providers/apps.md.",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "text_only": true,
+    "live_verified": false
+  },
+  {
+    "id": "warp",
+    "adapter": "warp",
+    "base_url": "https://app.warp.dev",
+    "reference": "https://github.com/Xchat1/Warp2Api/tree/c3a7fb35ae8c34cd8246cb881ffc5852601e49ff/proto",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "subscription",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Pinned Warp multi_agent.v1 protobuf request and response schema. Explicit JWT, one user text turn, pinned models, buffered SSE, no gateway continuation. Independent schema path and response wire tests; not live verified. docs/providers/codingfinal.md."
+  },
+  {
+    "id": "zcode",
+    "adapter": "zcode",
+    "base_url": "zcode://app-server/stdio",
+    "reference": "https://github.com/OmniRoute/OmniRoute/blob/ba597b631d22d85e56db6982f24b7d1ebe238df9/open-sse/executors/zcode.ts",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "local",
+    "implementation": "native_cli",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Local ZCode app-server framed RPC companion; product owns login. Explicit COT_ZCODE_ALLOW_UNSAFE=1 operator opt-in required because source exposes build mode with local actions. Temporary workspace, restricted environment, bounded process. Contract tests only; no live verification. docs/providers/codingfinal.md."
+  },
+  {
+    "id": "gemini-business",
+    "adapter": "gemini-business",
+    "base_url": "https://business.gemini.google/home",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Source-backed private web RPC. Explicit browser credential bundle required. Text chat, buffered delivery, strict response framing, no gateway continuation. Contract tests only; not live verified. docs/providers/businessweb.md.",
+    "reference": "https://github.com/OmniRoute/OmniRoute/blob/ba597b631d22d85e56db6982f24b7d1ebe238df9/open-sse/executors/gemini-business.ts"
+  },
+  {
+    "id": "copilot-m365",
+    "adapter": "copilot-m365",
+    "base_url": "https://substrate.office.com",
+    "reference": "https://github.com/OmniRoute/OmniRoute/blob/ba597b631d22d85e56db6982f24b7d1ebe238df9/open-sse/executors/copilot-m365-web.ts",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Source-backed native private protocol; explicit own product login/configuration required. Buffered text completion, no unverified continuation. Local contract tests; not live verified. docs/providers/businessweb.md."
+  },
+  {
+    "id": "promptql",
+    "adapter": "promptql",
+    "base_url": "https://data.prompt.ql.app/promptql/playground-v2-hge/v1/graphql",
+    "reference": "https://github.com/OmniRoute/OmniRoute/blob/ba597b631d22d85e56db6982f24b7d1ebe238df9/open-sse/executors/promptql.ts",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "text_only": true,
+    "live_verified": false,
+    "notes": "Source-backed native private protocol; explicit own product login/configuration required. Buffered text completion, no unverified continuation. Local contract tests; not live verified. docs/providers/businessweb.md."
+  }
+]
