@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "scope": "freecoding",
+  "reference": "https://github.com/Damue01/FreeCoding",
+  "reference_commit": "f0ae52075e584bd55989ec4053b5ff61c09e422f",
+  "license": "docs/licenses/FreeCoding-MIT.txt",
+  "driver": "internal/drivers/device",
+  "adapter": "internal/providers/appdevice",
+  "checked_at": "2026-09-09",
+  "sources": [
+    {
+      "id": "meituan-xiaotuan",
+      "product": "美团小团",
+      "entry": "com.sankuai.meituan / 正常 App 入口打开的小团聊天页",
+      "client_version": "not_captured",
+      "catalog": "complete",
+      "connection": "unverified",
+      "interface": "offline_passed",
+      "agent": "single_user_text_current_app_session",
+      "runtime": "blocked_device_missing",
+      "tests": ["TestNativeWorkflowsEndToEnd", "TestMeituanBoundariesRejectOldPartialAndOffscreen"],
+      "missing": "Connect and authorize the phone, enable vivo clipboard sync, open a logged-in Xiaotuan chat, then run the unique-string live probe."
+    },
+    {
+      "id": "wangzhe-lingbao",
+      "product": "王者荣耀灵宝",
+      "entry": "com.tencent.tmgp.sgame / 3200x1440 灵宝对话页",
+      "client_version": "not_captured",
+      "catalog": "complete",
+      "connection": "unverified",
+      "interface": "offline_passed",
+      "agent": "single_user_text_current_app_session",
+      "runtime": "blocked_device_missing",
+      "tests": ["TestNativeWorkflowsEndToEnd", "TestOCRTSVAndOverlappingRows"],
+      "missing": "Connect the phone and calibrate the native Tesseract path on the actual landscape Lingbao page; OCR stability is not a native completion event."
+    },
+    {
+      "id": "douyin-xiaohuoren",
+      "product": "抖音/多闪小火人（参考版本为多闪包）",
+      "entry": "my.maya.android / 用户选定的小火人聊天，1440x3200",
+      "client_version": "not_captured",
+      "catalog": "complete",
+      "connection": "unverified",
+      "interface": "offline_passed",
+      "agent": "single_user_text_current_app_session",
+      "runtime": "blocked_device_missing",
+      "tests": ["TestNativeWorkflowsEndToEnd", "TestXiaohuorenCurrentTurnAndCard"],
+      "missing": "Connect the phone, select the intended chat and validate real mention metadata plus the calibrated card copy action."
+    }
+  ]
+}

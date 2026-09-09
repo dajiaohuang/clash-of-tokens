@@ -1834,5 +1834,50 @@
     "notes": "Book-scoped AI: project is book ID; source credential JSON vid/access_token; model web. Buffered polling. See docs/providers/weread-ai.md.",
     "live_verified": false,
     "text_only": true
+  },
+  {
+    "id": "meituan-xiaotuan",
+    "adapter": "app-device",
+    "base_url": "adb://current-app-session",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "device",
+    "implementation": "native_device",
+    "reference": "https://github.com/Damue01/FreeCoding/tree/f0ae52075e584bd55989ec4053b5ff61c09e422f",
+    "notes": "Native Go Android workflow; requires ADB, vivo clipboard sync and local Chinese OCR. One physical slot, current app conversation, manual routing only. Offline-tested, not live-verified. See docs/providers/app-device.md.",
+    "live_verified": false,
+    "anonymous": true,
+    "text_only": true
+  },
+  {
+    "id": "wangzhe-lingbao",
+    "adapter": "app-device",
+    "base_url": "adb://current-app-session",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "device",
+    "implementation": "native_device",
+    "reference": "https://github.com/Damue01/FreeCoding/tree/f0ae52075e584bd55989ec4053b5ff61c09e422f",
+    "notes": "Native Go Android workflow; requires ADB, vivo clipboard sync and local Chinese OCR. One physical slot, current app conversation, manual routing only. Offline-tested, not live-verified. See docs/providers/app-device.md.",
+    "live_verified": false,
+    "anonymous": true,
+    "text_only": true
+  },
+  {
+    "id": "douyin-xiaohuoren",
+    "adapter": "app-device",
+    "base_url": "adb://current-app-session",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "device",
+    "implementation": "native_device",
+    "reference": "https://github.com/Damue01/FreeCoding/tree/f0ae52075e584bd55989ec4053b5ff61c09e422f",
+    "notes": "Native Go Android workflow; requires ADB, vivo clipboard sync and local Chinese OCR. One physical slot, current app conversation, manual routing only. Offline-tested, not live-verified. See docs/providers/app-device.md.",
+    "live_verified": false,
+    "anonymous": true,
+    "text_only": true
   }
 ]

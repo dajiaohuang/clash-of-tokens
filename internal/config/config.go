@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -19,8 +20,21 @@ type Config struct {
 	AdminKeyEnv   string   `json:"admin_key_env"`
 	Runtime       Runtime  `json:"runtime"`
 	Browser       Browser  `json:"browser"`
+	Device        Device   `json:"device"`
 	Sources       []Source `json:"sources"`
 	Groups        []Group  `json:"groups"`
+}
+
+// Device is an explicitly configured physical execution environment. It is not
+// an inference server and does not store mobile app login credentials.
+type Device struct {
+	Enabled         bool   `json:"enabled"`
+	ADBPath         string `json:"adb_path"`
+	Serial          string `json:"serial"`
+	StateDir        string `json:"state_dir"`
+	OCRPath         string `json:"ocr_path"`
+	OCRDataDir      string `json:"ocr_data_dir"`
+	ClipboardSyncMS int    `json:"clipboard_sync_ms"`
 }
 type Browser struct {
 	Enabled           bool   `json:"enabled"`
@@ -151,6 +165,7 @@ func (c Config) Validate() error {
 		}
 		ids[s.ID] = true
 		switch s.Adapter {
+		case "app-device":
 		case "tencent-aistudio-web", "tencent-ima", "weread-ai":
 		case "flowith", "langfast", "liaobots":
 		case "freebuff", "codebuddy-cn", "zed-hosted":
@@ -161,6 +176,7 @@ func (c Config) Validate() error {
 			return fmt.Errorf("source %s: unsupported adapter", s.ID)
 		}
 		if s.Adapter == "chatgpt-web" {
+
 			browserCount++
 			if s.Enabled && !c.Browser.Enabled {
 				return errors.New("chatgpt-web requires browser.enabled")
@@ -219,9 +235,28 @@ func (c Config) Validate() error {
 		if s.Adapter == "weread-ai" && strings.TrimSpace(s.Project) == "" {
 			return fmt.Errorf("source %s: WeRead book ID required in project", s.ID)
 		}
+		if s.Adapter == "app-device" {
+			models := map[string]string{"meituan-xiaotuan": "meituan_xiaotuan", "wangzhe-lingbao": "wangzhe_lingbao", "douyin-xiaohuoren": "douyin_xiaohuoren"}
+			if models[s.Provider] == "" || s.BaseURL != "adb://current-app-session" || s.Local || s.AutoApproved || !s.Anonymous || s.KeyEnv != "" || s.MaxInflight != 1 || s.QuotaMaxInflight != 1 || s.QuotaDomain != "android-device" {
+				return fmt.Errorf("source %s: device providers require manual routing, android-device capacity one, and adb://current-app-session", s.ID)
+			}
+			if s.Enabled {
+				d := c.Device
+				if !d.Enabled || !filepath.IsAbs(d.ADBPath) || !filepath.IsAbs(d.OCRPath) || !filepath.IsAbs(d.StateDir) || d.Serial == "" || strings.ContainsAny(d.Serial, "\r\n\x00") || d.ClipboardSyncMS < 200 || d.ClipboardSyncMS > 5000 || s.Project != "current-app-session" {
+					return fmt.Errorf("source %s: enabled device requires explicit paths, serial, sync delay and project current-app-session", s.ID)
+				}
+			}
+			for _, m := range s.Models {
+				if m.Upstream != models[s.Provider] {
+					return fmt.Errorf("source %s: unknown device model selector", s.ID)
+				}
+			}
+		}
 		isDevinCLI := s.Adapter == "devin-cli"
 		u, e := url.Parse(s.BaseURL)
-		if isDevinCLI {
+		if s.Adapter == "app-device" {
+			// Validated above; this is an ADB device origin, not an HTTP service.
+		} else if isDevinCLI {
 			if s.BaseURL != "devin://acp/stdio" || !s.Local {
 				return fmt.Errorf("source %s: Devin CLI requires local base_url devin://acp/stdio", s.ID)
 			}
@@ -274,7 +309,7 @@ func (c Config) Validate() error {
 				return fmt.Errorf("source %s: Kiro tool round-trip is not implemented; tools must be none", s.ID)
 			}
 			switch s.Adapter {
-			case "tencent-aistudio-web", "tencent-ima", "weread-ai":
+			case "tencent-aistudio-web", "tencent-ima", "weread-ai", "app-device":
 				if m.Tools != "none" || m.Vision {
 					return fmt.Errorf("source %s: %s requires text only and tools none", s.ID, s.Adapter)
 				}
@@ -343,6 +378,8 @@ func (c Config) Validate() error {
 }
 func Supports(adapter, p string) bool {
 	switch adapter {
+	case "app-device":
+		return p == "chat"
 	case "tencent-aistudio-web", "tencent-ima", "weread-ai":
 		return p == "chat"
 	case "flowith", "langfast", "liaobots":

@@ -8,6 +8,8 @@ Clash of Tokens 是原生 Go 实现的本地优先 AI 协议网关，将来源�
 
 [来源状态](docs/SOURCE_STATUS.md) · [多账号并发](docs/MULTI_ACCOUNT_CONCURRENCY.md) · [性能记录](docs/PERFORMANCE.md) · [真实验证](docs/LIVE_VALIDATION.md) · [产品方案](docs/PRODUCT_SPEC.md)
 
+FreeCoding 的美团小团、王者灵宝和小火人已移植为项目内的 **Go 设备驱动**，包含共用 ADB/剪贴板/OCR 机制和离线验收，不依赖 FreeCoding 服务。三项尚未真机验证，默认禁用且只允许手动使用当前 App 会话。见 [设备配置](docs/providers/app-device.md) 与 [适配器工作台](docs/ADAPTER_WORKBENCH.md)。
+
 ## 功能
 
 - **统一入口**：OpenAI Chat Completions / Responses、Anthropic Messages、Gemini 原生请求路径。

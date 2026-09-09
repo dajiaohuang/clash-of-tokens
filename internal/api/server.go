@@ -39,7 +39,7 @@ type clientSlot struct {
 
 func (s *Server) client(i int) *upstream.Client {
 	slot := &s.clients[i]
-	slot.once.Do(func() { slot.client = upstream.New(s.cfg.Sources[i], s.cfg.Browser) })
+	slot.once.Do(func() { slot.client = upstream.NewConfigured(s.cfg.Sources[i], s.cfg.Browser, s.cfg.Device) })
 	return slot.client
 }
 func New(c config.Config) (*Server, error) {
@@ -285,7 +285,7 @@ func (s *Server) generate(w http.ResponseWriter, r *http.Request, proto, pathMod
 		fail(w, 502, "upstream did not return an SSE stream")
 		return
 	}
-	for _, key := range []string{"X-COT-Session", "X-COT-Response-Id", "X-COT-Delivery"} {
+	for _, key := range []string{"X-COT-Session", "X-COT-Response-Id", "X-COT-Delivery", "X-COT-Extraction", "X-COT-Context", "X-COT-Completion"} {
 		if v := resp.Header.Get(key); v != "" {
 			w.Header().Set(key, v)
 		}

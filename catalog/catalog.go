@@ -56,6 +56,13 @@ func Preset(id, model string, baseOverride ...string) (config.Source, error) {
 		}
 		s := config.Source{ID: id, Provider: id, Adapter: p.Adapter, BaseURL: p.BaseURL, KeyEnv: "COT_" + strings.ToUpper(strings.ReplaceAll(id, "-", "_")) + "_KEY", Local: p.Kind == "local", Paid: p.Kind != "local", MaxInflight: 1, QuotaDomain: id + "-account", QuotaMaxInflight: 1, Models: []config.Model{{ID: model, Upstream: model, Protocols: p.Protocols, Tier: "unrated", Tools: "unknown", MaxInputBytes: 1 << 20}}}
 		s.Anonymous = p.Anonymous
+		if p.Adapter == "app-device" {
+			selectors := map[string]string{"meituan-xiaotuan": "meituan_xiaotuan", "wangzhe-lingbao": "wangzhe_lingbao", "douyin-xiaohuoren": "douyin_xiaohuoren"}
+			s.Models[0].ID = selectors[p.ID]
+			s.Models[0].Upstream = selectors[p.ID]
+			s.Models[0].MaxInputBytes = 64 << 10
+			s.QuotaDomain = "android-device"
+		}
 		if p.Anonymous {
 			s.KeyEnv = ""
 		}

@@ -18,11 +18,14 @@
     {
       "id": "meituan-xiaotuan",
       "name": "美团小团",
-      "status": "blocked",
-      "provider": null,
+      "status": "implemented_unverified",
+      "provider": "meituan-xiaotuan",
       "live_verified": false,
-      "missing": "缺少 App 内助手请求协议及与小美的身份/能力边界。",
-      "evidence": [],
+      "missing": "原生 Go 设备工作流已移植并通过离线回放；缺少连接并授权的手机与已登录小团页面进行真机验收。",
+      "evidence": [
+        "https://github.com/Damue01/FreeCoding/tree/f0ae52075e584bd55989ec4053b5ff61c09e422f",
+        "docs/providers/app-device.md"
+      ],
       "checked_at": "2026-09-09"
     },
     {

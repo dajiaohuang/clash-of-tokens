@@ -17,6 +17,7 @@ import (
 	"clash-of-tokens/internal/api"
 	"clash-of-tokens/internal/chatgptweb"
 	"clash-of-tokens/internal/config"
+	"clash-of-tokens/internal/providers/appdevice"
 	"clash-of-tokens/internal/secrets"
 )
 
@@ -77,8 +78,8 @@ func run() error {
 		fmt.Println("clash-tokens 0.1.0-dev")
 		return nil
 	}
-	if command != "serve" && command != "validate" && command != "browser-login" && command != "doctor" && command != "keys" {
-		return fmt.Errorf("usage: clash-tokens {init|providers|validate|serve|browser-login|doctor|keys|version} [-config path]")
+	if command != "serve" && command != "validate" && command != "browser-login" && command != "doctor" && command != "device-doctor" && command != "keys" {
+		return fmt.Errorf("usage: clash-tokens {init|providers|validate|serve|browser-login|doctor|device-doctor|keys|version} [-config path]")
 	}
 	c, e := config.Load(*path)
 	if e != nil {
@@ -87,6 +88,11 @@ func run() error {
 	if command == "validate" {
 		fmt.Printf("configuration valid: %d sources, %d groups\n", len(c.Sources), len(c.Groups))
 		return nil
+	}
+	if command == "device-doctor" {
+		ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+		defer cancel()
+		return json.NewEncoder(os.Stdout).Encode(appdevice.Check(ctx, c.Device))
 	}
 	if command == "browser-login" {
 		return browserLogin(c)

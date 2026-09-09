@@ -19,6 +19,7 @@ import (
 
 	"clash-of-tokens/internal/chatgptweb"
 	"clash-of-tokens/internal/config"
+	"clash-of-tokens/internal/providers/appdevice"
 	"clash-of-tokens/internal/providers/businessweb"
 	"clash-of-tokens/internal/providers/china"
 	"clash-of-tokens/internal/providers/chinaapps"
@@ -49,6 +50,13 @@ type Client struct {
 	}
 }
 
+func NewConfigured(s config.Source, b config.Browser, d config.Device) *Client {
+	if s.Adapter == "app-device" {
+		return &Client{source: s, adapter: appdevice.New(s, d)}
+	}
+	return New(s, b)
+}
+
 func New(s config.Source, browser ...config.Browser) *Client {
 	if s.Adapter == "cloudflare-playground" {
 		b := config.Default().Browser
@@ -58,6 +66,8 @@ func New(s config.Source, browser ...config.Browser) *Client {
 		return &Client{source: s, adapter: playground.New(b)}
 	}
 	switch s.Adapter {
+	case "app-device":
+		return &Client{source: s, adapter: appdevice.New(s, config.Device{})}
 	case "tencent-ima", "weread-ai":
 		return &Client{source: s, adapter: chinaapps.New(s)}
 	case "gemini-business", "aistudio-playground", "aistudio-build", "copilot-m365", "promptql":
