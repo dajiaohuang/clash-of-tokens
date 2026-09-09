@@ -5,6 +5,7 @@ import (
 	"clash-of-tokens/internal/drivers/device"
 	"context"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"image"
 	"image/color"
@@ -24,6 +25,7 @@ type phoneFixture struct {
 	sendCount                            int
 	pngBefore, pngAfter                  []byte
 	commands                             []string
+	afterSend                            func()
 }
 
 func node(id, text, class, bounds string) device.Node {
@@ -124,6 +126,9 @@ func (p *phoneFixture) Run(ctx context.Context, args ...string) ([]byte, error) 
 			}
 			p.sent = true
 			p.sendCount++
+			if p.afterSend != nil {
+				p.afterSend()
+			}
 		case "shell input tap 125 530":
 			p.clip = "完整答案正文"
 		case "shell input tap 500 1500":
@@ -183,6 +188,31 @@ func TestNativeWorkflowsEndToEnd(t *testing.T) {
 			}
 			if !strings.HasPrefix(answer, tc.want) || method == "" || p.sendCount != 1 || dirty == 0 || p.clip != "原来的剪贴板" || p.detail {
 				t.Fatalf("answer=%q method=%s sends=%d clip=%q detail=%v", answer, method, p.sendCount, p.clip, p.detail)
+			}
+		})
+	}
+}
+
+func TestCancellationAfterSubmissionStopsPhoneActions(t *testing.T) {
+	for _, id := range []string{"meituan-xiaotuan", "wangzhe-lingbao", "douyin-xiaohuoren"} {
+		t.Run(id, func(t *testing.T) {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			p := &phoneFixture{p: profiles[id], clip: "原来的剪贴板", afterSend: cancel}
+			w, h := p.p.Width, p.p.Height
+			if w == 0 {
+				w, h = 1440, 3200
+			}
+			p.pngBefore = fixturePNG(w, h, 100)
+			p.pngAfter = fixturePNG(w, h, 200)
+			f := &flow{p: p.p, r: p, ocr: p, readClip: func() (string, error) { return p.clip, nil }, writeClip: func(s string) error { p.clip = s; return nil }, pause: func(ctx context.Context, _ time.Duration) error { return ctx.Err() }, dirty: func() {}}
+			answer, _, err := f.run(ctx, "测试问题")
+			if !errors.Is(err, context.Canceled) || answer != "" || p.sendCount != 1 || p.clip != "原来的剪贴板" {
+				t.Fatalf("err=%v answer=%q sends=%d clipboard restored=%v", err, answer, p.sendCount, p.clip == "原来的剪贴板")
+			}
+			last := p.commands[len(p.commands)-1]
+			if !strings.HasPrefix(last, "shell input tap ") {
+				t.Fatalf("phone action after canceled submission: %s", last)
 			}
 		})
 	}
