@@ -4,7 +4,7 @@
 
 Clash of Tokens 是原生 Go 实现的本地优先 AI 协议网关，将来源选择、账号并发、共享额度、排队和故障隔离集中处理，提供 OpenAI、Anthropic 和 Gemini 协议入口。
 
-当前版本：**0.1.0-dev，实验阶段**。93 项参考来源均已注册可执行适配路径，其中 **2 项完成过真实上游验证**；其余主要依据源码审查和本地契约测试。注册数量不代表全部账号可用或全部 API 语义兼容。
+当前版本：**0.1.0-dev，实验阶段**。原有 93 项参考来源均已注册可执行适配路径，另新增腾讯 ima、微信读书 AI 两项。已有 **2 项完成过真实上游验证**；其余主要依据源码审查和本地契约测试。注册数量不代表全部账号可用或全部 API 语义兼容。最新中国 App 候选的全量接入尚未完成，见 [候选实施状态](docs/CHINA_APP_CANDIDATES.md)。
 
 [来源状态](docs/SOURCE_STATUS.md) · [多账号并发](docs/MULTI_ACCOUNT_CONCURRENCY.md) · [性能记录](docs/PERFORMANCE.md) · [真实验证](docs/LIVE_VALIDATION.md) · [产品方案](docs/PRODUCT_SPEC.md)
 
@@ -160,4 +160,4 @@ docs/                来源约束、参考出处和验证记录
 
 Clash of Tokens is a local-first Go gateway for multiple AI providers and accounts. It offers OpenAI, Anthropic and Gemini request endpoints, bounded queues, account/shared-quota concurrency limits, routing policies and a local dashboard.
 
-This is an experimental `0.1.0-dev` project. The 93 registered adapter paths are not 93 live-verified services: only two have recorded real upstream validation. Protocol capabilities vary by adapter. HTTP accounts can be configured as separate sources; a general isolated browser account pool is not implemented. See the linked provider documentation and performance reports for exact scope and reproducible evidence.
+This is an experimental `0.1.0-dev` project. The original 93-source scope has registered adapter paths; Tencent ima and book-scoped WeRead AI are additional implementations. Only two providers have recorded real upstream validation; neither new adapter has account verification. The remaining Chinese app candidates are tracked with concrete blockers in the linked candidate report. Protocol capabilities vary by adapter. HTTP accounts can be configured as separate sources; a general isolated browser account pool is not implemented. See the provider documentation and performance reports for exact scope and reproducible evidence.

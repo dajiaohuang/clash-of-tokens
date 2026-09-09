@@ -35,7 +35,7 @@ func TestCatalogPresetsAreExecutableConfigurations(t *testing.T) {
 		if e != nil {
 			t.Fatal(e)
 		}
-		if p.Adapter == "gemini-cli" || p.Adapter == "antigravity" {
+		if p.Adapter == "gemini-cli" || p.Adapter == "antigravity" || p.Adapter == "weread-ai" {
 			p.Project = "explicit-project"
 		}
 		c := config.Default()

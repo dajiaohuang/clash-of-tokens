@@ -1806,5 +1806,33 @@
     "text_only": true,
     "live_verified": false,
     "notes": "Source-backed native private protocol; explicit own product login/configuration required. Buffered text completion, no unverified continuation. Local contract tests; not live verified. docs/providers/businessweb.md."
+  },
+  {
+    "id": "tencent-ima",
+    "adapter": "tencent-ima",
+    "base_url": "https://ima.qq.com",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "reference": "https://github.com/1icc0/ima2api/tree/3fc4bd7ed07bd26eccb17327661e62f4fe4b612e",
+    "notes": "Single user text; account x-ima-cookie; buffered completion; see docs/providers/tencent-ima.md. No live account verification.",
+    "live_verified": false,
+    "text_only": true
+  },
+  {
+    "id": "weread-ai",
+    "adapter": "weread-ai",
+    "base_url": "https://i.weread.qq.com",
+    "protocols": [
+      "chat"
+    ],
+    "kind": "web",
+    "implementation": "native_http",
+    "reference": "https://github.com/teng-lin/weread-omni/tree/3a7fee58995ef502f2044d93f11af7b76fdacd0e",
+    "notes": "Book-scoped AI: project is book ID; source credential JSON vid/access_token; model web. Buffered polling. See docs/providers/weread-ai.md.",
+    "live_verified": false,
+    "text_only": true
   }
 ]

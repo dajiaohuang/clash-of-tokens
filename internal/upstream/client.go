@@ -21,6 +21,7 @@ import (
 	"clash-of-tokens/internal/config"
 	"clash-of-tokens/internal/providers/businessweb"
 	"clash-of-tokens/internal/providers/china"
+	"clash-of-tokens/internal/providers/chinaapps"
 	"clash-of-tokens/internal/providers/chinafinal"
 	"clash-of-tokens/internal/providers/chinamore"
 	"clash-of-tokens/internal/providers/chinanext"
@@ -57,6 +58,8 @@ func New(s config.Source, browser ...config.Browser) *Client {
 		return &Client{source: s, adapter: playground.New(b)}
 	}
 	switch s.Adapter {
+	case "tencent-ima", "weread-ai":
+		return &Client{source: s, adapter: chinaapps.New(s)}
 	case "gemini-business", "aistudio-playground", "aistudio-build", "copilot-m365", "promptql":
 		return &Client{source: s, adapter: businessweb.New(s, browser...)}
 	case "cursor", "windsurf", "trae", "v0-web", "warp", "zcode", "qoder":

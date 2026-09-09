@@ -151,7 +151,7 @@ func (c Config) Validate() error {
 		}
 		ids[s.ID] = true
 		switch s.Adapter {
-		case "tencent-aistudio-web":
+		case "tencent-aistudio-web", "tencent-ima", "weread-ai":
 		case "flowith", "langfast", "liaobots":
 		case "freebuff", "codebuddy-cn", "zed-hosted":
 		case "claude-web", "grok-web", "grok-console", "grok-build", "genspark", "zenmux-web", "blackbox", "conol-web", "adapta-web", "pi", "reka-web", "huggingchat", "hyperagent", "inner-ai", "uc-web", "easemate", "gemini-web", "gigachat-web", "copilot-web", "perplexity-web", "t3-web", "you", "poe-web", "meta-ai", "arena", "tinycms-web", "merlin", "sider", "monica", "raycast", "duckduckgo-web", "emohaa", "spark-web", "qwen-web-cn", "metaso", "maxai", "notion-web", "opera-aria", "google-ai-mode", "phindai", "whiterabbitneo", "cloudflare-playground", "cursor", "windsurf", "trae", "v0-web", "warp", "zcode", "qoder", "gemini-business", "aistudio-playground", "aistudio-build", "copilot-m365", "promptql":
@@ -216,6 +216,9 @@ func (c Config) Validate() error {
 		if (s.Adapter == "gemini-cli" || s.Adapter == "antigravity") && s.Project == "" {
 			return fmt.Errorf("source %s: Code Assist project required", s.ID)
 		}
+		if s.Adapter == "weread-ai" && strings.TrimSpace(s.Project) == "" {
+			return fmt.Errorf("source %s: WeRead book ID required in project", s.ID)
+		}
 		isDevinCLI := s.Adapter == "devin-cli"
 		u, e := url.Parse(s.BaseURL)
 		if isDevinCLI {
@@ -271,9 +274,9 @@ func (c Config) Validate() error {
 				return fmt.Errorf("source %s: Kiro tool round-trip is not implemented; tools must be none", s.ID)
 			}
 			switch s.Adapter {
-			case "tencent-aistudio-web":
+			case "tencent-aistudio-web", "tencent-ima", "weread-ai":
 				if m.Tools != "none" || m.Vision {
-					return fmt.Errorf("source %s: Tencent AI Studio currently requires text only and tools none", s.ID)
+					return fmt.Errorf("source %s: %s requires text only and tools none", s.ID, s.Adapter)
 				}
 			case "flowith", "langfast", "liaobots":
 				if m.Tools != "none" || m.Vision {
@@ -340,7 +343,7 @@ func (c Config) Validate() error {
 }
 func Supports(adapter, p string) bool {
 	switch adapter {
-	case "tencent-aistudio-web":
+	case "tencent-aistudio-web", "tencent-ima", "weread-ai":
 		return p == "chat"
 	case "flowith", "langfast", "liaobots":
 		return p == "chat"

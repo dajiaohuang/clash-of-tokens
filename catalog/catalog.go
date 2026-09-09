@@ -65,7 +65,7 @@ func Preset(id, model string, baseOverride ...string) (config.Source, error) {
 		if p.Adapter == "aistudio-build" || p.Adapter == "zcode" || p.Adapter == "devin-cli" {
 			s.KeyEnv = ""
 		}
-		if p.Adapter == "promptql" || p.Adapter == "copilot-m365" {
+		if p.Adapter == "promptql" || p.Adapter == "copilot-m365" || p.Adapter == "weread-ai" {
 			s.Models[0].ID = "web"
 			s.Models[0].Upstream = "web"
 		}

@@ -1,0 +1,407 @@
+{
+  "schema_version": 1,
+  "checked_at": "2026-09-09",
+  "scope": "参考对话最新两条可见消息明确点名的中国 App；小美/小团分列。不是附件所称52项的完整重建。",
+  "complete": false,
+  "reference_attachment_available": false,
+  "candidates": [
+    {
+      "id": "meituan-xiaomei",
+      "name": "美团小美",
+      "status": "blocked",
+      "provider": null,
+      "live_verified": false,
+      "missing": "缺少该入口的账号会话、生成请求与完成/错误响应样本。",
+      "evidence": [],
+      "checked_at": "2026-09-09"
+    },
+    {
+      "id": "meituan-xiaotuan",
+      "name": "美团小团",
+      "status": "blocked",
+      "provider": null,
+      "live_verified": false,
+      "missing": "缺少 App 内助手请求协议及与小美的身份/能力边界。",
+      "evidence": [],
+      "checked_at": "2026-09-09"
+    },
+    {
+      "id": "zhixiaobao",
+      "name": "支小宝",
+      "status": "blocked",
+      "provider": null,
+      "live_verified": false,
+      "missing": "缺少 App 会话凭证格式、签名与生成响应；不能以蚂蚁通用模型 API 代替。",
+      "evidence": [],
+      "checked_at": "2026-09-09"
+    },
+    {
+      "id": "taobao-wenwen",
+      "name": "淘宝问问",
+      "status": "blocked",
+      "provider": null,
+      "live_verified": false,
+      "missing": "缺少淘宝 App 助手的签名、会话及生成完成协议。",
+      "evidence": [],
+      "checked_at": "2026-09-09"
+    },
+    {
+      "id": "quark-ai",
+      "name": "夸克",
+      "status": "blocked",
+      "provider": null,
+      "live_verified": false,
+      "missing": "公开入口本次落到品牌主页；未取得 AI 会话的鉴权、发送及完成协议。",
+      "evidence": [
+        "https://quarkman.quark.cn",
+        "https://www.quark.cn"
+      ],
+      "checked_at": "2026-09-09"
+    },
+    {
+      "id": "qq-browser-ai",
+      "name": "QQ浏览器",
+      "status": "blocked",
+      "provider": null,
+      "live_verified": false,
+      "missing": "缺少原生 AI 对话接口和响应样本；元宝基础聊天不等于此入口。",
+      "evidence": [],
+      "checked_at": "2026-09-09"
+    },
+    {
+      "id": "uc-ai",
+      "name": "UC",
+      "status": "existing",
+      "provider": "uc-web",
+      "live_verified": false,
+      "missing": "已复用 uc-web；本次未增加账号实测。",
+      "evidence": [
+        "docs/providers"
+      ],
+      "checked_at": "2026-09-09"
+    },
+    {
+      "id": "baidu-netdisk-yunyiduo",
+      "name": "百度网盘云一朵",
+      "status": "blocked",
+      "provider": null,
+      "live_verified": false,
+      "missing": "缺少该助手的会话、文件上下文绑定及完成信号；网盘文件 API 不等于 AI。",
+      "evidence": [],
+      "checked_at": "2026-09-09"
+    },
+    {
+      "id": "baidu-wenku-ai",
+      "name": "百度文库",
+      "status": "blocked",
+      "provider": null,
+      "live_verified": false,
+      "missing": "缺少账号生成协议与文档范围；文心网页不能作为文库 AI 的实测替代。",
+      "evidence": [],
+      "checked_at": "2026-09-09"
+    },
+    {
+      "id": "tencent-ima",
+      "name": "腾讯ima",
+      "status": "implemented_unverified",
+      "provider": "tencent-ima",
+      "live_verified": false,
+      "missing": "实现与本地测试完成；尚缺自有账号的真实请求验证。",
+      "evidence": [
+        "docs/providers/tencent-ima.md",
+        "https://github.com/1icc0/ima2api/tree/3fc4bd7ed07bd26eccb17327661e62f4fe4b612e"
+      ],
+      "checked_at": "2026-09-09"
+    },
+    {
+      "id": "wps-ai",
+      "name": "WPS AI",
+      "status": "blocked",
+      "provider": null,
+      "live_verified": false,
+      "missing": "缺少 WPS App 账号、文档上下文及生成接口的可验证契约。",
+      "evidence": [],
+      "checked_at": "2026-09-09"
+    },
+    {
+      "id": "feishu-ai",
+      "name": "飞书AI",
+      "status": "blocked",
+      "provider": null,
+      "live_verified": false,
+      "missing": "缺少具体 AI 助手入口、租户权限及推理协议；开放平台消息 API 不等于飞书内置 AI。",
+      "evidence": [],
+      "checked_at": "2026-09-09"
+    },
+    {
+      "id": "dingtalk-ai",
+      "name": "钉钉AI",
+      "status": "blocked",
+      "provider": null,
+      "live_verified": false,
+      "missing": "缺少具体助手入口、租户会话及推理协议；机器人回调/发消息 API 不提供内置模型推理。",
+      "evidence": [],
+      "checked_at": "2026-09-09"
+    },
+    {
+      "id": "zhihu-zhida",
+      "name": "知乎直答",
+      "status": "blocked",
+      "provider": null,
+      "live_verified": false,
+      "missing": "入口本次重定向至登录；参考项目未提供可核验直答服务实现，缺少自有登录后的生成与完成协议。",
+      "evidence": [
+        "https://zhida.zhihu.com",
+        "https://github.com/liguobao/kanshan-neo"
+      ],
+      "checked_at": "2026-09-09"
+    },
+    {
+      "id": "nami-ai",
+      "name": "纳米AI",
+      "status": "blocked",
+      "provider": null,
+      "live_verified": false,
+      "missing": "已定位 new/conversation、chat 与 100/101/200/201 事件；缺少动态 Chat-Token signer、有效会话和可验证成功终止语义。",
+      "evidence": [
+        "https://bot.n.cn",
+        "https://qcdn.zhaomi.cn/assistant/assets/index-BQC3lRqa.js"
+      ],
+      "checked_at": "2026-09-09"
+    },
+    {
+      "id": "xiaohongshu-ai",
+      "name": "小红书AI",
+      "status": "blocked",
+      "provider": null,
+      "live_verified": false,
+      "missing": "缺少站内 AI 助手协议。已查到的 xiaohongshu-mcp 提供内容操作，不是原生 AI 推理。",
+      "evidence": [
+        "https://github.com/xpzouying/xiaohongshu-mcp"
+      ],
+      "checked_at": "2026-09-09"
+    },
+    {
+      "id": "jd-yanxi",
+      "name": "京东言犀",
+      "status": "blocked",
+      "provider": null,
+      "live_verified": false,
+      "missing": "需明确京东 App 中的助手入口并提供其会话与生成协议；云端言犀产品不能直接充当 App 账号来源。",
+      "evidence": [],
+      "checked_at": "2026-09-09"
+    },
+    {
+      "id": "ctrip-ai",
+      "name": "携程",
+      "status": "blocked",
+      "provider": null,
+      "live_verified": false,
+      "missing": "缺少旅游助手会话、请求签名与完成响应；订单/搜索工具不是 AI provider。",
+      "evidence": [],
+      "checked_at": "2026-09-09"
+    },
+    {
+      "id": "tongcheng-ai",
+      "name": "同程",
+      "status": "blocked",
+      "provider": null,
+      "live_verified": false,
+      "missing": "缺少具体助手入口、App 会话与生成响应。",
+      "evidence": [],
+      "checked_at": "2026-09-09"
+    },
+    {
+      "id": "amap-ai",
+      "name": "高德",
+      "status": "blocked",
+      "provider": null,
+      "live_verified": false,
+      "missing": "缺少 App 内 AI 助手会话与推理协议；地图 MCP/路线 API 不是该助手模型。",
+      "evidence": [],
+      "checked_at": "2026-09-09"
+    },
+    {
+      "id": "didi-ai",
+      "name": "滴滴",
+      "status": "blocked",
+      "provider": null,
+      "live_verified": false,
+      "missing": "缺少 App 内助手推理协议、身份和响应完成标记。",
+      "evidence": [],
+      "checked_at": "2026-09-09"
+    },
+    {
+      "id": "weread-ai",
+      "name": "微信读书",
+      "status": "implemented_unverified",
+      "provider": "weread-ai",
+      "live_verified": false,
+      "missing": "实现与本地测试完成；尚缺自有移动端凭证、可访问 book ID 的真实验证。",
+      "evidence": [
+        "docs/providers/weread-ai.md",
+        "https://github.com/teng-lin/weread-omni/tree/3a7fee58995ef502f2044d93f11af7b76fdacd0e"
+      ],
+      "checked_at": "2026-09-09"
+    },
+    {
+      "id": "tencent-meeting-ai",
+      "name": "腾讯会议",
+      "status": "blocked",
+      "provider": null,
+      "live_verified": false,
+      "missing": "缺少会议 AI 的推理契约及会议上下文授权；字幕导出不能替代 AI 对话。",
+      "evidence": [],
+      "checked_at": "2026-09-09"
+    },
+    {
+      "id": "huawei-xiaoyi",
+      "name": "小艺",
+      "status": "blocked",
+      "provider": null,
+      "live_verified": false,
+      "missing": "缺少小艺 App 会话、设备绑定与生成协议；云模型服务不等于小艺。",
+      "evidence": [],
+      "checked_at": "2026-09-09"
+    },
+    {
+      "id": "xiaomi-super-xiaoai",
+      "name": "超级小爱",
+      "status": "blocked",
+      "provider": null,
+      "live_verified": false,
+      "missing": "缺少超级小爱的生成协议与设备/账号上下文；音箱接入外部 LLM 的项目不能证明超级小爱可用。",
+      "evidence": [
+        "https://github.com/Nex-Z/XiaoAiAgent",
+        "https://github.com/axcom/xiaobot"
+      ],
+      "checked_at": "2026-09-09"
+    },
+    {
+      "id": "oppo-xiaobu",
+      "name": "小布",
+      "status": "blocked",
+      "provider": null,
+      "live_verified": false,
+      "missing": "缺少登录后的小布生成请求、签名及完成响应。",
+      "evidence": [],
+      "checked_at": "2026-09-09"
+    },
+    {
+      "id": "vivo-blue-v",
+      "name": "蓝心小V",
+      "status": "blocked",
+      "provider": null,
+      "live_verified": false,
+      "missing": "缺少小V App 会话与设备协议；蓝心开放模型 SDK 不能替代小V入口。",
+      "evidence": [
+        "https://github.com/dingdinglz/vivo"
+      ],
+      "checked_at": "2026-09-09"
+    },
+    {
+      "id": "honor-yoyo",
+      "name": "YOYO",
+      "status": "blocked",
+      "provider": null,
+      "live_verified": false,
+      "missing": "缺少荣耀助手设备会话与生成协议；同名 yoyo.bot 不是此产品。",
+      "evidence": [],
+      "checked_at": "2026-09-09"
+    },
+    {
+      "id": "lenovo-tianxi",
+      "name": "联想天禧",
+      "status": "blocked",
+      "provider": null,
+      "live_verified": false,
+      "missing": "缺少天禧具体入口、设备会话及生成协议。",
+      "evidence": [],
+      "checked_at": "2026-09-09"
+    },
+    {
+      "id": "iflytek-input-ai",
+      "name": "讯飞输入法",
+      "status": "blocked",
+      "provider": null,
+      "live_verified": false,
+      "missing": "缺少输入法内 AI 功能的会话/生成协议；星火网页已存在但不等于此入口。",
+      "evidence": [],
+      "checked_at": "2026-09-09"
+    },
+    {
+      "id": "sogou-input-ai",
+      "name": "搜狗输入法",
+      "status": "blocked",
+      "provider": null,
+      "live_verified": false,
+      "missing": "缺少输入法内 AI 写作/对话请求和完成响应。",
+      "evidence": [],
+      "checked_at": "2026-09-09"
+    },
+    {
+      "id": "baidu-input-ai",
+      "name": "百度输入法",
+      "status": "blocked",
+      "provider": null,
+      "live_verified": false,
+      "missing": "缺少输入法内 AI 会话与生成契约；拼音云候选服务不是 AI 对话。",
+      "evidence": [],
+      "checked_at": "2026-09-09"
+    },
+    {
+      "id": "youdao-ai",
+      "name": "有道",
+      "status": "blocked",
+      "provider": null,
+      "live_verified": false,
+      "missing": "需定位具体 App 功能（翻译/写作/学习助手）及其鉴权、请求和完成契约。",
+      "evidence": [],
+      "checked_at": "2026-09-09"
+    },
+    {
+      "id": "yuanbao-other-agents",
+      "name": "腾讯元宝其他Agent",
+      "status": "blocked",
+      "provider": null,
+      "live_verified": false,
+      "missing": "基础 yuanbao 已存在；缺少新增 Agent ID、入口及额外会话契约，不计为已接通。",
+      "evidence": [
+        "catalog/providers.json"
+      ],
+      "checked_at": "2026-09-09"
+    },
+    {
+      "id": "bilibili-ai",
+      "name": "B站AI",
+      "status": "blocked",
+      "provider": null,
+      "live_verified": false,
+      "missing": "缺少 B站原生 AI 助手推理协议；外部模型驱动评论机器人不能替代。",
+      "evidence": [
+        "https://github.com/TheEarlyWinter/bilibili-ai-bot/blob/main/README.md"
+      ],
+      "checked_at": "2026-09-09"
+    },
+    {
+      "id": "xianyu-ai",
+      "name": "闲鱼AI",
+      "status": "blocked",
+      "provider": null,
+      "live_verified": false,
+      "missing": "缺少闲鱼 App AI 助手的会话、签名和推理响应。",
+      "evidence": [],
+      "checked_at": "2026-09-09"
+    },
+    {
+      "id": "eleme-ai",
+      "name": "饿了么AI",
+      "status": "blocked",
+      "provider": null,
+      "live_verified": false,
+      "missing": "缺少 App 助手的具体入口、会话和推理响应。",
+      "evidence": [],
+      "checked_at": "2026-09-09"
+    }
+  ]
+}
