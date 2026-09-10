@@ -260,7 +260,16 @@ function edit(kind,item,create=false){
 }
 async function toggle(kind,item,key='enabled'){
  const next=clone(S.config),entry=next[kind].find(x=>x.id===item.id);
- entry[key]=!entry[key];await preview(next,(entry[key]?'Enable ':'Disable ')+kind+'/'+item.id+(key==='auto_approved'?' for Auto':'')); 
+ if(!entry)throw Error('Resource is no longer configured. Refresh and try again.');
+ const enabling=!entry[key];entry[key]=enabling;
+ const apply=()=>preview(next,(enabling?'Enable ':'Disable ')+kind+'/'+item.id+(key==='auto_approved'?' for Auto':''));
+ if(kind==='providers'&&key==='enabled'&&!enabling){
+  const accounts=(S.config.accounts||[]).filter(a=>a.provider_id===item.id);
+  const sources=(S.config.sources||[]).filter(s=>s.provider===item.id);
+  dialog('Disable provider',[h('p',{class:'warning'},'Disable '+item.id+' for new routing requests? Existing requests can finish; all accounts and sources under this provider will become ineligible.'),table(['Affected configuration','Entries'],[['Accounts',accounts.map(a=>a.display_name||a.id).join(', ')||'None'],['Sources',sources.map(s=>s.id).join(', ')||'None']])],[button('Cancel',()=>$('dialog').close()),button('Review disable',apply,'danger')]);
+  return;
+ }
+ await apply();
 }
 async function toggleAuto(kind,item){
  const next=clone(S.config),entry=next[kind].find(x=>x.id===item.id);

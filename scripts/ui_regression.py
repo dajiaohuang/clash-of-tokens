@@ -59,6 +59,27 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     expect(provider_row.get_by_role("button", name="Remove Auto", exact=True)).to_be_visible()
     provider_row.get_by_role("button", name="Remove Auto", exact=True).click()
     page.get_by_role("button", name="Apply changes", exact=True).click()
+    # Disabling an entire provider is a sensitive operation: review lists the
+    # affected account/source rows, cancellation leaves the switch unchanged,
+    # and an explicit re-enable restores the provider for later checks.
+    provider_row.get_by_role("button", name="Disable", exact=True).click()
+    expect(page.get_by_role("heading", name="Disable provider", exact=True)).to_be_visible()
+    expect(page.get_by_role("dialog")).to_contain_text("UI test account")
+    page.get_by_role("button", name="Cancel", exact=True).click()
+    expect(provider_row.get_by_role("button", name="Disable", exact=True)).to_be_visible()
+    provider_row.get_by_role("button", name="Disable", exact=True).click()
+    page.get_by_role("button", name="Review disable", exact=True).click()
+    expect(page.get_by_role("heading", name="Review changes", exact=True)).to_be_visible()
+    page.get_by_role("button", name="Apply changes", exact=True).click()
+    expect(provider_row.get_by_role("button", name="Enable", exact=True)).to_be_visible()
+    page.get_by_role("link", name="Accounts", exact=True).click()
+    expect(page.get_by_role("row").filter(has=page.get_by_text("UI test account", exact=True))).to_contain_text("disabled")
+    page.get_by_role("link", name="Providers", exact=True).click()
+    page.get_by_role("searchbox", name="Filter providers").fill("openai")
+    provider_row = page.get_by_role("row").filter(has=page.get_by_role("button", name="openai", exact=True))
+    provider_row.get_by_role("button", name="Enable", exact=True).click()
+    page.get_by_role("button", name="Apply changes", exact=True).click()
+    expect(provider_row.get_by_role("button", name="Disable", exact=True)).to_be_visible()
     auth_status = {"claude-web": 200, "blackbox": 200}
     page.get_by_role("searchbox", name="Filter providers").fill("claude-web")
     claude_provider_row = page.get_by_role("row").filter(has=page.get_by_role("button", name="claude-web", exact=True))

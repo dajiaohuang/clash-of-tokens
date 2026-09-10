@@ -849,3 +849,11 @@ Batch 156 adds a dedicated reviewed credential unbind API at
 an optimistic revision, clears direct and account-inherited source references
 in one configuration transaction, reports the affected IDs, and retains the
 encrypted vault value for later rebind or explicit deletion.
+
+Batch 157 adds a reviewed provider-disable step to the control-plane UI. The
+disable action first explains that existing requests may finish and lists the
+affected accounts and sources; Cancel leaves the switch unchanged, while
+Review disable enters the existing revision-aware preview/apply transaction.
+The browser regression covers cancellation, review/apply, re-enable, the
+affected-account rendering, and the disabled account-health projection with a
+rebuilt isolated gateway binary.
