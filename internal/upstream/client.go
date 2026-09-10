@@ -11,10 +11,12 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/http/httptrace"
 	"net/url"
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"clash-of-tokens/internal/chatgptweb"
@@ -161,13 +163,21 @@ func (c *Client) Do(ctx context.Context, protocol, model string, stream bool, bo
 	// Avoid net/http replay of an ambiguous POST, including a stale keepalive
 	// connection. A failed generation must never become a duplicate generation.
 	req.GetBody = nil
+	// Absence of GotConn proves this attempt never reached request writing.
+	// Once a connection is handed to the transport, even a write error is
+	// ambiguous: some bytes may already have reached the provider.
+	var connected atomic.Bool
+	req = req.WithContext(httptrace.WithClientTrace(req.Context(), &httptrace.ClientTrace{
+		GotConn: func(httptrace.GotConnInfo) { connected.Store(true) },
+	}))
 	resp, e := c.http.Do(req)
 	// The transport may close request bodies asynchronously. A closeable reader
 	// drops the input reference under a lock, so early responses/cancellation
 	// cannot race a writeLoop still reading the request.
 	payload.Close()
 	if e != nil {
-		return nil, errors.New("upstream transport failed")
+		_, standardTransport := c.http.Transport.(*http.Transport)
+		return nil, &TransportError{BeforeSubmission: standardTransport && !connected.Load() && ctx.Err() == nil}
 	}
 	if c.source.Adapter == "gemini-cli" && resp.StatusCode >= 200 && resp.StatusCode < 300 {
 		resp.Body, e = cloudResponse(resp.Body, stream)
@@ -179,6 +189,15 @@ func (c *Client) Do(ctx context.Context, protocol, model string, stream bool, bo
 	}
 	return resp, nil
 }
+
+// TransportError deliberately excludes transport error text, which may contain
+// credentials or sensitive endpoint details. BeforeSubmission is conservative;
+// false means the caller must not replay this request.
+type TransportError struct {
+	BeforeSubmission bool
+}
+
+func (*TransportError) Error() string { return "upstream transport failed" }
 
 type payload struct {
 	mu sync.Mutex
