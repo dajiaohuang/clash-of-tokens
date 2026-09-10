@@ -297,15 +297,32 @@ function deleteCredential(credential){
   button('Cancel',()=> $('dialog').close()),button('Delete credential',async()=>{await api('/admin/credentials/'+encodeURIComponent(credential.id.replace('cred://','')),{method:'DELETE'});$('dialog').close();await refresh()},'danger')
  ]);
 }
-function providerDetail(provider){
+async function providerDetail(provider){
+ await refresh();
  const configured=(S.config.providers||[]).find(p=>p.id===provider.id);
  const descriptor=S.descriptors.find(d=>d.id===provider.adapter);
  const accounts=(S.config.accounts||[]).filter(a=>a.provider_id===provider.id);
+ const sources=S.config.sources.filter(s=>s.provider===provider.id),sourceIDs=new Set(sources.map(s=>s.id));
+ const runtime=S.status.sources.filter(s=>sourceIDs.has(s.id)),evidence=(S.status.verification||[]).filter(v=>sourceIDs.has(v.source));
+ const verified=new Set(evidence.filter(v=>v.models.some(m=>m.status==='verified')).map(v=>v.source));
+ const completed=runtime.reduce((n,s)=>n+s.completed,0),failed=runtime.reduce((n,s)=>n+s.failures,0);
+ const group=select(S.config.groups.map(g=>g.id),'auto'),protocol=select(provider.protocols||[],'chat'),explanations=h('div',{});
+ const explain=button('Explain provider eligibility',async()=>{
+  const result=await api('/admin/routing/simulate',{method:'POST',body:JSON.stringify({model:group.value,protocol:protocol.value,bytes:100})});
+  explanations.replaceChildren(table(['Source / model','Eligibility'],Object.entries(result).filter(([id])=>sources.some(s=>id.startsWith(s.id+'/'))).map(([id,reason])=>[id,reason]),'No configured models for this provider.'));
+ });
  const rows=[['Type',provider.kind],['Adapter',provider.adapter],['Protocols',(provider.protocols||[]).join(', ')],['Implementation',provider.implementation],['Credential types',(descriptor?.credential_modes||[]).join(', ')],['Browser login check',descriptor?.browser_auth_check?'Supported':'Not implemented'],['Upstream verification',provider.live_verified?'Catalog contains live evidence':'Not live verified']];
  dialog(provider.id,[
   h('dl',{class:'key-value'},rows.flatMap(([k,v])=>[h('dt',{},k),h('dd',{},v)])),
   h('p',{class:'muted'},provider.notes||''),
-  table(['Account','Enabled','Credential'],accounts.map(a=>[a.display_name||a.id,a.enabled?'Yes':'No',a.credential_ref||'Not bound']),'No accounts. Add an account to keep credentials and routing policy together.')
+  h('h3',{},'Configured runtime'),table(['Measure','Value'],[['Provider enabled',configured?(configured.enabled?'Yes':'No'):'Not configured'],['Provider Auto approval',configured?(configured.auto_approved?'Yes':'No'):'Not configured'],['Accounts / sources / models',accounts.length+' / '+sources.length+' / '+sources.reduce((n,s)=>n+s.models.length,0)],['Sources with matching generation evidence',verified.size+' / '+sources.length],['Successful / failed requests',completed+' / '+failed],['Observed success rate',completed+failed?(completed*100/(completed+failed)).toFixed(1)+'%':'No completed requests']]),
+  h('p',{class:'muted'},'A source counts as verified when at least one configured model/protocol has matching generation evidence. This does not verify every model, capability, account or future request. Runtime counters include explicit checks; shared quota is not a sum of source capacities.'),
+  h('h3',{},'Accounts'),table(['Account','Enabled / Auto','Credential','Browser authentication','In flight / limit','Actions'],accounts.map(a=>{
+   const capacity=(S.status.accounts||[]).find(c=>c.id===a.id);
+   return [a.display_name||a.id,(a.enabled?'Yes':'No')+' / '+(a.auto_approved?'Yes':'No'),a.credential_ref||'Not bound',accountAuth(a),(capacity?.active||0)+' / '+a.max_inflight,[button('Edit account',()=>edit('accounts',a)),a.browser_profile_id?button('Check login',()=>loginEvidence(a)):null]];
+  }),'No accounts. Add an account to keep credentials and routing policy together.'),
+  h('h3',{},'Sources'),table(['Source','Account','Routing state','Models','Matching generation evidence','Actions'],sources.map(s=>[s.id,s.account_id||'No account',state(s),s.models.length,verified.has(s.id)?'At least one model/protocol':'Not established',[button('Source details',()=>sourceDetail(s)),button('Validate source',()=>validateSource(s)),button('Discover models',()=>discoverModels(s))]]),'No sources configured.'),
+  h('h3',{},'Provider routing eligibility'),h('p',{class:'muted'},'Read-only simulation for a 100-byte text request. Results explain eligibility, not final candidate selection.'),field('Provider group',group),field('Provider protocol',protocol),explain,explanations
  ],[
   button('Provider settings',()=>edit('providers',configured||{id:provider.id,enabled:true,auto_approved:false,pool_strategy:'round-robin'},!configured)),
   button('Add account',()=>addAccount(provider.id)),button('Add source',()=>addSource(provider.id),'primary')

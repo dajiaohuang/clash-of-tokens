@@ -19,7 +19,7 @@ must be checked again before final acceptance.
 | 8. Provider matching | Exact catalog-domain/type suggestions | Complete domain aliases and direct binding workflow |
 | 9. Launch login | Dedicated browser launch and bounded UI watcher | Broader provider detection and complete account creation flow |
 | 10. Profile registry | Profile CRUD, per-account CDP/session isolation | Existing-profile onboarding and lifecycle status |
-| 11. Full management pages | Embedded UI, provider/account/credential pages | Overview queue/rate/memory/process/session data; account health/capacity; credential last use/status; complete Provider Detail actions |
+| 11. Full management pages | Embedded UI; batch 30 expands Provider Detail with accounts/sources/observations and direct detail/check/edit actions | Overview queue/rate/memory/process/session data; broader account health; credential last use/status; full end-to-end page acceptance |
 | 12. Groups | Batch 28 adds vision requirement, declared input/output rate ceiling and ordered preferences to configuration/UI/router | Total-request cost accounting and full policy acceptance still outstanding |
 | 13. Multiple memberships | Source editor and group membership controls | Explicit end-to-end multiple-group routing verification |
 | 14. Source Detail | Batch 29 consolidates configuration/models/capacity/runtime/TTFT/evidence and edit/check actions; explicit three-sample benchmark with cancellation tests | Full live-adapter acceptance and aggregate benchmark persistence remain unverified |
@@ -33,7 +33,7 @@ must be checked again before final acceptance.
 | 22. Discovery approval | New models disabled, unrated and not Auto-approved | Verify persisted discovery selections through routing |
 | 23. Official sources | Generic drivers and many official presets | Check every named provider and custom profile; Ark/Hunyuan/Qianfan not found in this pass |
 | 24. Visible source types | Source-kind badge and provider-kind filter | Consistent complete official/cloud/browser/app/CLI/local/custom taxonomy |
-| 25. Explain exclusions | Router Explain surfaced in simulator; batch 29 adds filtered Source Detail explanation | Provider Detail and full policy-reason acceptance |
+| 25. Explain exclusions | Router Explain in simulator; batches 29/30 add filtered Source/Provider Detail explanations | Full policy-reason acceptance across configured adapters |
 | 26. Simulator | Model/protocol/tools/vision/size without upstream request | Ordered candidates and distinction between eligibility and final choice |
 | 27. Health | Runtime outcome, TTFT, last status/timestamps exist | Surface all fields; provider/account aggregation and distinct degraded/exhausted/broken states |
 | 28. Test Provider | Explicit one-request stream validation | Separate connection/auth/request/stream/completion/latency presentation |

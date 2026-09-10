@@ -133,6 +133,11 @@ CLI format references: [Codex auth fixture](https://github.com/openai/codex/blob
     three-sample validation exposes billing and measurement limits; browser
     regression covers samples/history, first-failure stop and cancellation.
     See [source detail](SOURCE_DETAIL.md).
+30. Provider detail now combines account/source/model counts, scoped generation
+    evidence, runtime observations, account controls, source actions and filtered
+    eligibility explanations. Browser regression covers count provenance,
+    credential-rotation invalidation and navigation to Source Detail.
+    See [provider detail](PROVIDER_DETAIL.md).
 
 Discovery protocol references: [Anthropic models](https://platform.claude.com/docs/en/api/models/list),
 [Gemini models](https://ai.google.dev/api/models),
