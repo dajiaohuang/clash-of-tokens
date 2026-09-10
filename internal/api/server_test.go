@@ -171,9 +171,11 @@ func TestAdminIsolationAndDisable(t *testing.T) {
 func TestOutputLimitAbortsStream(t *testing.T) {
 	s, g := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
+		_, _ = io.WriteString(w, "data: {\"choices\":[{\"delta\":{\"content\":\"x\"}}]}\n\n")
+		w.(http.Flusher).Flush()
 		_, _ = io.WriteString(w, strings.Repeat("x", 1024))
 	})
-	s.cfg.Runtime.MaxOutputBytes = 8
+	s.cfg.Runtime.MaxOutputBytes = 64
 	req, _ := http.NewRequest("POST", g.URL+"/v1/chat/completions", strings.NewReader(`{"model":"mock/model","stream":true}`))
 	req.Header.Set("Authorization", "Bearer "+testKey)
 	res, e := http.DefaultClient.Do(req)

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"clash-of-tokens/internal/config"
+	"clash-of-tokens/internal/protocol"
 )
 
 var ErrUnavailable = errors.New("no eligible source; check protocol, approval, tier, quota and enabled state")
@@ -19,14 +20,19 @@ type Target struct {
 	Model  config.Model
 }
 type state struct {
-	virtualFinish float64
-	enabled       bool
-	active        int
-	cooldown      time.Time
-	failures      uint64
-	completed     uint64
-	latency       float64
-	blocked       bool
+	lastExecution  *protocol.ExecutionResult
+	ttftMS         float64
+	lastSuccess    time.Time
+	lastFailure    time.Time
+	lastHTTPStatus int
+	virtualFinish  float64
+	enabled        bool
+	active         int
+	cooldown       time.Time
+	failures       uint64
+	completed      uint64
+	latency        float64
+	blocked        bool
 }
 type quota struct {
 	lastDispatch  uint64
@@ -85,13 +91,14 @@ type Query struct {
 	Vision   bool   `json:"vision"`
 }
 type Lease struct {
-	router  *Router
-	Target  Target
-	once    sync.Once
-	started time.Time
-	state   *state
-	quota   *quota
-	account *quota
+	firstOutput sync.Once
+	router      *Router
+	Target      Target
+	once        sync.Once
+	started     time.Time
+	state       *state
+	quota       *quota
+	account     *quota
 }
 
 func New(c config.Config) *Router {
@@ -273,7 +280,7 @@ func (r *Router) choose(q Query, now time.Time) (int, bool) {
 	g := r.groups[key]
 	candidates := r.candidates[key]
 	var preferred map[string]string
-	if r.hasPools && g.Type != "fallback" && g.Type != "select" {
+	if r.hasPools && g.Type != "fallback" && g.Type != "select" && g.Type != "weighted" {
 		preferred = r.poolPreferences(q, candidates, now)
 	}
 	position := 0
@@ -439,6 +446,7 @@ func (l *Lease) Release(status int, retryAfter time.Duration) {
 			a.active--
 		}
 		st := l.state
+		st.lastHTTPStatus = status
 		if status == 401 || status == 403 {
 			st.blocked = true
 		}
@@ -449,6 +457,7 @@ func (l *Lease) Release(status int, retryAfter time.Duration) {
 			l.quota.cooldown = time.Now().Add(min(retryAfter, 24*time.Hour))
 		}
 		if status >= 200 && status < 300 {
+			st.lastSuccess = time.Now().UTC()
 			st.completed++
 			ms := float64(time.Since(l.started).Milliseconds())
 			if st.latency == 0 {
@@ -457,6 +466,7 @@ func (l *Lease) Release(status int, retryAfter time.Duration) {
 				st.latency = st.latency*.8 + ms*.2
 			}
 		} else if status != 499 {
+			st.lastFailure = time.Now().UTC()
 			st.failures++
 			if status == 0 || status >= 500 {
 				st.cooldown = time.Now().Add(5 * time.Second)
@@ -482,14 +492,19 @@ func (r *Router) SetEnabled(id string, on bool) bool {
 }
 
 type Status struct {
-	ID        string    `json:"id"`
-	Enabled   bool      `json:"enabled"`
-	Active    int       `json:"active"`
-	Completed uint64    `json:"completed"`
-	Failures  uint64    `json:"failures"`
-	Blocked   bool      `json:"blocked"`
-	Cooldown  time.Time `json:"cooldown"`
-	LatencyMS float64   `json:"latency_ms"`
+	LastExecution  *protocol.ExecutionResult `json:"last_execution,omitempty"`
+	TTFTMS         float64                   `json:"ttft_ms"`
+	LastSuccess    time.Time                 `json:"last_success"`
+	LastFailure    time.Time                 `json:"last_failure"`
+	LastHTTPStatus int                       `json:"last_http_status"`
+	ID             string                    `json:"id"`
+	Enabled        bool                      `json:"enabled"`
+	Active         int                       `json:"active"`
+	Completed      uint64                    `json:"completed"`
+	Failures       uint64                    `json:"failures"`
+	Blocked        bool                      `json:"blocked"`
+	Cooldown       time.Time                 `json:"cooldown"`
+	LatencyMS      float64                   `json:"latency_ms"`
 }
 
 func (r *Router) Status() []Status {
@@ -497,7 +512,12 @@ func (r *Router) Status() []Status {
 	defer r.mu.Unlock()
 	out := make([]Status, 0, len(r.state))
 	for i, s := range r.state {
-		out = append(out, Status{r.cfg.Sources[i].ID, s.enabled && r.parentEnabled[i], s.active, s.completed, s.failures, s.blocked, maxTime(s.cooldown, r.quotas[i].cooldown), s.latency})
+		var execution *protocol.ExecutionResult
+		if s.lastExecution != nil {
+			copy := *s.lastExecution
+			execution = &copy
+		}
+		out = append(out, Status{ID: r.cfg.Sources[i].ID, Enabled: s.enabled && r.parentEnabled[i], Active: s.active, Completed: s.completed, Failures: s.failures, Blocked: s.blocked, Cooldown: maxTime(s.cooldown, r.quotas[i].cooldown), LatencyMS: s.latency, TTFTMS: s.ttftMS, LastSuccess: s.lastSuccess, LastFailure: s.lastFailure, LastHTTPStatus: s.lastHTTPStatus, LastExecution: execution})
 	}
 	return out
 }

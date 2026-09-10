@@ -260,6 +260,15 @@ func (s *Server) generate(w http.ResponseWriter, r *http.Request, proto, pathMod
 		meta.Stateful = true
 	}
 	affinity := r.Header.Get("X-COT-Affinity")
+	if meta.Stream {
+		streamBudget := 4*min(s.cfg.Runtime.MaxOutputBytes, 1<<20) + 8192
+		if !s.reserve(streamBudget) {
+			s.rejected.Add(1)
+			fail(w, 503, "stream memory budget exhausted")
+			return
+		}
+		defer s.buffered.Add(-streamBudget)
+	}
 	if len(affinity) > 128 {
 		fail(w, 400, "affinity identifier exceeds 128 bytes")
 		return
@@ -323,6 +332,24 @@ func (s *Server) generate(w http.ResponseWriter, r *http.Request, proto, pathMod
 	w.Header().Set("Content-Type", ct)
 	w.Header().Set("X-COT-Source", s.cfg.Sources[lease.Target.Source].ID)
 	w.Header().Set("X-Accel-Buffering", "no")
+	if meta.Stream {
+		result, sent := s.streamResponse(r.Context(), w, resp.Body, proto, lease)
+		result.UpstreamStatus = resp.StatusCode
+		lease.RecordExecution(result)
+		if !result.Successful() {
+			if result.ClientCanceled {
+				status = 499
+				return
+			}
+			status = 502
+			s.streamErrors.Add(1)
+			if sent {
+				panic(http.ErrAbortHandler)
+			}
+			fail(w, 502, "upstream stream did not complete")
+		}
+		return
+	}
 	w.WriteHeader(status)
 	buf := s.buffers.Get().(*[]byte)
 	defer s.buffers.Put(buf)
