@@ -214,6 +214,14 @@ function edit(kind,item,create=false){
     if(kind==='accounts'&&value.quota_domain!==item.quota_domain){
      for(const source of next.sources||[])if(source.account_id===item.id)source.quota_domain=value.quota_domain;
     }
+    if(kind==='sources'&&value.account_id){
+     const account=(next.accounts||[]).find(a=>a.id===value.account_id),moved=value.account_id!==item.account_id;
+     if(moved&&account)value.quota_domain=account.quota_domain;
+     else if(!moved&&value.quota_domain!==item.quota_domain&&account){
+      account.quota_domain=value.quota_domain;
+      for(const source of next.sources||[])if(source.account_id===account.id)source.quota_domain=value.quota_domain;
+     }
+    }
     if(kind==='accounts'&&!(next.providers||[]).some(p=>p.id===value.provider_id)){
      next.providers=next.providers||[];next.providers.push({id:value.provider_id,enabled:true,auto_approved:false,pool_strategy:'round-robin'});
     }

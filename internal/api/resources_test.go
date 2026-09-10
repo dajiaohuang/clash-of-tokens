@@ -5,6 +5,7 @@ import (
 	"clash-of-tokens/internal/config"
 	"clash-of-tokens/internal/credentials"
 	"encoding/json"
+	"fmt"
 	"net/http/httptest"
 	"path/filepath"
 	"strings"
@@ -90,5 +91,54 @@ func TestAccountQuotaMoveCascadesToMemberSources(t *testing.T) {
 	var response map[string]any
 	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil || response["status"] != "saved" {
 		t.Fatalf("invalid response: %s", w.Body.String())
+	}
+}
+
+func TestSourceQuotaMoveCascadesToAccountAndMembers(t *testing.T) {
+	dir := t.TempDir()
+	vault, _ := credentials.Open(filepath.Join(dir, "vault"))
+	c := config.Default()
+	c.Providers = []config.Provider{{ID: "p", Enabled: true}}
+	c.Accounts = []config.Account{
+		{ID: "a", ProviderID: "p", Enabled: true, QuotaDomain: "old", MaxInflight: 1, Weight: 1},
+		{ID: "b", ProviderID: "p", Enabled: true, QuotaDomain: "other", MaxInflight: 1, Weight: 1},
+	}
+	model := config.Model{ID: "m", Upstream: "m", Protocols: []string{"chat"}, Tier: "unrated", Tools: "none", MaxInputBytes: 1024}
+	newSource := func(id, account, domain string) config.Source {
+		return config.Source{ID: id, Provider: "p", Adapter: "openai", BaseURL: "http://127.0.0.1:1", Local: true, AccountID: account, Enabled: true, AutoApproved: true, MaxInflight: 1, QuotaDomain: domain, QuotaMaxInflight: 1, Models: []config.Model{model}}
+	}
+	c.Sources = []config.Source{newSource("s1", "a", "old"), newSource("s2", "a", "old"), newSource("s3", "b", "other")}
+	p, err := NewControlPlane(filepath.Join(dir, "config.json"), c, testKey, adminKey, vault)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer p.Close()
+	call := func(path, body string, revision uint64) *httptest.ResponseRecorder {
+		req := httptest.NewRequest("PATCH", path, strings.NewReader(body))
+		req.Header.Set("Authorization", "Bearer "+adminKey)
+		req.Header.Set("If-Match", fmt.Sprint(revision))
+		w := httptest.NewRecorder()
+		p.ServeHTTP(w, req)
+		return w
+	}
+	if w := call("/admin/sources/s1", `{"quota_domain":"new"}`, 1); w.Code != 200 {
+		t.Fatalf("source quota move status=%d body=%s", w.Code, w.Body.String())
+	}
+	loaded, err := config.Load(filepath.Join(dir, "config.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if loaded.Accounts[0].QuotaDomain != "new" || loaded.Sources[0].QuotaDomain != "new" || loaded.Sources[1].QuotaDomain != "new" || loaded.Sources[2].QuotaDomain != "other" {
+		t.Fatalf("source quota move did not preserve domains: accounts=%+v sources=%+v", loaded.Accounts, loaded.Sources)
+	}
+	if w := call("/admin/sources/s2", `{"account_id":"b"}`, 2); w.Code != 200 {
+		t.Fatalf("source account move status=%d body=%s", w.Code, w.Body.String())
+	}
+	loaded, err = config.Load(filepath.Join(dir, "config.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if loaded.Sources[1].AccountID != "b" || loaded.Sources[1].QuotaDomain != "other" || loaded.Accounts[1].QuotaDomain != "other" {
+		t.Fatalf("source account move did not adopt destination domain: accounts=%+v sources=%+v", loaded.Accounts, loaded.Sources)
 	}
 }

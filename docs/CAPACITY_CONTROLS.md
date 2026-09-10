@@ -18,7 +18,10 @@ limit for every current source in that domain in one configuration transaction.
 Changing an account's quota domain from the Accounts editor or the resource API
 moves every source bound to that account in the same validated transaction.
 The account and source rows therefore keep one shared capacity boundary. The
-shared-domain limit editor still does not rename domains or move unrelated
+Source editor follows the same rule: changing a bound source's domain moves its
+account and sibling sources, while moving a source to another account adopts
+that destination account's existing domain. The shared-domain limit editor
+still does not rename domains or move unrelated
 accounts between them.
 
 Lowering a limit does not cancel running requests. The displayed active count

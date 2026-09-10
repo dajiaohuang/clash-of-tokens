@@ -50,6 +50,16 @@ func (p *ControlPlane) resourceAdmin(w http.ResponseWriter, r *http.Request, ser
 	}
 	current := p.service.Current()
 	c := current.Config
+	var originalSource *config.Source
+	if kind == "sources" && id != "" {
+		for _, source := range c.Sources {
+			if source.ID == id {
+				copy := source
+				originalSource = &copy
+				break
+			}
+		}
+	}
 	var items any
 	switch kind {
 	case "browser_profiles":
@@ -146,6 +156,9 @@ func (p *ControlPlane) resourceAdmin(w http.ResponseWriter, r *http.Request, ser
 		}
 	case "sources":
 		c.Sources, err = editResource(c.Sources, id, method, raw)
+		if err == nil && method != "DELETE" {
+			normalizeSourceQuotaDomain(&c, id, originalSource)
+		}
 	case "groups":
 		c.Groups, err = editResource(c.Groups, id, method, raw)
 	}
@@ -173,6 +186,41 @@ func cascadeAccountQuotaDomain(c *config.Config, accountID, domain string) {
 		if c.Sources[i].AccountID == accountID {
 			c.Sources[i].QuotaDomain = domain
 		}
+	}
+}
+
+// A source bound to an account shares that account's quota domain. Editing the
+// domain on one member therefore moves the account and all its members. Moving
+// a source to another account adopts the destination account's existing domain
+// instead of unexpectedly renaming that account.
+func normalizeSourceQuotaDomain(c *config.Config, sourceID string, before *config.Source) {
+	var edited *config.Source
+	for i := range c.Sources {
+		if c.Sources[i].ID == sourceID {
+			edited = &c.Sources[i]
+			break
+		}
+	}
+	if edited == nil || edited.AccountID == "" {
+		return
+	}
+	accountIndex := -1
+	for i := range c.Accounts {
+		if c.Accounts[i].ID == edited.AccountID {
+			accountIndex = i
+			break
+		}
+	}
+	if accountIndex < 0 {
+		return
+	}
+	if before != nil && before.AccountID != edited.AccountID {
+		edited.QuotaDomain = c.Accounts[accountIndex].QuotaDomain
+		return
+	}
+	if edited.QuotaDomain != c.Accounts[accountIndex].QuotaDomain {
+		c.Accounts[accountIndex].QuotaDomain = edited.QuotaDomain
+		cascadeAccountQuotaDomain(c, edited.AccountID, edited.QuotaDomain)
 	}
 }
 

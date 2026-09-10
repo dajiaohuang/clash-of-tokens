@@ -209,7 +209,7 @@ Discovery protocol references: [Anthropic models](https://platform.claude.com/do
 [Gemini models](https://ai.google.dev/api/models),
 [OpenAI models](https://platform.openai.com/docs/api-reference/models).
 
-Validation: `go test ./...` passed, 586 tests in 38 packages on Windows.
+Validation: `go test ./...` passed, 587 tests in 38 packages on Windows.
 Windows and Linux-target `govulncheck` reported no vulnerabilities.
 Browser regression: credential creation/redaction, account binding, source
 creation, group membership, preview/apply, every navigation destination and
@@ -326,3 +326,8 @@ when its quota domain changes, in one validated transaction. This prevents an
 account move from leaving sources on a stale shared-capacity boundary. A
 resource API regression verifies persistence of both account and source domains;
 the shared-domain limit editor continues to govern unrelated domain members.
+
+Batch 58 extends that invariant to source edits. Changing the quota domain on a
+bound source now moves its account and sibling sources together; moving a source
+to another account adopts the destination account's existing domain. The API
+regression covers both paths and confirms unrelated account domains stay fixed.
