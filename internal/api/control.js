@@ -481,7 +481,10 @@ function importBrowserCookies(onSaved){
  },'primary')]);
 }
 function accountPools(){
- dialog('Account pools',table(['Provider','Strategy','Accounts','Actions'],(S.config.providers||[]).map(p=>[p.id,p.pool_strategy||'round-robin',(S.config.accounts||[]).filter(a=>a.provider_id===p.id).length,button('Edit pool',()=>editPool(p))])));
+ dialog('Account pools',table(['Provider','Strategy','Accounts','Enabled','In flight / limit','Weights','Actions'],(S.config.providers||[]).map(p=>{
+  const accounts=(S.config.accounts||[]).filter(a=>a.provider_id===p.id),health=accounts.map(a=>(S.status.account_health||[]).find(x=>x.id===a.id)||{}),active=health.reduce((n,a)=>n+(a.active||0),0),limit=accounts.reduce((n,a)=>n+(a.max_inflight||0),0),weights=accounts.map(a=>(a.display_name||a.id)+': '+(a.weight||1)).join(', ')||'None';
+  return [p.id,p.pool_strategy||'round-robin',accounts.length,accounts.filter(a=>a.enabled).length,active+' / '+limit,weights,button('Edit pool',()=>editPool(p))];
+ })));
 }
 function editPool(provider){
  const base=clone(S.config),revision=S.revision,strategy=select(['round-robin','least-load','sticky','weighted'],provider.pool_strategy||'round-robin');

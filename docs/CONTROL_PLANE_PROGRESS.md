@@ -543,3 +543,7 @@ Batch 100 makes the account wizard provider-aware. It filters stored protected
 credentials to the selected adapter's declared modes, clears a binding when
 the provider changes, and labels the compatible credential types without
 showing secret values.
+
+Batch 101 expands the Account pools dialog with enabled-account counts, live
+in-flight versus aggregate limits, and per-account weights. These values are
+read-only snapshots until the existing transactional pool editor is opened.
