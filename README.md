@@ -6,7 +6,7 @@ Clash of Tokens 是原生 Go 实现的本地优先 AI 协议网关，将来源�
 
 当前版本：**0.1.0-dev，实验阶段**。原有 93 项参考来源均已注册可执行适配路径，另新增腾讯 ima、微信读书 AI 两项。已有 **2 项完成过真实上游验证**；其余主要依据源码审查和本地契约测试。注册数量不代表全部账号可用或全部 API 语义兼容。最新中国 App 候选的全量接入尚未完成，见 [候选实施状态](docs/CHINA_APP_CANDIDATES.md)。
 
-[来源状态](docs/SOURCE_STATUS.md) · [多账号并发](docs/MULTI_ACCOUNT_CONCURRENCY.md) · [控制面审计](docs/CONTROL_PLANE_AUDIT.md) · [账号发现](docs/ACCOUNT_DISCOVERY.md) · [性能记录](docs/PERFORMANCE.md) · [真实验证](docs/LIVE_VALIDATION.md) · [产品方案](docs/PRODUCT_SPEC.md)
+[来源状态](docs/SOURCE_STATUS.md) · [多账号并发](docs/MULTI_ACCOUNT_CONCURRENCY.md) · [控制面审计](docs/CONTROL_PLANE_AUDIT.md) · [账号发现](docs/ACCOUNT_DISCOVERY.md) · [性能记录](docs/PERFORMANCE.md) · [真实验证](docs/LIVE_VALIDATION.md) · [CI](docs/CI.md) · [产品方案](docs/PRODUCT_SPEC.md)
 
 FreeCoding 的美团小团、王者灵宝和小火人已移植为项目内的 **Go 设备驱动**，包含共用 ADB/剪贴板/OCR 机制和离线验收，不依赖 FreeCoding 服务。三项尚未真机验证，默认禁用且只允许手动使用当前 App 会话。见 [设备配置](docs/providers/app-device.md) 与 [适配器工作台](docs/ADAPTER_WORKBENCH.md)。
 

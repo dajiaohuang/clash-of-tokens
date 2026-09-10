@@ -660,3 +660,11 @@ Batch 122 verifies the hot-reload boundary in the browser regression. A runtime
 queue-limit edit shows the restart-required warning during preview and remains
 visible as pending after apply, while the transaction and configuration history
 still complete normally.
+
+Batch 123 adds hosted cross-platform CI. Ubuntu, Windows and macOS run the full
+Go tests and vet; Ubuntu runs the full race detector; macOS executes the
+cgo-enabled native Keychain round trip with a synthetic vault entry; and the
+workflow builds Linux amd64, Windows amd64 and macOS arm64 gateway artifacts
+with cgo disabled. This proves the repository's repeatable build and test
+boundary, while live provider compatibility, signed releases and operator
+device/browser environments remain explicit external checks. See [CI](CI.md).
