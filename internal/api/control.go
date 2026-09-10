@@ -139,7 +139,7 @@ func (p *ControlPlane) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer p.release(g)
-	if strings.HasPrefix(r.URL.Path, "/admin/config") || managedResource(r.URL.Path) || r.URL.Path == "/admin/status" {
+	if strings.HasPrefix(r.URL.Path, "/admin/config") || managedResource(r.URL.Path) || r.URL.Path == "/admin/status" || credentialUnbindPath(r.URL.Path) {
 		w.Header().Set("Cache-Control", "no-store")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		if !authorized(r, g.server.adminKey) {
@@ -156,6 +156,9 @@ func (p *ControlPlane) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			} else {
 				reply(w, p.controlStatus(g.server))
 			}
+			return
+		}
+		if p.credentialUnbindAdmin(w, r) {
 			return
 		}
 		if managedResource(r.URL.Path) {
