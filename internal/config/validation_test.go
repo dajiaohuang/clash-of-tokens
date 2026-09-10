@@ -48,4 +48,14 @@ func TestLocalModelRequiresExplicitLocalInference(t *testing.T) {
 	if err := source.ValidateMetadata(); err != nil {
 		t.Fatalf("explicit local_model was rejected: %v", err)
 	}
+	source.BillingMode = "metered"
+	if err := source.ValidateMetadata(); err == nil || !strings.Contains(err.Error(), "local billing mode") {
+		t.Fatalf("metered local_model was accepted: %v", err)
+	}
+	source.BillingMode = "local"
+	source.SourceKind = "vendor_api"
+	source.InferenceLocation = "remote"
+	if err := source.ValidateMetadata(); err == nil || !strings.Contains(err.Error(), "local billing mode") {
+		t.Fatalf("local billing on a remote source was accepted: %v", err)
+	}
 }

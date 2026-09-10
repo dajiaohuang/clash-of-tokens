@@ -507,3 +507,7 @@ Batch 92 tightens source metadata validation: `local_model` now requires both
 `inference_location: local` and loopback transport. Remote or ambiguous sources
 cannot satisfy a `local_only` group by label alone; configuration regressions
 cover remote, non-loopback and valid local declarations.
+
+Batch 93 aligns billing metadata with that boundary. A `local_model` must use
+`billing_mode: local`, and a non-local source cannot claim local billing; focused
+configuration regressions cover both invalid combinations.
