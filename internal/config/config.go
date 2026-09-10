@@ -15,17 +15,18 @@ import (
 )
 
 type Config struct {
-	Providers     []Provider `json:"providers,omitempty"`
-	Accounts      []Account  `json:"accounts,omitempty"`
-	SchemaVersion int        `json:"schema_version"`
-	Listen        string     `json:"listen"`
-	APIKeyEnv     string     `json:"api_key_env"`
-	AdminKeyEnv   string     `json:"admin_key_env"`
-	Runtime       Runtime    `json:"runtime"`
-	Browser       Browser    `json:"browser"`
-	Device        Device     `json:"device"`
-	Sources       []Source   `json:"sources"`
-	Groups        []Group    `json:"groups"`
+	BrowserProfiles []BrowserProfile `json:"browser_profiles,omitempty"`
+	Providers       []Provider       `json:"providers,omitempty"`
+	Accounts        []Account        `json:"accounts,omitempty"`
+	SchemaVersion   int              `json:"schema_version"`
+	Listen          string           `json:"listen"`
+	APIKeyEnv       string           `json:"api_key_env"`
+	AdminKeyEnv     string           `json:"admin_key_env"`
+	Runtime         Runtime          `json:"runtime"`
+	Browser         Browser          `json:"browser"`
+	Device          Device           `json:"device"`
+	Sources         []Source         `json:"sources"`
+	Groups          []Group          `json:"groups"`
 }
 
 // Device is an explicitly configured physical execution environment. It is not
@@ -184,6 +185,7 @@ func (c Config) Validate() error {
 	ids := map[string]bool{}
 	domains := map[string]int{}
 	browserCount := 0
+	chatgptProfiles := map[string]bool{}
 	doubaoBrowserCount := 0
 	geminiBrowserCount := 0
 	gigaChatBrowserCount := 0
@@ -206,7 +208,12 @@ func (c Config) Validate() error {
 		if s.Adapter == "chatgpt-web" {
 
 			browserCount++
-			if s.Enabled && !c.Browser.Enabled {
+			endpoint := c.SourceBrowser(s).CDPURL
+			if chatgptProfiles[endpoint] {
+				return errors.New("one ChatGPT web source per browser profile is supported")
+			}
+			chatgptProfiles[endpoint] = true
+			if s.Enabled && !c.SourceBrowser(s).Enabled {
 				return errors.New("chatgpt-web requires browser.enabled")
 			}
 			if s.MaxInflight != 1 || s.QuotaMaxInflight != 1 {
@@ -215,13 +222,13 @@ func (c Config) Validate() error {
 		}
 		if s.Adapter == "doubao" {
 			doubaoBrowserCount++
-			if s.Enabled && !c.Browser.Enabled {
+			if s.Enabled && !c.SourceBrowser(s).Enabled {
 				return errors.New("doubao requires browser.enabled")
 			}
 		}
 		if s.Adapter == "gemini-web" {
 			geminiBrowserCount++
-			if s.Enabled && !c.Browser.Enabled {
+			if s.Enabled && !c.SourceBrowser(s).Enabled {
 				return errors.New("gemini-web requires browser.enabled")
 			}
 			if s.MaxInflight != 1 || s.QuotaMaxInflight != 1 {
@@ -230,7 +237,7 @@ func (c Config) Validate() error {
 		}
 		if s.Adapter == "gigachat-web" {
 			gigaChatBrowserCount++
-			if s.Enabled && !c.Browser.Enabled {
+			if s.Enabled && !c.SourceBrowser(s).Enabled {
 				return errors.New("gigachat-web requires browser.enabled")
 			}
 			if s.MaxInflight != 1 || s.QuotaMaxInflight != 1 {
@@ -238,7 +245,7 @@ func (c Config) Validate() error {
 			}
 		}
 		if s.Adapter == "cloudflare-playground" {
-			if s.Enabled && !c.Browser.Enabled {
+			if s.Enabled && !c.SourceBrowser(s).Enabled {
 				return errors.New("cloudflare-playground requires browser.enabled")
 			}
 			if strings.TrimRight(s.BaseURL, "/") != "https://playground.ai.cloudflare.com" {
@@ -250,7 +257,7 @@ func (c Config) Validate() error {
 		}
 		if s.Adapter == "aistudio-build" {
 			buildBrowserCount++
-			if s.Enabled && !c.Browser.Enabled {
+			if s.Enabled && !c.SourceBrowser(s).Enabled {
 				return errors.New("aistudio-build requires browser.enabled")
 			}
 			if s.MaxInflight != 1 || s.QuotaMaxInflight != 1 {
@@ -342,9 +349,6 @@ func (c Config) Validate() error {
 				}
 			}
 		}
-	}
-	if browserCount > 1 {
-		return errors.New("one ChatGPT web source per gateway is supported; put its model targets in that source")
 	}
 	if browserCount > 0 || doubaoBrowserCount > 0 || geminiBrowserCount > 0 || gigaChatBrowserCount > 0 || buildBrowserCount > 0 {
 		b := c.Browser

@@ -16,7 +16,7 @@ import (
 )
 
 func managedResource(path string) bool {
-	for _, prefix := range []string{"/admin/providers", "/admin/accounts", "/admin/sources", "/admin/groups"} {
+	for _, prefix := range []string{"/admin/providers", "/admin/accounts", "/admin/sources", "/admin/groups", "/admin/browser_profiles"} {
 		if path == prefix || strings.HasPrefix(path, prefix+"/") {
 			return true
 		}
@@ -52,6 +52,8 @@ func (p *ControlPlane) resourceAdmin(w http.ResponseWriter, r *http.Request, ser
 	c := current.Config
 	var items any
 	switch kind {
+	case "browser_profiles":
+		items = c.BrowserProfiles
 	case "providers":
 		items = c.Providers
 	case "accounts":
@@ -120,6 +122,8 @@ func (p *ControlPlane) resourceAdmin(w http.ResponseWriter, r *http.Request, ser
 	}
 	var err error
 	switch kind {
+	case "browser_profiles":
+		c.BrowserProfiles, err = editResource(c.BrowserProfiles, id, method, raw)
 	case "providers":
 		if method == "DELETE" {
 			for _, s := range c.Sources {

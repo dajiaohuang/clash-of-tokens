@@ -162,6 +162,7 @@ function formField(schema,value,label=schema.name){
  if(schema.name==='adapter')choices=S.descriptors.map(d=>d.id);
  if(schema.name==='account_id')choices=(S.config.accounts||[]).map(a=>a.id);
  if(schema.name==='credential_ref')choices=[...new Set([...S.credentials.map(c=>c.id),...(value?[value]:[])])];
+ if(schema.name==='browser_profile_id')choices=(S.config.browser_profiles||[]).map(p=>p.id);
  if(choices)input=select(choices,value,true);
  else input=h('input',{type:schema.type==='integer'?'number':'text',value:value??'',step:schema.type==='integer'?'1':null});
  return {element:field(title(label)+(schema.restart_required?' (restart required)':''),input),read:()=>{
@@ -291,7 +292,7 @@ function providers(){
 function accounts(){
  return [pageHead('Accounts','Account switches and capacity apply across their sources.',button('Add account',()=>addAccount(),'primary')),table(['Account','Provider','Credential','Quota / concurrency','Auto','Actions'],(S.config.accounts||[]).map(a=>[
   a.display_name||a.id,a.provider_id,a.credential_ref||'Not bound',a.quota_domain+' / '+a.max_inflight,badge(a.auto_approved?'Approved':'Manual',a.auto_approved?'accent':''),
-  [button(a.enabled?'Disable':'Enable',()=>toggle('accounts',a)),button('Edit',()=>edit('accounts',a)),button('Delete',()=>remove('accounts',a),'danger')]
+  [button(a.enabled?'Disable':'Enable',()=>toggle('accounts',a)),button('Edit',()=>edit('accounts',a)),a.browser_profile_id?button('Login',async()=>{const result=await api('/admin/accounts/'+encodeURIComponent(a.id)+'/login',{method:'POST'});message(result.message)}):null,button('Delete',()=>remove('accounts',a),'danger')]
  ]),'No accounts. Add an account and bind a credential before enabling its sources.')];
 }
 function credentials(){
@@ -371,6 +372,11 @@ function environment(type){
  const key=type==='browsers'?'browser':'device',form=formField(schemaFor(key),S.config[key]),base=clone(S.config),revision=S.revision;
  return [pageHead(labels[type],type==='browsers'?'Browser connection and session limits.':'Explicitly configured Android execution environment.'),h('section',{class:'panel'},form.element,h('div',{class:'toolbar'},button('Review settings',async()=>{const next=clone(base);next[key]=form.read();await preview(next,'Update '+key,null,base,revision)},'primary')))];
 }
+function browsers(){
+ return [pageHead('Browsers','Dedicated profiles keep account browser state separate.',button('Add profile',()=>edit('browser_profiles',{id:'',enabled:true,engine:'chrome',cdp_url:'http://127.0.0.1:9223'},true),'primary')),table(['Profile','Engine','CDP endpoint','Accounts','Actions'],(S.config.browser_profiles||[]).map(p=>[
+  p.id,p.engine,p.cdp_url,(S.config.accounts||[]).filter(a=>a.browser_profile_id===p.id).map(a=>a.display_name||a.id).join(', ')||'Unbound',[button(p.enabled?'Disable':'Enable',()=>toggle('browser_profiles',p)),button('Edit',()=>edit('browser_profiles',p)),button('Delete',()=>remove('browser_profiles',p),'danger')]
+ ]),'No profiles. Add a profile, bind it from Accounts, then use Login.'),...environment('browsers').slice(1)];
+}
 function activity(){
  return [pageHead('Activity','Persisted configuration changes.'),table(['Revision','Time','Change'],[...S.history].reverse().map(v=>[v.revision,new Date(v.created_at).toLocaleString(),v.summary]))];
 }
@@ -389,7 +395,7 @@ function render(){
  for(const a of $('navigation').querySelectorAll('a'))a.setAttribute('aria-current',a.hash==='#'+route?'page':'false');
  if(!S.config){$('view').replaceChildren(connectView());return}
  if($('search').value){$('view').replaceChildren(...searchResults($('search').value));return}
- const renderers={overview,providers,accounts,credentials,sources,models,groups,routing,health,metrics,config:configuration,logs:activity,about,browsers:()=>environment('browsers'),devices:()=>environment('devices'),sessions:()=>[pageHead('Sessions','Browser session configuration.'),...environment('browsers').slice(1)]};
+ const renderers={overview,providers,accounts,credentials,sources,models,groups,routing,health,metrics,config:configuration,logs:activity,about,browsers,devices:()=>environment('devices'),sessions:()=>[pageHead('Sessions','Browser session configuration.'),...environment('browsers').slice(1)]};
  $('view').replaceChildren(...(renderers[route]||overview)().filter(x=>x!=null));
 }
 for(const [group,items] of pages){$('navigation').append(h('div',{class:'nav-group'},group),...items.map(id=>h('a',{href:'#'+id},labels[id])))}

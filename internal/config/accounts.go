@@ -45,6 +45,9 @@ func (c Config) SourceCredentialRef(s Source) string {
 }
 
 func (c Config) ValidateAccounts() error {
+	if err := c.ValidateBrowserProfiles(); err != nil {
+		return err
+	}
 	providers := map[string]bool{}
 	for _, p := range c.Providers {
 		if !identifier.MatchString(p.ID) || providers[p.ID] {

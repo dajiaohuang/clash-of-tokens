@@ -1,0 +1,68 @@
+package config
+
+import (
+	"fmt"
+	"net"
+	"net/url"
+	"path/filepath"
+	"strconv"
+)
+
+type BrowserProfile struct {
+	ID      string `json:"id"`
+	Enabled bool   `json:"enabled"`
+	Engine  string `json:"engine"`
+	CDPURL  string `json:"cdp_url"`
+}
+
+func (c Config) ValidateBrowserProfiles() error {
+	ids := map[string]bool{}
+	endpoints := map[string]bool{}
+	for _, p := range c.BrowserProfiles {
+		if !identifier.MatchString(p.ID) || ids[p.ID] {
+			return fmt.Errorf("invalid or duplicate browser profile id")
+		}
+		ids[p.ID] = true
+		if p.Engine != "chrome" && p.Engine != "edge" && p.Engine != "chromium" {
+			return fmt.Errorf("profile %s: unsupported browser engine", p.ID)
+		}
+		u, err := url.Parse(p.CDPURL)
+		if err != nil {
+			return fmt.Errorf("profile %s: invalid CDP URL", p.ID)
+		}
+		ip := net.ParseIP(u.Hostname())
+		port, _ := strconv.Atoi(u.Port())
+		if u.Scheme != "http" || ip == nil || !ip.IsLoopback() || port < 1024 || port > 65535 || u.User != nil || u.RawQuery != "" || u.Fragment != "" || (u.Path != "" && u.Path != "/") {
+			return fmt.Errorf("profile %s: CDP must be explicit loopback HTTP with port 1024..65535", p.ID)
+		}
+		// Ports must differ even when equivalent loopback aliases are used.
+		if endpoints[u.Port()] {
+			return fmt.Errorf("browser profiles must use distinct CDP ports")
+		}
+		endpoints[u.Port()] = true
+	}
+	for _, a := range c.Accounts {
+		if a.BrowserProfileID != "" && !ids[a.BrowserProfileID] {
+			return fmt.Errorf("account %s: unknown browser profile", a.ID)
+		}
+	}
+	return nil
+}
+
+func (c Config) SourceBrowser(s Source) Browser {
+	for _, a := range c.Accounts {
+		if a.ID != s.AccountID || a.BrowserProfileID == "" {
+			continue
+		}
+		for _, p := range c.BrowserProfiles {
+			if p.ID == a.BrowserProfileID {
+				b := c.Browser
+				b.Enabled = p.Enabled
+				b.CDPURL = p.CDPURL
+				b.StateFile = filepath.Join(filepath.Dir(c.Browser.StateFile), "profiles", p.ID, "sessions.json")
+				return b
+			}
+		}
+	}
+	return c.Browser
+}

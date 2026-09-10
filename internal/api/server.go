@@ -45,7 +45,9 @@ type clientSlot struct {
 
 func (s *Server) client(i int) *upstream.Client {
 	slot := &s.clients[i]
-	slot.once.Do(func() { slot.client = upstream.NewConfigured(s.cfg.Sources[i], s.cfg.Browser, s.cfg.Device) })
+	slot.once.Do(func() {
+		slot.client = upstream.NewConfigured(s.cfg.Sources[i], s.cfg.SourceBrowser(s.cfg.Sources[i]), s.cfg.Device)
+	})
 	return slot.client
 }
 func New(c config.Config) (*Server, error) {
