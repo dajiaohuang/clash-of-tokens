@@ -305,9 +305,18 @@ async function toggleAuto(kind,item){
  const notice=paid&&enabling?' This may incur additional charges because a metered source can become eligible for Auto routing.':'';
  await preview(next,(enabling?'Allow ':'Remove ')+kind+'/'+item.id+' for Auto.'+notice);
 }
-async function remove(kind,item){
- const next=clone(S.config);next[kind]=next[kind].filter(x=>x.id!==item.id);
- await preview(next,'Delete '+kind+'/'+item.id);
+function remove(kind,item){
+ const base=clone(S.config),revision=S.revision,next=clone(base);
+ const groups=(base.groups||[]).filter(g=>kind==='sources'&&g.sources.includes(item.id));
+ const accounts=(base.accounts||[]).filter(a=>kind==='browser_profiles'&&a.browser_profile_id===item.id);
+ next[kind]=next[kind].filter(x=>x.id!==item.id);
+ if(kind==='sources')for(const group of next.groups||[])group.sources=group.sources.filter(id=>id!==item.id);
+ const label=kind==='browser_profiles'?'browser profile':kind.replace(/s$/,'');
+ const review=()=>{
+  if(kind==='browser_profiles'&&accounts.length)throw Error('Browser profile '+item.id+' still has bound accounts; migrate those accounts before deleting it.');
+  return preview(next,'Delete '+kind+'/'+item.id,()=>remove(kind,item),base,revision);
+ };
+ dialog('Delete '+label,[h('p',{class:'warning'},'Delete '+item.id+' from the configuration? Existing requests can finish under their retained configuration.'),table(['Affected configuration','Entries'],[['Groups',groups.map(g=>g.id).join(', ')||'None'],['Accounts',accounts.map(a=>a.display_name||a.id).join(', ')||'None']]),kind==='sources'&&groups.length?h('p',{class:'muted'},'The source will be removed from these group memberships in the same transaction.'):null,kind==='browser_profiles'&&accounts.length?h('p',{class:'muted'},'Bound accounts must be migrated before this profile can be deleted.'):null],[button('Cancel',()=>$('dialog').close()),button('Review deletion',review,'danger')]);
 }
 function addAccount(provider=''){
  accountWizard({provider_id:provider});

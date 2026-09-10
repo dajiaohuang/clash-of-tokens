@@ -903,3 +903,9 @@ and global-search editors. Provider-specific secret-field labels remain
 visible when replacing an existing protected value, while the vault keeps its
 explicit credential-kind choices; the browser regression verifies the OpenAI
 `API key` label without exposing the value.
+
+Batch 166 gives generic destructive actions an impact review. Source deletion
+now removes its group memberships in the same reviewed transaction, while
+browser-profile deletion lists bound accounts and fails closed until they are
+migrated; the browser regression covers source cancellation and the profile
+preflight error.
