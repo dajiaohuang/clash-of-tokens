@@ -12,7 +12,7 @@ must be checked again before final acceptance.
 | 1. Runtime correctness | `config/metadata.go`, router metadata/attempt/stream tests | End-to-end cross-adapter replay/completion audit; metadata preset accuracy |
 | 2. Account/credential separation | `config/accounts.go`, `credential.go`, injected adapter resolution | Finish provider-specific credential setup and migration UX |
 | 3. Account model | Account configuration plus `/admin/status` account health aggregation: health/auth state, capacity, sources, counters, last success/failure and last validation; explicit account validation entry point | Provider-specific health evidence and broader account lifecycle |
-| 4. Protected store | DPAPI; Linux native Secret Service integration tests; AES-GCM envelope tests | Native macOS cgo build/runtime verification |
+| 4. Protected store | DPAPI; Linux native Secret Service integration tests; AES-GCM envelope tests; credentials package cross-compiles for darwin/amd64 and linux/amd64 with cgo disabled | Native macOS cgo runtime verification |
 | 5. Add any account | Batch 27 account wizard combines credential/import selection and profile login | Complete provider-specific forms, organization/project setup and broader login checks |
 | 6. Browser import | Standard profile metadata and selected CDP Cookie import | Selected existing-profile account candidates and all named browser import paths |
 | 7. Manager import | All named CSV formats, Bitwarden JSON, redacted selection | End-to-end account binding from import; verify all format fixtures |

@@ -214,6 +214,8 @@ creation, group membership, preview/apply, every navigation destination and
 390px viewport passed via `scripts/ui_fixture.py --test` after building
 `.clash-tokens/ui-test.exe`. Screenshots are in `.clash-tokens/ui-artifacts/`.
 Race detection is outstanding: the current Go environment has cgo disabled.
+The credentials package also compiles for `darwin/amd64` and `linux/amd64`
+with cgo disabled; native keychain runtime behavior still requires those OSes.
 
 ## Remaining implementation
 
