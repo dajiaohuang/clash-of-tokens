@@ -53,12 +53,13 @@ not a completed acceptance audit.
 
 14. Selected CSV/JSON export import with redacted preview and atomic protected
     batch storage (1f1f212); exact catalog-domain recommendations and effective
-    source credential-type validation (0b92b8f). Specialized manager formats,
-    environment/CLI import and browser-session discovery remain outstanding.
-15. Browser profile registry, account binding, per-profile CDP/session storage
-    and explicit dedicated Chrome/Edge/Chromium login launch. Authentication
-    detection and post-login validation remain outstanding; launch is never
-    reported as authenticated.
+    source credential-type validation (0b92b8f). Specialized manager formats
+    still require explicit exports; environment/CLI imports and metadata-only
+    browser/account discovery are available through separate flows.
+15. Browser profile registry, account binding, per-profile CDP/session storage,
+    explicit dedicated Chrome/Edge/Chromium login launch, and bounded login
+    checks. Launch is never reported as authenticated; provider compatibility
+    and installed-browser discovery remain operator/provider dependent.
 
 16. ChatGPT Web authentication evidence without generation or token extraction
     (73148a3). Additional browser checks and persisted evidence are in batch 24.
@@ -141,8 +142,9 @@ CLI format references: [Codex auth fixture](https://github.com/openai/codex/blob
 31. Runtime execution status and validation responses now retain only fixed
     gateway error categories. Unknown adapter error text becomes `upstream_error`
     while preserving failure status. A synthetic URL/key/body regression verifies
-    serialized status redaction and snapshot isolation. This is one boundary of
-    the broader secret/log audit; runtime event logging remains outstanding.
+    serialized status redaction and snapshot isolation. Generation and model
+    discovery HTTP failures also use stable public categories; adapter-wide
+    logging remains outside the gateway boundary audit.
 32. Bounded structured execution-event ring survives hot updates and records
     exactly one event per released attempt, including finishing old leases.
     Activity exposes source/outcome filters. Tests cover capacity/order,
