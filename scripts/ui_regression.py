@@ -548,6 +548,7 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     page.get_by_role("button", name="Simulate", exact=True).click()
     expect(page.get_by_role("columnheader", name="Order", exact=True)).to_be_visible()
     expect(page.get_by_text("No target selected; capacity or eligibility rules prevented dispatch.", exact=True)).to_be_visible()
+    expect(page.get_by_role("cell", name="disabled", exact=True).first).to_be_visible()
     session_mutations = []
     def synthetic_sessions(route):
         if route.request.method == "GET":

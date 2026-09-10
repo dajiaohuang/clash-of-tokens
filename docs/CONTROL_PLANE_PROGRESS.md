@@ -423,6 +423,10 @@ Batch 140 extends the browser regression to toggle a source off and back on.
 Both changes pass through preview/apply and the final row state confirms the
 enabled switch remains independent from the source's Auto approval.
 
+Batch 141 follows the saved disabled source into Routing → Simulate and
+asserts that the candidate table reports the `disabled` exclusion reason. This
+connects the browser control state to the router's visible explanation.
+
 Batch 65 adds explicit OpenAI organization and project metadata to source
 configuration. The schema-driven source editor exposes both fields, validates
 control characters and length, and the native OpenAI client forwards them as
