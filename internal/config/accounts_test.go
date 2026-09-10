@@ -17,7 +17,7 @@ func TestAccountBindingValidation(t *testing.T) {
 		t.Fatal("credential not inherited")
 	}
 	c.Sources[0].Provider = "other"
-	if c.ValidateAccounts() == nil {
+	if err := c.ValidateAccounts(); err == nil || !strings.Contains(err.Error(), "migrate source first") {
 		t.Fatal("cross-provider binding accepted")
 	}
 	c.Sources[0].Provider = "p"

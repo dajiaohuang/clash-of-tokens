@@ -415,6 +415,10 @@ returns a conflict explaining that bound sources must be migrated first, and
 the regression verifies no configuration revision is advanced by the rejected
 edit.
 
+The shared account validator now emits the same migration guidance during a
+full configuration preview, so the schema-driven account editor does not hide
+the cause behind a generic provider mismatch.
+
 Batch 65 adds explicit OpenAI organization and project metadata to source
 configuration. The schema-driven source editor exposes both fields, validates
 control characters and length, and the native OpenAI client forwards them as

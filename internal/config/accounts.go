@@ -145,8 +145,11 @@ func (c Config) ValidateAccounts() error {
 			continue
 		}
 		a, ok := accounts[s.AccountID]
-		if !ok || a.ProviderID != s.Provider {
+		if !ok {
 			return fmt.Errorf("source %s: unknown account or provider mismatch", s.ID)
+		}
+		if a.ProviderID != s.Provider {
+			return fmt.Errorf("source %s: account provider changed while source is bound; migrate source first", s.ID)
 		}
 		if s.QuotaDomain != a.QuotaDomain {
 			return fmt.Errorf("source %s: quota domain must match its account", s.ID)
