@@ -114,6 +114,11 @@ func Default() Config {
 	return Config{SchemaVersion: 1, Listen: "127.0.0.1:8317", APIKeyEnv: "COT_API_KEY", AdminKeyEnv: "COT_ADMIN_KEY", Runtime: Runtime{128, 128, 16 << 20, 128 << 20, 64 << 20, 5000, 300000, 15000, 15000}, Browser: Browser{CDPURL: "http://127.0.0.1:9222", StateFile: ".clash-tokens/sessions.json", MaxSessions: 256, SessionTTLSeconds: 86400, PollMS: 1000, MaxPromptBytes: 64 << 10, MaxResponseBytes: 1 << 20}, Sources: []Source{}, Groups: []Group{{ID: "auto", Type: "auto", Sources: []string{}, MinTier: "silver"}}}
 }
 func Load(path string) (Config, error) {
+	if versions, err := readJournal(path + ".state"); err == nil {
+		return versions[len(versions)-1].Config, nil
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return Config{}, err
+	}
 	c := Default()
 	f, e := os.Open(path)
 	if e != nil {
