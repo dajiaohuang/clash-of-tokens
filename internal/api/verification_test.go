@@ -41,6 +41,29 @@ func TestVerificationBindingTracksCredentialAndRuntime(t *testing.T) {
 	}
 }
 
+func TestVerificationBindingTracksInheritedAccountDefaults(t *testing.T) {
+	p := &ControlPlane{runtimeID: "run"}
+	c := config.Default()
+	c.Accounts = []config.Account{{ID: "account", ProviderID: "openai", BaseURL: "https://one.example", Organization: "org-a", Project: "project-a"}}
+	source := config.Source{ID: "source", Provider: "openai", Adapter: "openai", AccountID: "account", Models: []config.Model{{ID: "model"}}}
+	meta := credentials.Metadata{ID: "cred://key", Version: 1}
+	original := p.bindingWithMetadata(c, source, meta)
+	c.Accounts[0].BaseURL = "https://two.example"
+	if original == p.bindingWithMetadata(c, source, meta) {
+		t.Fatal("inherited account base URL did not invalidate binding")
+	}
+	c.Accounts[0].BaseURL = "https://one.example"
+	c.Accounts[0].Organization = "org-b"
+	if original == p.bindingWithMetadata(c, source, meta) {
+		t.Fatal("inherited account organization did not invalidate binding")
+	}
+	c.Accounts[0].Organization = "org-a"
+	c.Accounts[0].Project = "project-b"
+	if original == p.bindingWithMetadata(c, source, meta) {
+		t.Fatal("inherited account project did not invalidate binding")
+	}
+}
+
 func TestNewerEvidenceUsesSequenceWhenTimestampsTie(t *testing.T) {
 	checked := time.Unix(100, 0).UTC()
 	if !newerEvidence(audit.Entry{CheckedAt: checked, Sequence: 2}, audit.Entry{CheckedAt: checked, Sequence: 1}) {

@@ -103,6 +103,11 @@ func (p *ControlPlane) bindingWithMetadata(c config.Config, s config.Source, met
 	if s.AccountIDEnv != "" || (meta.ID == "" && s.KeyEnv != "") {
 		run = p.runtimeID
 	}
+	// Validation executes against the effective source. Include inherited
+	// account defaults in the binding so changing an account endpoint or routing
+	// metadata cannot leave evidence from the previous effective configuration
+	// marked as current.
+	effective := c.EffectiveSource(s)
 	data, _ := json.Marshal(struct {
 		Source           config.Source
 		Browser          config.Browser
@@ -111,7 +116,7 @@ func (p *ControlPlane) bindingWithMetadata(c config.Config, s config.Source, met
 		Version          uint64
 		Created, Updated time.Time
 		Runtime          string
-	}{s, c.SourceBrowser(s), c.Device, meta.ID, meta.Version, meta.CreatedAt, meta.UpdatedAt, run})
+	}{effective, c.SourceBrowser(s), c.Device, meta.ID, meta.Version, meta.CreatedAt, meta.UpdatedAt, run})
 	digest := sha256.Sum256(data)
 	return hex.EncodeToString(digest[:])
 }
