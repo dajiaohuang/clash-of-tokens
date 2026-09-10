@@ -423,6 +423,27 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     page.get_by_role("button", name="Simulate", exact=True).click()
     expect(page.get_by_role("columnheader", name="Order", exact=True)).to_be_visible()
     expect(page.get_by_text("No target selected; capacity or eligibility rules prevented dispatch.", exact=True)).to_be_visible()
+    session_mutations = []
+    def synthetic_sessions(route):
+        if route.request.method == "GET":
+            route.fulfill(status=200, content_type="application/json", body=json.dumps({
+                "items": [{"id": "session-0123456789abcdef", "source": "openai", "provider": "openai", "account": "ui-account", "conversation": "provider-conversation", "model": "test-model", "protocol": "chat", "created": "2026-01-01T00:00:00Z", "updated": "2026-01-01T00:01:00Z", "expired": False, "dirty": False}],
+                "unsupported_sources": [], "failed_sources": [], "capabilities": [{"source": "openai", "adapter": "openai", "supported": False, "reason": "stateful session inventory is adapter-specific"}], "truncated": False
+            }))
+        else:
+            session_mutations.append(route.request.url)
+            route.fulfill(status=200, content_type="application/json", body='{"status":"completed"}')
+    page.route("**/admin/sessions**", synthetic_sessions)
+    page.get_by_role("link", name="Sessions", exact=True).click()
+    expect(page.get_by_role("heading", name="Sessions", exact=True)).to_be_visible()
+    expect(page.get_by_role("cell", name="session-0123456789abcdef", exact=True)).to_be_visible()
+    expect(page.get_by_role("cell", name="provider-conversation", exact=True)).to_be_visible()
+    page.get_by_role("button", name="Clear", exact=True).click()
+    expect(page.get_by_role("heading", name="Clear local session", exact=True)).to_be_visible()
+    page.get_by_role("button", name="Clear session", exact=True).click()
+    expect(page.get_by_role("heading", name="Sessions", exact=True)).to_be_visible()
+    assert len(session_mutations) == 1 and session_mutations[0].endswith("/openai/session-0123456789abcdef/clear")
+    page.unroute("**/admin/sessions**", synthetic_sessions)
     for label in ["Credentials", "Sources", "Models", "Groups", "Routing", "Health", "Metrics", "Browsers", "Devices", "Sessions", "Configuration", "Activity", "About"]:
         page.get_by_role("link", name=label, exact=True).click()
         expect(page.get_by_role("heading", name=label, exact=True)).to_be_visible()

@@ -603,3 +603,7 @@ Batch 112 adds an upstream dispatch regression proving stateful adapter
 inventory is available through the shared client while native API adapters
 return an explicit unsupported capability instead of an empty, misleading
 session list.
+
+Batch 113 extends the isolated browser regression to the Sessions page,
+covering redacted metadata rendering, capability boundaries, and the
+lease-protected Clear confirmation flow.
