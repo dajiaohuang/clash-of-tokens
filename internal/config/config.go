@@ -325,6 +325,9 @@ func (c Config) Validate() error {
 		if s.MaxInflight < 1 || s.MaxInflight > 10000 || s.QuotaDomain == "" || s.QuotaMaxInflight < 1 || s.QuotaMaxInflight > 10000 {
 			return fmt.Errorf("source %s: explicit source and quota capacity required", s.ID)
 		}
+		if len(s.Models) == 0 {
+			return fmt.Errorf("source %s: at least one model is required", s.ID)
+		}
 		if n, ok := domains[s.QuotaDomain]; ok && n != s.QuotaMaxInflight {
 			return fmt.Errorf("inconsistent quota limit for %s", s.QuotaDomain)
 		}

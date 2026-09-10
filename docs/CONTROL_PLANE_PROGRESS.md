@@ -406,3 +406,8 @@ Batch 72 hardens account-discovery provider suggestions to use normalized,
 host-exact catalog aliases. URL paths, trailing dots and case normalize safely;
 lookalike suffixes, subdomains and malformed origins no longer inherit a
 provider match.
+
+Batch 73 makes source configuration fail closed when a source has no configured
+models. The central validator now rejects an empty model list before quota and
+model checks; a config regression covers both the rejection and a valid model
+record.
