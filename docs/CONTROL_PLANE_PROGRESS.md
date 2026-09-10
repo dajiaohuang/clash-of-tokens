@@ -221,11 +221,12 @@ Discovery protocol references: [Anthropic models](https://platform.claude.com/do
 [Gemini models](https://ai.google.dev/api/models),
 [OpenAI models](https://platform.openai.com/docs/api-reference/models).
 
-Validation: `go test ./...` passed, 604 tests in 38 packages on Windows.
+Validation: `go test ./...` passed, 610 tests in 39 packages on Windows.
 Windows and Linux-target `govulncheck` reported no vulnerabilities.
 Browser regression: credential creation/redaction, account binding, source
-creation, group membership, preview/apply, every navigation destination and
-390px viewport passed via `scripts/ui_fixture.py --test` after building
+creation, group membership, preview/apply, session metadata/clear controls,
+every navigation destination and 390px viewport passed via
+`scripts/ui_fixture.py --test` after building
 `.clash-tokens/ui-test.exe`. Screenshots are in `.clash-tokens/ui-artifacts/`.
 Race detection is outstanding: the current Go environment has cgo disabled.
 The credentials package also compiles for `darwin/amd64` and `linux/amd64`
@@ -235,9 +236,8 @@ with cgo disabled; native keychain runtime behavior still requires those OSes.
 
 The [51-section ledger](CONTROL_PLANE_AUDIT.md) now replaces the previous generic
 A–E checklist. The main gaps include complete provider-specific setup and
-checks, quota/account pool end-to-end views, broader session management, the
-global adapter log-redaction audit, remaining routing policies and native macOS
-verification.
+checks, quota/account pool end-to-end views, remaining routing policies and
+native macOS verification.
 All explicit subrequirements and the end-to-end install-to-routing workflow must
 be verified before completion.
 
@@ -265,8 +265,10 @@ request, streaming, completion, and measured duration fields; the UI presents
 these stages separately and never treats an incomplete stream as verified.
 
 Batch 48 adds session capability rows to `/admin/sessions` and the Sessions
-page. ChatGPT Web remains the only adapter with local conversation inventory;
-other adapters are explicitly marked unavailable instead of being scraped.
+page. ChatGPT Web initially exposed local conversation inventory; Batch 109
+extends metadata-only inventory and expire/clear controls to China Web, China
+Next (Yuanbao), Zed Hosted, Amazon Q, and Augment. Other adapters remain
+explicitly marked unavailable instead of being scraped.
 
 Batch 49 makes execution accounting mode-independent: non-streaming responses
 record transport completion, upstream status, rejection, or cancellation
