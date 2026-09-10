@@ -209,7 +209,7 @@ Discovery protocol references: [Anthropic models](https://platform.claude.com/do
 [Gemini models](https://ai.google.dev/api/models),
 [OpenAI models](https://platform.openai.com/docs/api-reference/models).
 
-Validation: `go test ./...` passed, 585 tests in 38 packages on Windows.
+Validation: `go test ./...` passed, 586 tests in 38 packages on Windows.
 Windows and Linux-target `govulncheck` reported no vulnerabilities.
 Browser regression: credential creation/redaction, account binding, source
 creation, group membership, preview/apply, every navigation destination and
@@ -319,3 +319,10 @@ new value untouched. The review explains that matching generation evidence is
 historical after rotation and that in-flight requests are unaffected. The
 browser regression covers the confirmation before continuing its rotation and
 verification checks.
+
+Batch 57 closes the account quota-domain move invariant. The resource API and
+the schema-driven account editor now update every source bound to the account
+when its quota domain changes, in one validated transaction. This prevents an
+account move from leaving sources on a stale shared-capacity boundary. A
+resource API regression verifies persistence of both account and source domains;
+the shared-domain limit editor continues to govern unrelated domain members.

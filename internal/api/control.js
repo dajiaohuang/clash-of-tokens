@@ -211,6 +211,9 @@ function edit(kind,item,create=false){
     const next=clone(base),value=form.read();
     next[kind]=next[kind]||[];
     if(create)next[kind].push(value);else next[kind][next[kind].findIndex(x=>x.id===item.id)]=value;
+    if(kind==='accounts'&&value.quota_domain!==item.quota_domain){
+     for(const source of next.sources||[])if(source.account_id===item.id)source.quota_domain=value.quota_domain;
+    }
     if(kind==='accounts'&&!(next.providers||[]).some(p=>p.id===value.provider_id)){
      next.providers=next.providers||[];next.providers.push({id:value.provider_id,enabled:true,auto_approved:false,pool_strategy:'round-robin'});
     }

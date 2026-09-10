@@ -15,7 +15,11 @@ account, shared-domain or gateway capacity.
 **Health → Shared quota domains** shows each domain once, with its actual shared
 counter, limit and member sources. **Edit shared quota** changes the concurrency
 limit for every current source in that domain in one configuration transaction.
-This editor does not rename domains or move accounts between them.
+Changing an account's quota domain from the Accounts editor or the resource API
+moves every source bound to that account in the same validated transaction.
+The account and source rows therefore keep one shared capacity boundary. The
+shared-domain limit editor still does not rename domains or move unrelated
+accounts between them.
 
 Lowering a limit does not cancel running requests. The displayed active count
 can temporarily exceed the new limit; new work waits until capacity is available.

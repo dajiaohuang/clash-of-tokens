@@ -136,6 +136,14 @@ func (p *ControlPlane) resourceAdmin(w http.ResponseWriter, r *http.Request, ser
 		c.Providers, err = editResource(c.Providers, id, method, raw)
 	case "accounts":
 		c.Accounts, err = editResource(c.Accounts, id, method, raw)
+		if err == nil && method != "DELETE" {
+			for _, account := range c.Accounts {
+				if account.ID == id {
+					cascadeAccountQuotaDomain(&c, account.ID, account.QuotaDomain)
+					break
+				}
+			}
+		}
 	case "sources":
 		c.Sources, err = editResource(c.Sources, id, method, raw)
 	case "groups":
@@ -155,6 +163,17 @@ func (p *ControlPlane) resourceAdmin(w http.ResponseWriter, r *http.Request, ser
 		return
 	}
 	reply(w, map[string]any{"revision": updated.Revision, "status": "saved", "persistence": "durable", "restart_required": restartFields(p.startup, updated.Config)})
+}
+
+// Account and source quota domains are one capacity boundary. Moving an
+// account therefore moves all of its member sources in the same transaction;
+// otherwise the configuration would fail validation halfway through the edit.
+func cascadeAccountQuotaDomain(c *config.Config, accountID, domain string) {
+	for i := range c.Sources {
+		if c.Sources[i].AccountID == accountID {
+			c.Sources[i].QuotaDomain = domain
+		}
+	}
 }
 
 func decodeInput(w http.ResponseWriter, r *http.Request, out any, limit int64) error {
