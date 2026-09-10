@@ -24,8 +24,20 @@ func (p *ControlPlane) sessionAdmin(w http.ResponseWriter, r *http.Request, s *S
 		out := []row{}
 		unsupported := []string{}
 		failures := []string{}
+		type capability struct {
+			Source    string `json:"source"`
+			Adapter   string `json:"adapter"`
+			Supported bool   `json:"supported"`
+			Reason    string `json:"reason"`
+		}
+		capabilities := []capability{}
 		truncated := false
 		for _, source := range s.cfg.Sources {
+			cap := capability{Source: source.ID, Adapter: source.Adapter, Supported: source.Adapter == "chatgpt-web", Reason: "stateful session inventory is adapter-specific"}
+			if cap.Supported {
+				cap.Reason = "local conversation metadata"
+			}
+			capabilities = append(capabilities, cap)
 			if source.Adapter != "chatgpt-web" {
 				unsupported = append(unsupported, source.ID)
 				continue
@@ -43,7 +55,7 @@ func (p *ControlPlane) sessionAdmin(w http.ResponseWriter, r *http.Request, s *S
 				out = append(out, row{item, source.Provider, source.AccountID})
 			}
 		}
-		reply(w, map[string]any{"items": out, "unsupported_sources": unsupported, "failed_sources": failures, "truncated": truncated})
+		reply(w, map[string]any{"items": out, "unsupported_sources": unsupported, "failed_sources": failures, "capabilities": capabilities, "truncated": truncated})
 		return true
 	}
 	parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/admin/sessions/"), "/")

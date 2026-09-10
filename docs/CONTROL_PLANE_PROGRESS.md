@@ -247,3 +247,7 @@ safe; suffix lookalikes remain unmatched. See [provider matching](PROVIDER_MATCH
 Batch 47 enriches source validation evidence with connection, authentication,
 request, streaming, completion, and measured duration fields; the UI presents
 these stages separately and never treats an incomplete stream as verified.
+
+Batch 48 adds session capability rows to `/admin/sessions` and the Sessions
+page. ChatGPT Web remains the only adapter with local conversation inventory;
+other adapters are explicitly marked unavailable instead of being scraped.

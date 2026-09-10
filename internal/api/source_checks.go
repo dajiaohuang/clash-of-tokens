@@ -167,6 +167,9 @@ func (p *ControlPlane) sourceCheckAdmin(w http.ResponseWriter, r *http.Request, 
 		}
 	}
 	evidence.Checks.DurationMS = float64(time.Since(started).Microseconds()) / 1000
+	if evidence.Checks.DurationMS <= 0 {
+		evidence.Checks.DurationMS = 0.001
+	}
 	evidence.Result.ClientCanceled = ctx.Err() != nil
 	evidence.Result = evidence.Result.Redacted()
 	evidence.Verified = evidence.Result.Successful() && evidence.OutputObserved
