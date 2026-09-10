@@ -24,6 +24,13 @@ type accountCandidate struct {
 	Available  bool     `json:"available"`
 }
 
+type discoveryChannel struct {
+	ID       string `json:"id"`
+	Status   string `json:"status"`
+	Action   string `json:"action"`
+	ReadOnly bool   `json:"read_only"`
+}
+
 func candidateProviders(origin string, kind string, entries []catalog.Entry) []string {
 	needle := strings.ToLower(origin)
 	out := []string{}
@@ -64,6 +71,18 @@ func (p *ControlPlane) accountDiscoveryAdmin(w http.ResponseWriter, r *http.Requ
 	}
 	entries := catalog.All()
 	items := []accountCandidate{}
+	channels := []discoveryChannel{
+		{ID: "browsers", Status: "scanned_on_request", Action: "scan_browsers", ReadOnly: true},
+		{ID: "environment", Status: "configured_sources_only", Action: "import_credential", ReadOnly: true},
+		{ID: "password_managers", Status: "manual_export_required", Action: "import_export", ReadOnly: true},
+		{ID: "cli_sessions", Status: "manual_export_required", Action: "import_token", ReadOnly: true},
+		{ID: "existing_profiles", Status: "configured_profiles", Action: "create_browser_profile", ReadOnly: true},
+	}
+	for _, profile := range s.cfg.BrowserProfiles {
+		if profile.Enabled {
+			items = append(items, accountCandidate{ID: "profile:" + profile.ID, Kind: "browser_profile", Label: profile.ID, Origin: profile.CDPURL, Providers: nil, Confidence: "configured", Action: "use_existing_profile", Available: true})
+		}
+	}
 	if input.ScanBrowsers {
 		for _, b := range browsermeta.Discover(browsermeta.StandardRoots()) {
 			providers := candidateProviders(b.Browser, "browser_profile", entries)
@@ -86,7 +105,7 @@ func (p *ControlPlane) accountDiscoveryAdmin(w http.ResponseWriter, r *http.Requ
 	if len(items) > 512 {
 		items = items[:512]
 	}
-	reply(w, map[string]any{"items": items, "browser_scan": input.ScanBrowsers, "secret_values": false})
+	reply(w, map[string]any{"items": items, "channels": channels, "browser_scan": input.ScanBrowsers, "secret_values": false})
 	return true
 }
 
