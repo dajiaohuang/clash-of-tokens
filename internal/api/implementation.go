@@ -44,7 +44,7 @@ func (p *ControlPlane) implementationAdmin(w http.ResponseWriter, r *http.Reques
 		providersBySource[source.ID] = source.Provider
 	}
 	for _, item := range p.evidence.List() {
-		if item.Kind != "source" {
+		if item.Kind != "validation" {
 			continue
 		}
 		provider := providersBySource[item.Resource]

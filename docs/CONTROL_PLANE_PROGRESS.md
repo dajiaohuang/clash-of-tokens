@@ -454,3 +454,8 @@ runtime evidence and capacity instead of collapsing them into one status.
 Batch 81 adds provider pool strategy and account weight to the Health snapshot.
 The pool editor and runtime health view now expose the same selection metadata
 alongside active limits and observed counters.
+
+Batch 82 fixes System > Implementation runtime totals to consume the validation
+evidence emitted by explicit source/provider checks. Verified and failed checks
+now appear under the matching catalog provider without changing catalog live
+claims.
