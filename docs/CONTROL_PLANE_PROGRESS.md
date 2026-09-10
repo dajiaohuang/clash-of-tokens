@@ -209,7 +209,7 @@ Discovery protocol references: [Anthropic models](https://platform.claude.com/do
 [Gemini models](https://ai.google.dev/api/models),
 [OpenAI models](https://platform.openai.com/docs/api-reference/models).
 
-Validation: `go test ./...` passed, 571 tests in 38 packages on Windows.
+Validation: `go test ./...` passed, 582 tests in 38 packages on Windows.
 Windows and Linux-target `govulncheck` reported no vulnerabilities.
 Browser regression: credential creation/redaction, account binding, source
 creation, group membership, preview/apply, every navigation destination and

@@ -156,6 +156,8 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     expect(page.get_by_role("heading", name="Source / openai", exact=True)).to_be_visible()
     expect(page.get_by_role("dialog").get_by_text("0.25 / 1.5", exact=True)).to_be_visible()
     expect(page.get_by_role("dialog").get_by_text("verified", exact=True)).to_be_visible()
+    expect(page.get_by_role("dialog").get_by_role("row").filter(has=page.get_by_text("Input tokens observed", exact=True))).to_contain_text("2")
+    expect(page.get_by_role("dialog").get_by_role("row").filter(has=page.get_by_text("Estimated declared cost", exact=True))).to_contain_text("$0.000002")
     page.get_by_role("button", name="Explain eligibility", exact=True).click()
     expect(page.get_by_role("columnheader", name="Eligibility for this request", exact=True)).to_be_visible()
     page.get_by_role("button", name="Benchmark", exact=True).click()

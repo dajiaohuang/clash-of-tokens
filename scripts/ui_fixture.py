@@ -25,7 +25,7 @@ class SyntheticUpstream(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", "text/event-stream")
         self.end_headers()
-        self.wfile.write(b'data: {"choices":[{"delta":{"content":"OK"}}]}\n\ndata: [DONE]\n\n')
+        self.wfile.write(b'data: {"choices":[{"delta":{"content":"OK"}}]}\n\ndata: {"choices":[],"usage":{"prompt_tokens":2,"completion_tokens":1,"total_tokens":3}}\n\ndata: [DONE]\n\n')
 
 root = Path(__file__).resolve().parents[1]
 binary = root / ".clash-tokens" / "ui-test.exe"
