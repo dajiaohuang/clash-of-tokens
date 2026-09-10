@@ -515,3 +515,7 @@ configuration regressions cover both invalid combinations.
 Batch 94 makes the local billing declaration mandatory for `local_model` sources.
 An omitted billing mode no longer becomes an ambiguous `unknown` value; the
 metadata regression keeps the valid local tuple explicit.
+
+Batch 95 carries evidence sequence through provider and account health
+aggregation. When two sources validate at the same instant, the newest stored
+entry now controls the exposed timestamp and state deterministically.

@@ -273,6 +273,8 @@ func (p *ControlPlane) providerHealth(s *Server, accounts []accountHealth, entri
 		providerHealth
 		hasHealthy, hasDegraded, hasBlocked, hasCooldown, hasExhausted, hasBroken, hasDisabled bool
 		authenticated, authRequired, authChecked                                               bool
+		lastValidation                                                                         audit.Entry
+		hasValidation                                                                          bool
 	}
 	type runtimeAggregate struct {
 		health                   string
@@ -343,10 +345,12 @@ func (p *ControlPlane) providerHealth(s *Server, accounts []accountHealth, entri
 	for _, source := range s.cfg.Sources {
 		row := ensure(source.Provider)
 		row.Sources = append(row.Sources, source.ID)
-		if checked, ok := latestValidation[source.ID]; ok && checked.CheckedAt.After(valueTime(row.LastValidatedAt)) {
+		if checked, ok := latestValidation[source.ID]; ok && (!row.hasValidation || newerEvidence(checked, row.lastValidation)) {
 			value := checked.CheckedAt
 			row.LastValidatedAt = &value
 			row.LastValidationState = p.validationState(s.cfg, source, checked)
+			row.lastValidation = checked
+			row.hasValidation = true
 		}
 		status, ok := runtimeByID[source.ID]
 		if !ok {
@@ -463,6 +467,8 @@ func (p *ControlPlane) accountHealth(s *Server, entries []audit.Entry) []account
 	out := make([]accountHealth, 0, len(s.cfg.Accounts))
 	for _, account := range s.cfg.Accounts {
 		health := accountHealth{ID: account.ID, Provider: account.ProviderID, Enabled: account.Enabled, AutoApproved: account.AutoApproved, Health: "untested", AuthStatus: "not_checked", Limit: account.MaxInflight, Weight: account.Weight, LastValidationState: "not_checked", Sources: []string{}}
+		var lastValidation audit.Entry
+		hasValidation := false
 		for _, provider := range s.cfg.Providers {
 			if provider.ID == account.ProviderID {
 				health.PoolStrategy = provider.PoolStrategy
@@ -489,10 +495,12 @@ func (p *ControlPlane) accountHealth(s *Server, entries []audit.Entry) []account
 				v := aggregate.lastFailure
 				health.LastFailure = &v
 			}
-			if entry, ok := latestValidation[source.ID]; ok && entry.CheckedAt.After(valueTime(health.LastValidatedAt)) {
+			if entry, ok := latestValidation[source.ID]; ok && (!hasValidation || newerEvidence(entry, lastValidation)) {
 				v := entry.CheckedAt
 				health.LastValidatedAt = &v
 				health.LastValidationState = p.validationState(s.cfg, source, entry)
+				lastValidation = entry
+				hasValidation = true
 			}
 		}
 		if entry, ok := latestAuth[account.ID]; ok {
