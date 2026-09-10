@@ -830,3 +830,10 @@ Batch 151 adds the missing model-management group action. The bulk model editor
 can add every selected model's source to an existing group in the same reviewed
 configuration transaction, while model enablement, approval and capability
 changes remain atomic.
+
+Batch 154 adds a cross-adapter replay and completion audit. The API regression
+drives OpenAI Chat, Anthropic Messages and Gemini through both buffered and
+streaming requests, verifies model rewriting and credential headers, and checks
+that each protocol's terminal event is required for a successful stream. This
+is a local contract audit; live provider compatibility remains an explicit
+operator check.
