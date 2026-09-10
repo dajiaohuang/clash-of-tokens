@@ -432,6 +432,10 @@ Batch 142 adds an API-to-router discovery regression. A synthetic native
 unapproved defaults, and the simulator confirms the candidate is excluded as
 `model_disabled` until a later policy edit explicitly enables it.
 
+Batch 143 extends the wizard regression to the Codex descriptor. Its manual
+credential dialog exposes only `oauth`, `cli_session`, and `api_key` modes, so
+cookie material cannot be bound accidentally to a CLI/OAuth provider.
+
 Batch 65 adds explicit OpenAI organization and project metadata to source
 configuration. The schema-driven source editor exposes both fields, validates
 control characters and length, and the native OpenAI client forwards them as
