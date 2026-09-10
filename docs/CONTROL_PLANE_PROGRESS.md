@@ -843,3 +843,9 @@ fallback advancement, select's no-fallthrough rule, latency and load-balance
 selection, shared source membership across groups, disabled-member simulator
 reasons, and the fact that simulation never acquires capacity. The matrix uses
 synthetic sources and does not claim live-provider behavior.
+
+Batch 156 adds a dedicated reviewed credential unbind API at
+`POST /admin/credentials/{id}/unbind`. It requires explicit confirmation and
+an optimistic revision, clears direct and account-inherited source references
+in one configuration transaction, reports the affected IDs, and retains the
+encrypted vault value for later rebind or explicit deletion.
