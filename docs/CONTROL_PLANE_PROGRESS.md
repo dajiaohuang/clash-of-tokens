@@ -11,7 +11,16 @@ Acceptance scope: [complete synthesis](CONTROL_PLANE_REQUIREMENTS.md).
    Metered, subscription and unknown-cost routing have independent overrides.
    Catalog presets no longer derive billing from process location (a51e968).
 
-Validation: `go test ./...` passed, 460 tests in 33 packages on Windows.
+3. Account and Provider models, hierarchical enable/approval checks and account
+   concurrency across sources (e75167d).
+4. All adapters resolve primary credentials through an injectable reference
+   resolver; explicit references never fall back to environment credentials
+   and resolver values are not serialized (69a9933).
+5. Windows DPAPI credential vault, atomic persistence, redacted listing,
+   authenticated PUT/DELETE endpoints and bound-credential deletion protection
+   (8a2ccac). Non-Windows platform keychains remain outstanding and fail closed.
+
+Validation: `go test ./...` passed, 473 tests in 34 packages on Windows.
 
 ## Remaining implementation
 
