@@ -93,6 +93,7 @@ type capacity struct {
 }
 type Query struct {
 	Probe           bool     `json:"-"`
+	Detail          bool     `json:"detail,omitempty"`
 	ExcludedSources []string `json:"-"`
 	Affinity        string   `json:"affinity,omitempty"`
 	Model           string   `json:"model"`
@@ -171,9 +172,16 @@ func New(c config.Config) *Router {
 		s := c.Sources[t.Source]
 		r.candidates[s.ID+"/"+t.Model.ID] = append(r.candidates[s.ID+"/"+t.Model.ID], i)
 		r.candidates[t.Model.ID] = append(r.candidates[t.Model.ID], i)
-		for id, g := range r.groups {
-			if _, ok := g.members[s.ID]; ok {
-				r.candidates[id] = append(r.candidates[id], i)
+	}
+	// Group membership order is user-controlled (especially for fallback), so
+	// build each group's candidate list from its declared source sequence rather
+	// than from the source declaration order in the top-level config.
+	for id, g := range r.groups {
+		for _, sourceID := range g.Sources {
+			for i, t := range r.targets {
+				if c.Sources[t.Source].ID == sourceID {
+					r.candidates[id] = append(r.candidates[id], i)
+				}
 			}
 		}
 	}
@@ -557,6 +565,24 @@ type Status struct {
 	LatencyMS        float64                   `json:"latency_ms"`
 }
 
+// SimulationCandidate describes one target considered by the read-only
+// routing simulator. Order is the router's current evaluation order; Selected
+// marks the target that would receive the request if capacity were available.
+type SimulationCandidate struct {
+	ID       string `json:"id"`
+	Order    int    `json:"order"`
+	Reason   string `json:"reason"`
+	Eligible bool   `json:"eligible"`
+	Selected bool   `json:"selected"`
+}
+
+// Simulation is an opt-in detailed response for control-plane callers. The
+// router does not acquire a lease or contact an upstream while producing it.
+type Simulation struct {
+	Selected   string                `json:"selected,omitempty"`
+	Candidates []SimulationCandidate `json:"candidates"`
+}
+
 func (r *Router) Status() []Status {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -605,23 +631,61 @@ func (r *Router) Explain(q Query) map[string]string {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	out := map[string]string{}
+	now := time.Now()
 	for _, t := range r.targets {
-		_, reason := r.eligible(t, q)
-		if reason == "" {
-			s := r.state[t.Source]
-			qt := r.quotas[t.Source]
-			switch {
-			case r.accounts[t.Source] != nil && r.accounts[t.Source].active >= r.accounts[t.Source].limit:
-				reason = "account_capacity"
-			case time.Now().Before(maxTime(s.cooldown, qt.cooldown)):
-				reason = "cooldown"
-			case s.active >= r.cfg.Sources[t.Source].MaxInflight || qt.active >= qt.limit || r.active >= r.cfg.Runtime.MaxInflight:
-				reason = "capacity"
-			default:
-				reason = "eligible"
-			}
+		out[r.cfg.Sources[t.Source].ID+"/"+t.Model.ID] = r.explainReason(t, q, now)
+	}
+	return out
+}
+
+func (r *Router) explainReason(t Target, q Query, now time.Time) string {
+	_, reason := r.eligible(t, q)
+	if reason != "" {
+		return reason
+	}
+	s := r.state[t.Source]
+	qt := r.quotas[t.Source]
+	switch {
+	case r.accounts[t.Source] != nil && r.accounts[t.Source].active >= r.accounts[t.Source].limit:
+		return "account_capacity"
+	case now.Before(maxTime(s.cooldown, qt.cooldown)):
+		return "cooldown"
+	case s.active >= r.cfg.Sources[t.Source].MaxInflight || qt.active >= qt.limit || r.active >= r.cfg.Runtime.MaxInflight:
+		return "capacity"
+	default:
+		return "eligible"
+	}
+}
+
+// Simulate returns the ordered targets for a query and the selected target,
+// without changing router state. The candidate list follows the same source
+// and group ordering used by choose; selection still reflects strategy,
+// preference, capacity and health rules.
+func (r *Router) Simulate(q Query) Simulation {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	now := time.Now()
+	selected, _ := r.choose(q, now)
+	key := q.Model
+	if strings.HasPrefix(key, "auto/") {
+		key = "auto"
+	}
+	indices := r.candidates[key]
+	if len(indices) == 0 {
+		indices = make([]int, len(r.targets))
+		for i := range r.targets {
+			indices[i] = i
 		}
-		out[r.cfg.Sources[t.Source].ID+"/"+t.Model.ID] = reason
+	}
+	out := Simulation{Candidates: make([]SimulationCandidate, 0, len(indices))}
+	for order, idx := range indices {
+		t := r.targets[idx]
+		id := r.cfg.Sources[t.Source].ID + "/" + t.Model.ID
+		reason := r.explainReason(t, q, now)
+		out.Candidates = append(out.Candidates, SimulationCandidate{ID: id, Order: order + 1, Reason: reason, Eligible: reason == "eligible", Selected: idx == selected})
+		if idx == selected {
+			out.Selected = id
+		}
 	}
 	return out
 }

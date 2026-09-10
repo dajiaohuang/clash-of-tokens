@@ -35,6 +35,10 @@ func (p *ControlPlane) resourceAdmin(w http.ResponseWriter, r *http.Request, ser
 			fail(w, 400, "invalid routing query")
 			return
 		}
+		if q.Detail {
+			reply(w, server.Router.Simulate(q))
+			return
+		}
 		reply(w, server.Router.Explain(q))
 		return
 	}

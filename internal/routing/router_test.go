@@ -151,6 +151,28 @@ func TestFallbackFollowsConfiguredMemberOrder(t *testing.T) {
 	l.Release(200, 0)
 }
 
+func TestDetailedSimulationReportsOrderAndSelection(t *testing.T) {
+	c := fixture(2)
+	c.Groups = []config.Group{{ID: "fallback", Type: "fallback", Sources: []string{"s1", "s0"}, MinTier: "silver"}}
+	r := New(c)
+	q := Query{Model: "fallback", Protocol: "chat", Bytes: 100}
+	sim := r.Simulate(q)
+	if sim.Selected != "s1/model" || len(sim.Candidates) != 2 {
+		t.Fatalf("unexpected initial simulation: %+v", sim)
+	}
+	if sim.Candidates[0].ID != "s1/model" || sim.Candidates[0].Order != 1 || !sim.Candidates[0].Eligible || !sim.Candidates[0].Selected {
+		t.Fatalf("first candidate did not preserve fallback order: %+v", sim.Candidates[0])
+	}
+	if sim.Candidates[1].ID != "s0/model" || sim.Candidates[1].Order != 2 || sim.Candidates[1].Reason != "eligible" || sim.Candidates[1].Selected {
+		t.Fatalf("second candidate was not reported correctly: %+v", sim.Candidates[1])
+	}
+	r.SetEnabled("s1", false)
+	sim = r.Simulate(q)
+	if sim.Selected != "s0/model" || sim.Candidates[0].Reason != "disabled" || !sim.Candidates[1].Selected {
+		t.Fatalf("simulation did not update after disabling first member: %+v", sim)
+	}
+}
+
 func BenchmarkChoose(b *testing.B) {
 	for _, n := range []int{8, 100, 1000} {
 		b.Run(fmt.Sprint(n), func(b *testing.B) {

@@ -617,8 +617,9 @@ function routing(){
  const tools=h('input',{type:'checkbox'}),vision=h('input',{type:'checkbox'}),stateful=h('input',{type:'checkbox'});
  const output=h('div',{});
  return [pageHead('Routing','Simulate eligibility without sending an upstream request.'),h('section',{class:'panel'},h('div',{class:'form-grid'},field('Model or group',model),field('Protocol',protocol),field('Input bytes',size),h('div',{},h('label',{class:'boolean'},tools,'Requires tools'),h('label',{class:'boolean'},vision,'Requires vision'),h('label',{class:'boolean'},stateful,'Stateful request'))),h('div',{class:'toolbar'},button('Simulate',async()=>{
-  const result=await api('/admin/routing/simulate',{method:'POST',body:JSON.stringify({model:model.value,protocol:protocol.value,bytes:Number(size.value),tools:tools.checked,vision:vision.checked,stateful:stateful.checked})});
-  output.replaceChildren(table(['Source / model','Eligibility'],Object.entries(result).map(([id,reason])=>[id,badge(reason,reason==='eligible'?'good':'warn')])));
+  const result=await api('/admin/routing/simulate',{method:'POST',body:JSON.stringify({model:model.value,protocol:protocol.value,bytes:Number(size.value),tools:tools.checked,vision:vision.checked,stateful:stateful.checked,detail:true})});
+  const candidates=result.candidates||[];
+  output.replaceChildren(h('p',{class:'muted'},result.selected?'Selected target: '+result.selected:'No target selected; capacity or eligibility rules prevented dispatch.'),table(['Order','Source / model','Eligibility','Selection'],candidates.map(candidate=>[candidate.order,candidate.id,badge(candidate.reason,candidate.eligible?'good':'warn'),candidate.selected?'Selected':''])));
  },'primary'))),output,h('h2',{},'Routing policies'),table(['Group','Strategy',''],S.config.groups.map(g=>[g.id,g.type,button('Edit policy',()=>edit('groups',g))]))];
 }
 function health(){

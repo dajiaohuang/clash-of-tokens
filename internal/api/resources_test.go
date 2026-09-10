@@ -58,6 +58,66 @@ func TestPersistentResourcesValidateReferencesAndRevision(t *testing.T) {
 	if w := call("POST", "/admin/routing/simulate", "", `{"model":"auto","protocol":"chat","tools":true,"bytes":120000}`); w.Code != 200 {
 		t.Fatal(w.Code)
 	}
+	var detailed struct {
+		Selected   string `json:"selected"`
+		Candidates []struct {
+			ID       string `json:"id"`
+			Order    int    `json:"order"`
+			Eligible bool   `json:"eligible"`
+			Selected bool   `json:"selected"`
+		} `json:"candidates"`
+	}
+	if w := call("POST", "/admin/routing/simulate", "", `{"model":"auto","protocol":"chat","detail":true}`); w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &detailed) != nil {
+		t.Fatalf("detailed simulation failed: %d %s", w.Code, w.Body.String())
+	}
+	if len(detailed.Candidates) != 0 || detailed.Selected != "" {
+		t.Fatalf("unexpected empty-config simulation: %+v", detailed)
+	}
+}
+
+func TestRoutingSimulationDetailReportsSelection(t *testing.T) {
+	dir := t.TempDir()
+	vault, _ := credentials.Open(filepath.Join(dir, "vault"))
+	c := config.Default()
+	c.Sources = []config.Source{{
+		ID: "sim-source", Provider: "test", Adapter: "openai", BaseURL: "http://127.0.0.1:1",
+		Local: true, Enabled: true, AutoApproved: true, BillingMode: "free_allowance", MaxInflight: 1,
+		QuotaDomain: "sim-quota", QuotaMaxInflight: 1,
+		Models: []config.Model{{ID: "sim-model", Upstream: "sim-model", Protocols: []string{"chat"}, Tier: "silver", RatingBasis: "fixture", Tools: "none", MaxInputBytes: 4096}},
+	}}
+	c.Groups[0].Sources = []string{"sim-source"}
+	p, err := NewControlPlane(filepath.Join(dir, "config.json"), c, testKey, adminKey, vault)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer p.Close()
+	req := httptest.NewRequest("POST", "/admin/routing/simulate", strings.NewReader(`{"model":"auto/silver","protocol":"chat","detail":true}`))
+	req.Header.Set("Authorization", "Bearer "+adminKey)
+	w := httptest.NewRecorder()
+	p.ServeHTTP(w, req)
+	if w.Code != 200 {
+		t.Fatalf("simulation status=%d body=%s", w.Code, w.Body.String())
+	}
+	var result struct {
+		Selected   string `json:"selected"`
+		Candidates []struct {
+			ID       string `json:"id"`
+			Order    int    `json:"order"`
+			Reason   string `json:"reason"`
+			Eligible bool   `json:"eligible"`
+			Selected bool   `json:"selected"`
+		} `json:"candidates"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
+		t.Fatal(err)
+	}
+	if result.Selected != "sim-source/sim-model" || len(result.Candidates) != 1 {
+		t.Fatalf("unexpected detailed simulation: %+v", result)
+	}
+	candidate := result.Candidates[0]
+	if candidate.ID != result.Selected || candidate.Order != 1 || candidate.Reason != "eligible" || !candidate.Eligible || !candidate.Selected {
+		t.Fatalf("unexpected candidate details: %+v", candidate)
+	}
 }
 
 func TestAccountQuotaMoveCascadesToMemberSources(t *testing.T) {

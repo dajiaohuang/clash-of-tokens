@@ -404,6 +404,10 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     page.get_by_role("button", name="Apply changes", exact=True).click()
     expect(page.get_by_role("dialog")).not_to_be_visible()
     expect(page.get_by_role("row").filter(has=page.get_by_text("wizard-import", exact=True).first)).to_contain_text("Manual")
+    page.get_by_role("link", name="Routing", exact=True).click()
+    page.get_by_role("button", name="Simulate", exact=True).click()
+    expect(page.get_by_role("columnheader", name="Order", exact=True)).to_be_visible()
+    expect(page.get_by_text("No target selected; capacity or eligibility rules prevented dispatch.", exact=True)).to_be_visible()
     for label in ["Credentials", "Sources", "Models", "Groups", "Routing", "Health", "Metrics", "Browsers", "Devices", "Sessions", "Configuration", "Activity", "About"]:
         page.get_by_role("link", name=label, exact=True).click()
         expect(page.get_by_role("heading", name=label, exact=True)).to_be_visible()

@@ -411,3 +411,8 @@ Batch 73 makes source configuration fail closed when a source has no configured
 models. The central validator now rejects an empty model list before quota and
 model checks; a config regression covers both the rejection and a valid model
 record.
+
+Batch 74 makes the routing simulator show the router's ordered candidates and
+selected target without acquiring a lease or contacting an upstream. The
+existing reason-map response remains available to older callers; detailed
+simulation is opt in and covered by fallback-order, API and browser tests.
