@@ -14,6 +14,13 @@ type Status struct {
 	State          string    `json:"state"`
 	Browser        string    `json:"browser"`
 	Pages          int       `json:"pages"`
+	// MaxSessions is the configured browser session ceiling. BoundAccounts and
+	// BoundSources describe control-plane bindings, not authenticated pages;
+	// providers may retain additional upstream state outside this metadata
+	// probe.
+	MaxSessions    int       `json:"max_sessions,omitempty"`
+	BoundAccounts  int       `json:"bound_accounts,omitempty"`
+	BoundSources   int       `json:"bound_sources,omitempty"`
 	CheckedAt      time.Time `json:"checked_at"`
 	Authentication string    `json:"authentication"`
 }

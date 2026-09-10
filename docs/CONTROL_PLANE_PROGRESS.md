@@ -668,3 +668,10 @@ workflow builds Linux amd64, Windows amd64 and macOS arm64 gateway artifacts
 with cgo disabled. This proves the repository's repeatable build and test
 boundary, while live provider compatibility, signed releases and operator
 device/browser environments remain explicit external checks. See [CI](CI.md).
+
+Batch 124 extends **Browsers → Check connections** with the configured session
+limit and bound account/source counts alongside the CDP page and browser
+identity probe. These are clearly labeled configuration metadata: they do not
+claim authentication or upstream capacity. The API regression covers a
+connected synthetic CDP endpoint and ignores sources that are not bound to the
+profile.

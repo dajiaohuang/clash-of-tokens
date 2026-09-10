@@ -13,6 +13,13 @@ process as its own. Account Login and draft setup use the same ownership tracker
 Browser data directories are derived from the running gateway's startup browser
 state root, including when a different root is pending restart.
 
+**Check connections** probes each configured profile's loopback CDP endpoint and
+shows the browser identity, page count, configured session limit, and the
+number of accounts and sources bound to that profile. Bound counts are
+configuration metadata; they do not claim that a page is authenticated or that
+an upstream provider has capacity. Provider-specific session inventories remain
+on the Sessions page when an adapter exposes them.
+
 ## Explicit stop
 
 **Stop** opens a confirmation naming the recorded profile and PID. Only
