@@ -144,6 +144,8 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 		} `json:"provider_health"`
 		Accounts []struct {
 			ID                  string     `json:"id"`
+			CredentialRef       string     `json:"credential_ref"`
+			CredentialBinding   string     `json:"credential_binding"`
 			CredentialState     string     `json:"credential_state"`
 			CredentialVersion   uint64     `json:"credential_version"`
 			Enabled             bool       `json:"enabled"`
@@ -207,7 +209,7 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 		t.Fatalf("disabled provider was not classified: %+v", out.Providers[1])
 	}
 	a := out.Accounts[0]
-	if a.ID != "a" || a.CredentialState != "protected_reference" || a.CredentialVersion != 1 || a.Health != "untested" || a.AuthStatus != "authenticated" || a.Active != 0 || a.Limit != 1 || len(a.Sources) != 1 || a.Sources[0] != "s" || a.LastValidated == nil {
+	if a.ID != "a" || a.CredentialRef != "cred://account-key" || a.CredentialBinding != "account" || a.CredentialState != "protected_reference" || a.CredentialVersion != 1 || a.Health != "untested" || a.AuthStatus != "authenticated" || a.Active != 0 || a.Limit != 1 || len(a.Sources) != 1 || a.Sources[0] != "s" || a.LastValidated == nil {
 		t.Fatalf("unexpected account health: %+v", a)
 	}
 	if !a.Enabled || a.AutoApproved {
@@ -258,10 +260,10 @@ func TestAccountHealthReportsSourceCredentialBindings(t *testing.T) {
 	if len(rows) != 2 {
 		t.Fatalf("account rows = %+v", rows)
 	}
-	if rows[0].CredentialState != "protected_reference" || rows[0].CredentialVersion != 1 {
+	if rows[0].CredentialRef != "cred://source" || rows[0].CredentialBinding != "source" || rows[0].CredentialState != "protected_reference" || rows[0].CredentialVersion != 1 {
 		t.Fatalf("source-bound protected credential was not reported: %+v", rows[0])
 	}
-	if rows[1].CredentialState != "environment_present" || rows[1].CredentialVersion != 0 {
+	if rows[1].CredentialBinding != "environment" || rows[1].CredentialState != "environment_present" || rows[1].CredentialVersion != 0 {
 		t.Fatalf("source-bound environment credential was not reported: %+v", rows[1])
 	}
 }

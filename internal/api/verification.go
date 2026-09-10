@@ -39,6 +39,8 @@ type sourceVerification struct {
 type accountHealth struct {
 	ID                     string     `json:"id"`
 	Provider               string     `json:"provider"`
+	CredentialRef          string     `json:"credential_ref,omitempty"`
+	CredentialBinding      string     `json:"credential_binding"`
 	CredentialState        string     `json:"credential_state"`
 	CredentialVersion      uint64     `json:"credential_version,omitempty"`
 	CredentialTypeOverride bool       `json:"credential_type_override"`
@@ -468,6 +470,7 @@ func (p *ControlPlane) providerHealth(s *Server, accounts []accountHealth, entri
 }
 
 func (p *ControlPlane) accountHealth(s *Server, entries []audit.Entry) []accountHealth {
+	durable := p.service.Current().Config
 	capacities, _ := s.Router.CapacityStatus()
 	providerEnabled := map[string]bool{}
 	for _, provider := range s.cfg.Providers {
@@ -502,8 +505,9 @@ func (p *ControlPlane) accountHealth(s *Server, entries []audit.Entry) []account
 	}
 	out := make([]accountHealth, 0, len(s.cfg.Accounts))
 	for _, account := range s.cfg.Accounts {
-		credentialState, credentialVersion := p.accountCredentialState(s.cfg, account)
-		health := accountHealth{ID: account.ID, Provider: account.ProviderID, CredentialState: credentialState, CredentialVersion: credentialVersion, CredentialTypeOverride: account.CredentialTypeOverride, Enabled: account.Enabled, AutoApproved: account.AutoApproved, Health: "untested", AuthStatus: "not_checked", Limit: account.MaxInflight, Weight: account.Weight, LastValidationState: "not_checked", Sources: []string{}}
+		credentialState, credentialVersion := p.accountCredentialState(durable, account)
+		credentialRef, credentialBinding := p.accountCredentialProvenance(durable, account)
+		health := accountHealth{ID: account.ID, Provider: account.ProviderID, CredentialRef: credentialRef, CredentialBinding: credentialBinding, CredentialState: credentialState, CredentialVersion: credentialVersion, CredentialTypeOverride: account.CredentialTypeOverride, Enabled: account.Enabled, AutoApproved: account.AutoApproved, Health: "untested", AuthStatus: "not_checked", Limit: account.MaxInflight, Weight: account.Weight, LastValidationState: "not_checked", Sources: []string{}}
 		var lastValidation audit.Entry
 		hasValidation := false
 		for _, provider := range s.cfg.Providers {
@@ -575,6 +579,38 @@ func (p *ControlPlane) accountHealth(s *Server, entries []audit.Entry) []account
 		out = append(out, health)
 	}
 	return out
+}
+
+// accountCredentialProvenance returns only a protected reference and its
+// ownership class. It never reads or returns a credential value.
+func (p *ControlPlane) accountCredentialProvenance(c config.Config, account config.Account) (string, string) {
+	if account.CredentialRef != "" {
+		return account.CredentialRef, "account"
+	}
+	var ref string
+	for _, source := range c.Sources {
+		if source.AccountID != account.ID {
+			continue
+		}
+		if source.CredentialRef != "" {
+			if ref != "" && ref != source.CredentialRef {
+				return "", "multiple_sources"
+			}
+			ref = source.CredentialRef
+		}
+	}
+	if ref != "" {
+		return ref, "source"
+	}
+	for _, source := range c.Sources {
+		if source.AccountID == account.ID && source.KeyEnv != "" {
+			return "", "environment"
+		}
+	}
+	if account.BrowserProfileID != "" {
+		return "", "browser"
+	}
+	return "", "none"
 }
 
 // accountCredentialState reports the effective credential posture without
