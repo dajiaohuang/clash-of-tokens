@@ -475,3 +475,7 @@ binding evidence is classified as `verified` or `failed`, while entries from a
 previous credential/source binding are retained as `historical`. Health and
 Provider Detail display the state next to the timestamp, and API regressions
 cover both provider and account projections.
+
+Batch 86 keeps that provenance visible in the Health page's provider table as
+well as Provider Detail and account rows. The browser regression now checks a
+verified provider row after an explicit validation.

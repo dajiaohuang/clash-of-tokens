@@ -248,6 +248,9 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     page.get_by_role("button", name="Source details", exact=True).click()
     expect(page.get_by_role("heading", name="Source / openai", exact=True)).to_be_visible()
     page.get_by_role("button", name="Close", exact=True).click()
+    page.get_by_role("link", name="Health", exact=True).click()
+    health_provider_row = page.get_by_role("row").filter(has=page.get_by_text("openai", exact=True)).first
+    expect(health_provider_row).to_contain_text("verified")
     page.get_by_role("link", name="Overview", exact=True).click()
     expect(page.get_by_text("Sources with matching validation", exact=True).locator("xpath=following-sibling::dd[1]")).to_have_text("1")
     page.get_by_role("link", name="Credentials", exact=True).click()
