@@ -310,3 +310,12 @@ an upstream, and is labeled as impact rather than final candidate selection.
 API coverage verifies disabling the only Auto source changes the preview from
 one eligible candidate to zero; the browser flow continues to exercise the
 transactional diff and apply path.
+
+Batch 56 adds a credential replacement impact review in the browser control
+plane. Replacing a protected reference now pauses for a review showing bound
+accounts, inherited/direct sources and credential-type transition. Confirming
+the review performs the existing protected vault write; canceling leaves the
+new value untouched. The review explains that matching generation evidence is
+historical after rotation and that in-flight requests are unaffected. The
+browser regression covers the confirmation before continuing its rotation and
+verification checks.

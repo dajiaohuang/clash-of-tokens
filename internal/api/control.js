@@ -286,15 +286,27 @@ function credentialForm(existing,onSaved){
  const kind=select(['api_key','oauth','cookie','browser_session','username_password','cli_session','device_session','browser_profile'],existing?.kind||'api_key');
  const value=h('input',{type:'password',autocomplete:'new-password',placeholder:'New secret value'});
  const username=h('input',{autocomplete:'off',placeholder:'Username (username/password only)'});
- dialog(existing?'Replace credential':'Add credential',[h('div',{class:'form-grid'},field('Credential ID',id),field('Type',kind),field('Username',username),field('Secret value',value)),h('p',{class:'muted'},'The existing secret is never sent to this page. Saving replaces the protected value.')],[
-  button('Save credential',async()=>{
+ const formBody=[h('div',{class:'form-grid'},field('Credential ID',id),field('Type',kind),field('Username',username),field('Secret value',value)),h('p',{class:'muted'},'The existing secret is never sent to this page. Saving replaces the protected value.')];
+ let confirmed=false;
+ const save=async()=>{
    if(!existing&&S.credentials.some(c=>c.id==='cred://'+id.value))throw new Error('This credential ID exists. Use Replace from Credentials to change it.');
    const secret=kind.value==='username_password'?JSON.stringify({username:username.value,password:value.value}):value.value;
    const saved=await api('/admin/credentials/'+encodeURIComponent(id.value),{method:'PUT',body:JSON.stringify({kind:kind.value,source:'manual',value:secret})});
    value.value='';$('dialog').close();await refresh();
    onSaved?.(saved);
-  },'primary')
- ]);
+ };
+ const saveButton=button('Save credential',async()=>{
+  if(existing&&!confirmed){
+   const accountRows=(S.config.accounts||[]).filter(a=>a.credential_ref===existing.id).map(a=>({id:a.id,label:a.display_name||a.id}));
+   const accounts=accountRows.map(a=>a.label);
+   const sources=(S.config.sources||[]).filter(s=>s.credential_ref===existing.id||((!s.credential_ref)&&accountRows.some(a=>a.id===s.account_id))).map(s=>s.id);
+   confirmed=true;
+   dialog('Review credential replacement',[h('p',{class:'warning'},'Replace the protected value for '+existing.id+'? In-flight requests are unchanged; matching generation evidence becomes historical and future checks must establish the new credential.'),table(['Affected configuration','Entries'],[['Accounts',accounts.join(', ')||'None'],['Sources',sources.join(', ')||'None'],['Credential type',existing.kind+' → '+kind.value]])],[button('Back',()=>{confirmed=false;dialog(existing?'Replace credential':'Add credential',formBody,[saveButton])}),button('Replace credential',save,'danger')]);
+   return;
+  }
+  await save();
+ },'primary');
+ dialog(existing?'Replace credential':'Add credential',formBody,[saveButton]);
 }
 function deleteCredential(credential){
  dialog('Delete credential',h('p',{},'Delete '+credential.id+'? Accounts and sources must be unbound first.'),[

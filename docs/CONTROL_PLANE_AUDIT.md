@@ -53,10 +53,10 @@ must be checked again before final acceptance.
 | 42. Embedded frontend | Go-embedded static HTML/CSS/JS, no Node runtime | Packaging/build verification |
 | 43. Navigation | All named destinations; batch 32 adds bounded runtime execution events and source/outcome filters in Activity; Batch 54 includes declared usage in status/events | Complete content on every destination and broader event coverage |
 | 44. Search | Batch 36 adds explicit model/browser/device matches and tests all eight entity navigation paths | Broader naming/localization and large-catalog usability acceptance |
-| 45. Preview | Config diff, optimistic revision preview, and bounded read-only group eligibility/account/source impact counts before apply | Credential replacement preview and complete impact coverage for every sensitive action |
+| 45. Preview | Config diff, optimistic revision preview, bounded read-only group eligibility/account/source impact counts before apply, and credential replacement impact review | Complete impact coverage for every sensitive action |
 | 46. Central validation | Schema validation plus runtime prepare before apply | All special actions must retain the same invariants |
 | 47. Hot reload | Generation pinning and restart-required fields | Full browser confirmation of live vs pending runtime settings |
-| 48. Sensitive confirmation | Config preview, credential-delete confirmation, billing notices | All specified sensitive actions and cost warnings acceptance test |
+| 48. Sensitive confirmation | Config preview, credential-delete confirmation, credential replacement impact review, billing notices | All specified sensitive actions and cost warnings acceptance test |
 | 49. Secret-safe logs | Redacted vault/import/session/evidence responses; fixed execution categories; batch 32 stores bounded structured events without raw error/body/credential fields; Batch 54 stores only numeric declared usage/cost fields; generation and model-discovery HTTP errors use stable public categories | Global Secret representation and all adapter/error/log paths audit; pre-acquisition rejections not logged |
 | 50. Five epics | Work split into committed batches | A–E remain incomplete until their component rows are accepted |
 | 51. End-to-end workflow | API integration test covers protected credential → account → two inherited sources → Auto group → successful synthetic local API call without editing JSON | Browser-driven full install/import/login journey and live-provider call remain external-environment checks |
