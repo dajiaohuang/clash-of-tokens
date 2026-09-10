@@ -333,6 +333,8 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     page.get_by_role("link", name="Overview", exact=True).click()
     expect(page.get_by_text("Sources with matching validation", exact=True).locator("xpath=following-sibling::dd[1]")).to_have_text("1")
     page.get_by_role("link", name="Credentials", exact=True).click()
+    credential_row = page.get_by_role("row").filter(has=page.get_by_text("cred://ui-token", exact=True))
+    expect(credential_row).to_contain_text("openai")
     page.get_by_role("row").filter(has=page.get_by_text("cred://ui-token", exact=True)).get_by_role("button", name="Replace", exact=True).click()
     page.get_by_label("Secret value", exact=True).fill("replacement-synthetic-secret")
     page.get_by_role("button", name="Save credential", exact=True).click()
