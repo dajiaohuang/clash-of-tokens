@@ -296,7 +296,7 @@ function accounts(){
  ]),'No accounts. Add an account and bind a credential before enabling its sources.')];
 }
 function credentials(){
- return [pageHead('Credentials','Protected values are stored separately from configuration.',h('div',{},button('Import export',importCredentials),button('Add credential',()=>credentialForm(),'primary'))),table(['Credential','Type','Used by','Imported from','Updated','Actions'],S.credentials.map(c=>[
+ return [pageHead('Credentials','Protected values are stored separately from configuration.',h('div',{},button('Import export',importCredentials),button('Import token',importToken),button('Add credential',()=>credentialForm(),'primary'))),table(['Credential','Type','Used by','Imported from','Updated','Actions'],S.credentials.map(c=>[
   c.id,badge(c.kind),[...(S.config.accounts||[]).filter(a=>a.credential_ref===c.id).map(a=>a.id),...S.config.sources.filter(s=>s.credential_ref===c.id).map(s=>s.id)].join(', ')||'Unbound',c.source,new Date(c.updated_at).toLocaleString(),[button('Replace',()=>credentialForm(c)),button('Delete',()=>deleteCredential(c),'danger')]
  ]),'No credentials. Add a key or session, then bind its reference to an account.')];
 }
@@ -393,6 +393,22 @@ function browsers(){
  return [pageHead('Browsers','Dedicated profiles keep account browser state separate.',button('Add profile',()=>edit('browser_profiles',{id:'',enabled:true,engine:'chrome',cdp_url:'http://127.0.0.1:9223'},true),'primary')),table(['Profile','Engine','CDP endpoint','Accounts','Actions'],(S.config.browser_profiles||[]).map(p=>[
   p.id,p.engine,p.cdp_url,(S.config.accounts||[]).filter(a=>a.browser_profile_id===p.id).map(a=>a.display_name||a.id).join(', ')||'Unbound',[button(p.enabled?'Disable':'Enable',()=>toggle('browser_profiles',p)),button('Edit',()=>edit('browser_profiles',p)),button('Delete',()=>remove('browser_profiles',p),'danger')]
  ]),'No profiles. Add a profile, bind it from Accounts, then use Login.'),...environment('browsers').slice(1)];
+}
+function importToken(){
+ const mode=select(['environment','codex','gemini-cli','oauth'],'environment');
+ const source=select(S.config.sources.filter(s=>s.key_env).map(s=>s.id),'',true);
+ const kind=select(['api_key','oauth','cookie'],'api_key');
+ const file=h('input',{type:'file',accept:'.json'});
+ dialog('Import token',[field('Import from',mode),field('Configured source for environment import',source),field('Environment credential type',kind),field('CLI session JSON file',file),h('p',{class:'muted'},'Environment import reads only the selected source’s configured variable. CLI import copies the current access token only; refresh tokens and account IDs are not imported. Source account-ID configuration may still be required.')],[button('Preview token',async()=>{
+  let payload,path;
+  if(mode.value==='environment'){path='/admin/credentials/import-env';payload={source:source.value,kind:kind.value}}
+  else {const chosen=file.files[0];if(!chosen||chosen.size>1024*1024)throw new Error('Choose a CLI JSON file up to 1 MiB.');path='/admin/credentials/import-cli';payload={format:mode.value,data:await chosen.text()}}
+  const preview=await api(path,{method:'POST',body:JSON.stringify(payload)});
+  dialog('Token import preview',[h('p',{},'Available: '+(preview.available?'Yes':'No')),h('p',{},'Type: '+preview.kind),h('p',{class:'muted'},preview.message||'Variable: '+preview.variable+'. The value is never returned to this page.')],[button('Save imported token',async()=>{
+   if(!preview.available)throw new Error('The selected credential is unavailable.');
+   await api(path,{method:'POST',body:JSON.stringify({...payload,apply:true})});payload=null;$('dialog').close();await refresh();message('Imported token saved. Bind its new reference from Accounts.');
+  },'primary')]);
+ },'primary')]);
 }
 function sessions(){
  const target=h('div',{},h('p',{},'Loading session metadata…'));

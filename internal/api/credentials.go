@@ -27,6 +27,9 @@ func (s *Server) credentialAdmin(w http.ResponseWriter, r *http.Request) {
 		fail(w, 503, "credential vault not configured")
 		return
 	}
+	if s.tokenImport(w, r) {
+		return
+	}
 	if r.URL.Path == "/admin/credentials/import" && r.Method == "POST" {
 		var p struct {
 			Format   string `json:"format"`

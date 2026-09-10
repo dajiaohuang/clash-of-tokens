@@ -39,6 +39,7 @@ with tempfile.TemporaryDirectory(prefix="cot-ui-") as directory:
     env = os.environ.copy()
     env["COT_API_KEY"] = "ui-test-data-key-123456789"
     env["COT_ADMIN_KEY"] = "ui-test-admin-key-123456789"
+    env["COT_OPENAI_KEY"] = "synthetic-env-token-not-for-display"
     upstream = ThreadingHTTPServer(("127.0.0.1", 0), SyntheticUpstream)
     threading.Thread(target=upstream.serve_forever, daemon=True).start()
     env["COT_UI_UPSTREAM"] = f"http://127.0.0.1:{upstream.server_port}/v1"
