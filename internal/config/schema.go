@@ -42,7 +42,7 @@ func schemaFields(t reflect.Type) []FieldSchema {
 			"credential_mode": {"api_key", "oauth", "browser_session", "cookie", "username_password", "cli_session", "device_session", "anonymous"},
 			"tier":            {"unrated", "bronze", "silver", "gold", "platinum", "diamond"}, "min_tier": {"bronze", "silver", "gold", "platinum", "diamond"},
 			"tools": {"none", "native", "unknown"}, "pool_strategy": {"round-robin", "least-load", "sticky", "weighted"},
-			"type": {"auto", "select", "fallback", "latency", "load-balance"},
+			"type": {"auto", "select", "fallback", "latency", "load-balance", "weighted"},
 		}
 		s.Enum = enums[name]
 		if name == "protocols" && s.Item != nil {

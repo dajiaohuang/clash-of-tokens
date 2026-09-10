@@ -61,6 +61,7 @@ type Runtime struct {
 	BodyReadTimeoutMS int   `json:"body_read_timeout_ms"`
 }
 type Source struct {
+	Weight             int                 `json:"weight,omitempty"`
 	CredentialResolver func(string) string `json:"-"`
 	AccountID          string              `json:"account_id,omitempty"`
 	CredentialRef      string              `json:"credential_ref,omitempty"`
@@ -187,6 +188,9 @@ func (c Config) Validate() error {
 	gigaChatBrowserCount := 0
 	buildBrowserCount := 0
 	for _, s := range c.Sources {
+		if s.Weight < 0 || s.Weight > 10000 {
+			return fmt.Errorf("source %s: invalid weight", s.ID)
+		}
 		if err := s.ValidateMetadata(); err != nil {
 			return fmt.Errorf("source %s: %w", s.ID, err)
 		}
@@ -358,7 +362,7 @@ func (c Config) Validate() error {
 		}
 		gids[g.ID] = true
 		switch g.Type {
-		case "auto", "select", "fallback", "latency", "load-balance":
+		case "auto", "select", "fallback", "latency", "load-balance", "weighted":
 		default:
 			return fmt.Errorf("group %s: invalid type", g.ID)
 		}

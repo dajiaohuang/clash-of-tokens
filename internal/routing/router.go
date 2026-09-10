@@ -19,15 +19,18 @@ type Target struct {
 	Model  config.Model
 }
 type state struct {
-	enabled   bool
-	active    int
-	cooldown  time.Time
-	failures  uint64
-	completed uint64
-	latency   float64
-	blocked   bool
+	virtualFinish float64
+	enabled       bool
+	active        int
+	cooldown      time.Time
+	failures      uint64
+	completed     uint64
+	latency       float64
+	blocked       bool
 }
 type quota struct {
+	lastDispatch  uint64
+	virtualFinish float64
 	active, limit int
 	cooldown      time.Time
 }
@@ -52,6 +55,9 @@ type Router struct {
 	accounts       []*quota
 	parentEnabled  []bool
 	parentApproved []bool
+	poolStrategies []string
+	accountWeights []float64
+	hasPools       bool
 	waiting        int
 	retired        bool
 	cursor         uint64
@@ -61,14 +67,16 @@ type Router struct {
 // Capacity survives configuration generations, including leases held by
 // retired routers. A hot update never doubles an account's available slots.
 type capacity struct {
-	mu            sync.Mutex
-	active        int
-	sourceStates  map[string]*state
-	quotaStates   map[string]*quota
-	accountStates map[string]*quota
-	current       *Router
+	mu               sync.Mutex
+	active           int
+	dispatchSequence uint64
+	sourceStates     map[string]*state
+	quotaStates      map[string]*quota
+	accountStates    map[string]*quota
+	current          *Router
 }
 type Query struct {
+	Affinity string `json:"affinity,omitempty"`
 	Model    string `json:"model"`
 	Protocol string `json:"protocol"`
 	Tools    bool   `json:"tools"`
@@ -113,6 +121,11 @@ func New(c config.Config) *Router {
 		r.parentEnabled = append(r.parentEnabled, enabled)
 		r.parentApproved = append(r.parentApproved, approved)
 		r.accounts = append(r.accounts, accountLimits[s.AccountID])
+		r.poolStrategies = append(r.poolStrategies, providerConfig[s.Provider].PoolStrategy)
+		r.accountWeights = append(r.accountWeights, float64(max(1, accountConfig[s.AccountID].Weight)))
+		if accountLimits[s.AccountID] != nil {
+			r.hasPools = true
+		}
 		r.state[i] = &state{enabled: s.Enabled}
 		r.sourceStates[s.ID] = r.state[i]
 		if qs[s.QuotaDomain] == nil {
@@ -259,6 +272,10 @@ func (r *Router) choose(q Query, now time.Time) (int, bool) {
 	}
 	g := r.groups[key]
 	candidates := r.candidates[key]
+	var preferred map[string]string
+	if r.hasPools && g.Type != "fallback" && g.Type != "select" {
+		preferred = r.poolPreferences(q, candidates, now)
+	}
 	position := 0
 	if len(candidates) > 0 {
 		position = int(r.cursor % uint64(len(candidates)))
@@ -279,6 +296,10 @@ func (r *Router) choose(q Query, now time.Time) (int, bool) {
 			return -1, true
 		}
 		st := r.state[t.Source]
+		source := r.cfg.Sources[t.Source]
+		if account, ok := preferred[source.Provider]; ok && source.AccountID != "" && account != source.AccountID {
+			continue
+		}
 		quota := r.quotas[t.Source]
 		if a := r.accounts[t.Source]; a != nil && a.active >= a.limit {
 			continue
@@ -288,6 +309,8 @@ func (r *Router) choose(q Query, now time.Time) (int, bool) {
 		}
 		value := float64(st.active) / float64(r.cfg.Sources[t.Source].MaxInflight)
 		switch g.Type {
+		case "weighted":
+			value = st.virtualFinish
 		case "fallback", "select":
 			value = float64(g.members[r.cfg.Sources[t.Source].ID])
 		case "latency":
@@ -330,9 +353,13 @@ func (r *Router) Acquire(ctx context.Context, q Query) (*Lease, error) {
 			t := r.targets[idx]
 			r.active++
 			r.state[t.Source].active++
+			r.state[t.Source].virtualFinish += 1 / float64(max(1, r.cfg.Sources[t.Source].Weight))
 			r.quotas[t.Source].active++
 			if a := r.accounts[t.Source]; a != nil {
 				a.active++
+				r.dispatchSequence++
+				a.lastDispatch = r.dispatchSequence
+				a.virtualFinish += 1 / r.accountWeights[t.Source]
 			}
 			r.cursor++
 			return &Lease{router: r, Target: t, started: time.Now(), state: r.state[t.Source], quota: r.quotas[t.Source], account: r.accounts[t.Source]}, nil

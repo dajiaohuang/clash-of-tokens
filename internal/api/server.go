@@ -259,10 +259,15 @@ func (s *Server) generate(w http.ResponseWriter, r *http.Request, proto, pathMod
 	if r.Header.Get("X-COT-Session") != "" {
 		meta.Stateful = true
 	}
+	affinity := r.Header.Get("X-COT-Affinity")
+	if len(affinity) > 128 {
+		fail(w, 400, "affinity identifier exceeds 128 bytes")
+		return
+	}
 	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(s.cfg.Runtime.RequestTimeoutMS)*time.Millisecond)
 	defer cancel()
 	queueCtx, qcancel := context.WithTimeout(ctx, time.Duration(s.cfg.Runtime.QueueTimeoutMS)*time.Millisecond)
-	lease, e := s.Router.Acquire(queueCtx, routing.Query{Model: meta.Model, Protocol: proto, Tools: meta.Tools, Bytes: int64(n), Stateful: meta.Stateful, Vision: meta.Vision})
+	lease, e := s.Router.Acquire(queueCtx, routing.Query{Model: meta.Model, Protocol: proto, Tools: meta.Tools, Bytes: int64(n), Stateful: meta.Stateful, Vision: meta.Vision, Affinity: affinity})
 	qcancel()
 	if e != nil {
 		s.rejected.Add(1)
