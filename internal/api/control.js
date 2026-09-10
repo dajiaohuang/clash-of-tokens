@@ -365,9 +365,17 @@ async function providerDetail(provider){
   h('h3',{},'Sources'),table(['Source','Account','Routing state','Models','Matching generation evidence','Actions'],sources.map(s=>[s.id,s.account_id||'No account',state(s),s.models.length,verified.has(s.id)?'At least one model/protocol':'Not established',[button('Source details',()=>sourceDetail(s)),button('Validate source',()=>validateSource(s)),button('Discover models',()=>discoverModels(s))]]),'No sources configured.'),
   h('h3',{},'Provider routing eligibility'),h('p',{class:'muted'},'Read-only simulation for a 100-byte text request. Results explain eligibility, not final candidate selection.'),field('Provider group',group),field('Provider protocol',protocol),explain,explanations
  ],[
+  configured?button('Validate provider',()=>validateProvider(provider),'primary'):null,
   button('Provider settings',()=>edit('providers',configured||{id:provider.id,enabled:true,auto_approved:false,pool_strategy:'round-robin'},!configured)),
   button('Add account',()=>addAccount(provider.id)),button('Add source',()=>addSource(provider.id),'primary')
  ]);
+}
+async function validateProvider(provider){
+ const result=await api('/admin/providers/'+encodeURIComponent(provider.id)+'/validate',{method:'POST'});
+ await refresh();
+ const checks=result.checks||{};
+ const rows=[['Provider',provider.id],['Status',result.verified?'Verified':result.status||'Failed'],['Account',result.account||'Not reported'],['Source / model',result.source?(result.source+' / '+result.model):'Browser authentication'],['Protocol',result.protocol||'Not applicable'],['Checked at',result.checked_at||'Not reported'],['History saved',result.history_recorded?'Yes':'No'],['Connection',checks.connection||'Not reported'],['Authentication',checks.auth||result.status||'Not reported'],['Request',checks.request||'Not applicable'],['Streaming',checks.streaming||'Not applicable'],['Completion',checks.completion||'Not applicable'],['Latency',checks.duration_ms===undefined?'Not reported':Number(checks.duration_ms).toFixed(1)+' ms'],['Output observed',result.output_observed===undefined?'Not reported':result.output_observed?'Yes':'No'],['Error',result.result?.upstream_error||'None']];
+ dialog('Provider validation',[h('p',{class:'muted'},'One explicit check uses the first configured source/model/protocol. Browser-only providers use the first account authentication check. This does not enable routing or prove every model, capability or account.'),table(['Check','Result'],rows)]);
 }
 function overview(){
  const c=S.config,status=S.status,sources=c.sources||[],accounts=c.accounts||[];
@@ -397,7 +405,7 @@ function providers(){
   const entries=S.catalog.filter(p=>(type.value==='all'||p.kind===type.value)&&p.id.toLowerCase().includes(query.value.toLowerCase()));
   target.replaceChildren(table(['Provider','Type','Protocols','Accounts','Implementation','State / actions'],entries.map(p=>{
    const configured=(S.config.providers||[]).find(x=>x.id===p.id);
-  return [button(p.id,()=>providerDetail(p)),badge(p.kind),(p.protocols||[]).join(', '),(S.config.accounts||[]).filter(a=>a.provider_id===p.id).length,p.implementation,[configured?button(configured.enabled?'Disable':'Enable',()=>toggle('providers',configured)):badge('Not configured'),configured?button(configured.auto_approved?'Remove Auto':'Allow Auto',()=>toggleAuto('providers',configured)):null,button('Open',()=>providerDetail(p))]];
+  return [button(p.id,()=>providerDetail(p)),badge(p.kind),(p.protocols||[]).join(', '),(S.config.accounts||[]).filter(a=>a.provider_id===p.id).length,p.implementation,[configured?button(configured.enabled?'Disable':'Enable',()=>toggle('providers',configured)):badge('Not configured'),configured?button(configured.auto_approved?'Remove Auto':'Allow Auto',()=>toggleAuto('providers',configured)):null,configured?button('Validate',()=>validateProvider(p)):null,button('Open',()=>providerDetail(p))]];
   })));
  }
  query.oninput=draw;type.onchange=draw;draw();

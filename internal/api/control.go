@@ -190,6 +190,9 @@ func (p *ControlPlane) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if p.sourceCheckAdmin(w, r, g.server) {
 				return
 			}
+			if p.providerValidateAdmin(w, r, g.server) {
+				return
+			}
 			if p.accountValidateAdmin(w, r, g.server) {
 				return
 			}

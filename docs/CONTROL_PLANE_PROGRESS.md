@@ -204,12 +204,19 @@ CLI format references: [Codex auth fixture](https://github.com/openai/codex/blob
     model records these IDs as disabled, unrated, not Auto-approved declared /
     canonical values; no capability or quality is inferred. Parser tests cover
     metadata and pagination. See [model discovery](MODEL_DISCOVERY.md).
+43. Provider validation now exposes `POST /admin/providers/{id}/validate`.
+    Configured providers use the first source/model/protocol through the existing
+    staged stream check; providers with browser-only accounts fall back to the
+    existing non-generating authentication check. The action preserves redacted
+    evidence, leaves all routing switches unchanged, and is available from both
+    Providers and Provider Detail. Synthetic API and browser regression tests
+    cover source and browser fallback paths. See [provider detail](PROVIDER_DETAIL.md).
 
 Discovery protocol references: [Anthropic models](https://platform.claude.com/docs/en/api/models/list),
 [Gemini models](https://ai.google.dev/api/models),
 [OpenAI models](https://platform.openai.com/docs/api-reference/models).
 
-Validation: `go test ./...` passed, 589 tests in 38 packages on Windows.
+Validation: `go test ./...` passed, 598 tests in 38 packages on Windows.
 Windows and Linux-target `govulncheck` reported no vulnerabilities.
 Browser regression: credential creation/redaction, account binding, source
 creation, group membership, preview/apply, every navigation destination and

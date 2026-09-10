@@ -1666,6 +1666,7 @@ GET  /admin/providers/{id}
 
 POST /admin/providers/{id}/enable
 POST /admin/providers/{id}/disable
+POST /admin/providers/{id}/validate
 
 GET  /admin/accounts
 POST /admin/accounts

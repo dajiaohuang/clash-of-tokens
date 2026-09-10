@@ -55,8 +55,8 @@ TTFT. Three samples are not a load test, statistical latency estimate, quality
 rating or future-availability guarantee. Individual completed validation records
 are persisted when storage succeeds; the aggregate timing table is session-only.
 
-The isolated browser regression checks detail rates/evidence, eligibility output,
-three successful samples and their four total history records (including the
-earlier single check), stop-on-failure, explicit cancellation and close behavior.
+The isolated browser regression checks detail rates/evidence, provider and source
+validation, eligibility output, three successful samples and their five total
+validation records, stop-on-failure, explicit cancellation and close behavior.
 It uses a local synthetic upstream and synthetic held requests, with no real
 provider credentials or generation.

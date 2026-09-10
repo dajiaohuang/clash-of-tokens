@@ -102,3 +102,87 @@ func TestAccountValidateUsesConfiguredSourceAndRecordsAccount(t *testing.T) {
 		t.Fatal("account validation enabled the disabled source")
 	}
 }
+
+func TestProviderValidateUsesFirstConfiguredSource(t *testing.T) {
+	calls := 0
+	up := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		w.Header().Set("Content-Type", "text/event-stream")
+		fmt.Fprint(w, "data: {\"choices\":[{\"delta\":{\"content\":\"OK\"}}]}\n\n")
+		fmt.Fprint(w, "data: [DONE]\n\n")
+	}))
+	defer up.Close()
+	c := config.Default()
+	c.Providers = []config.Provider{{ID: "provider", Enabled: true}}
+	c.Sources = []config.Source{{ID: "first", Provider: "provider", Adapter: "openai", BaseURL: up.URL, Local: true, Enabled: false, MaxInflight: 1, QuotaDomain: "quota", QuotaMaxInflight: 1, Models: []config.Model{{ID: "model", Upstream: "upstream", Protocols: []string{"chat"}, Tier: "unrated", Tools: "none", MaxInputBytes: 1024}}}}
+	dir := t.TempDir()
+	vault, err := credentials.Open(filepath.Join(dir, "vault"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, err := NewControlPlane(filepath.Join(dir, "config.json"), c, testKey, adminKey, vault)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer p.Close()
+	r := httptest.NewRequest("POST", "/admin/providers/provider/validate", nil)
+	r.Header.Set("Authorization", "Bearer "+adminKey)
+	w := httptest.NewRecorder()
+	p.ServeHTTP(w, r)
+	var result ValidationEvidence
+	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &result) != nil || !result.Verified || result.Source != "first" || result.Model != "model" || result.Protocol != "chat" || calls != 1 {
+		t.Fatalf("status=%d calls=%d body=%s result=%+v", w.Code, calls, w.Body.String(), result)
+	}
+	if p.current.server.Router.Status()[0].Enabled {
+		t.Fatal("provider validation enabled the disabled source")
+	}
+}
+
+func TestProviderValidateRejectsUnconfiguredProvider(t *testing.T) {
+	dir := t.TempDir()
+	vault, err := credentials.Open(filepath.Join(dir, "vault"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, err := NewControlPlane(filepath.Join(dir, "config.json"), config.Default(), testKey, adminKey, vault)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer p.Close()
+	r := httptest.NewRequest("POST", "/admin/providers/missing/validate", nil)
+	r.Header.Set("Authorization", "Bearer "+adminKey)
+	w := httptest.NewRecorder()
+	p.ServeHTTP(w, r)
+	if w.Code != 404 || !strings.Contains(w.Body.String(), "unknown configured provider") {
+		t.Fatalf("status=%d body=%s", w.Code, w.Body.String())
+	}
+}
+
+func TestProviderValidateFallsBackToBrowserAccount(t *testing.T) {
+	dir := t.TempDir()
+	c := config.Default()
+	c.Providers = []config.Provider{{ID: "custom", Enabled: true}}
+	c.Accounts = []config.Account{{ID: "browser-account", ProviderID: "custom", BrowserProfileID: "profile", QuotaDomain: "quota", MaxInflight: 1, Weight: 1}}
+	c.BrowserProfiles = []config.BrowserProfile{{ID: "profile", Enabled: true, Engine: "chrome", CDPURL: "http://127.0.0.1:19998"}}
+	vault, err := credentials.Open(filepath.Join(dir, "vault"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, err := NewControlPlane(filepath.Join(dir, "config.json"), c, testKey, adminKey, vault)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer p.Close()
+	r := httptest.NewRequest("POST", "/admin/providers/custom/validate", nil)
+	r.Header.Set("Authorization", "Bearer "+adminKey)
+	w := httptest.NewRecorder()
+	p.ServeHTTP(w, r)
+	var result struct {
+		Status          string `json:"status"`
+		Account         string `json:"account"`
+		HistoryRecorded bool   `json:"history_recorded"`
+	}
+	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &result) != nil || result.Status != "unsupported" || result.Account != "browser-account" || !result.HistoryRecorded {
+		t.Fatalf("status=%d body=%s result=%+v", w.Code, w.Body.String(), result)
+	}
+}
