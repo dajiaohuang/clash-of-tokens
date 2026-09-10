@@ -320,8 +320,8 @@ function loginEvidence(a,watch=false,launchMessage=''){
  run();
 }
 function accounts(){
- return [pageHead('Accounts','Account switches and capacity apply across their sources.',button('Add account',()=>addAccount(),'primary')),table(['Account','Provider','Credential','Browser authentication','Quota / concurrency','Auto','Actions'],(S.config.accounts||[]).map(a=>[
-  a.display_name||a.id,a.provider_id,a.credential_ref||'Not bound',accountAuth(a),a.quota_domain+' / '+a.max_inflight,badge(a.auto_approved?'Approved':'Manual',a.auto_approved?'accent':''),
+ return [pageHead('Accounts','Account switches and capacity apply across their sources.',button('Account pools',accountPools),button('Refresh capacity',refresh),button('Add account',()=>addAccount(),'primary')),table(['Account','Provider','Credential','Browser authentication','Quota / in flight','Auto','Actions'],(S.config.accounts||[]).map(a=>[
+  a.display_name||a.id,a.provider_id,a.credential_ref||'Not bound',accountAuth(a),a.quota_domain+' · '+((S.status.accounts||[]).find(x=>x.id===a.id)?.active||0)+' / '+a.max_inflight,badge(a.auto_approved?'Approved':'Manual',a.auto_approved?'accent':''),
   [button(a.enabled?'Disable':'Enable',()=>toggle('accounts',a)),button('Edit',()=>edit('accounts',a)),a.browser_profile_id?button('Login',async()=>{const result=await api('/admin/accounts/'+encodeURIComponent(a.id)+'/login',{method:'POST'});loginEvidence(a,true,result.message)}):null,a.browser_profile_id?button('Check login',()=>loginEvidence(a)):null,button('Delete',()=>remove('accounts',a),'danger')]
  ]),'No accounts. Add an account and bind a credential before enabling its sources.')];
 }
@@ -335,6 +335,25 @@ function importBrowserCookies(){
    if(!preview.count)throw new Error('No cookies available.');
    await api(path,{method:'POST',body:JSON.stringify({...payload,apply:true})});$('dialog').close();await refresh();message('Cookies saved. Bind the new reference from Accounts and check login separately.');
   },'primary')]);
+ },'primary')]);
+}
+function accountPools(){
+ dialog('Account pools',table(['Provider','Strategy','Accounts','Actions'],(S.config.providers||[]).map(p=>[p.id,p.pool_strategy||'round-robin',(S.config.accounts||[]).filter(a=>a.provider_id===p.id).length,button('Edit pool',()=>editPool(p))])));
+}
+function editPool(provider){
+ const base=clone(S.config),revision=S.revision,strategy=select(['round-robin','least-load','sticky','weighted'],provider.pool_strategy||'round-robin');
+ const rows=(base.accounts||[]).filter(a=>a.provider_id===provider.id).map(a=>({a,enabled:h('input',{type:'checkbox',checked:a.enabled,'aria-label':'Enable '+a.id}),weight:h('input',{type:'number',min:1,max:10000,value:a.weight,'aria-label':'Weight '+a.id}),limit:h('input',{type:'number',min:1,max:10000,value:a.max_inflight,'aria-label':'Concurrency '+a.id})}));
+ dialog('Edit account pool',[field('Pool strategy',strategy),h('p',{class:'muted'},'Account capacity is shared across its sources. Explicit fallback/select order and weighted source groups take precedence over account-pool selection.'),table(['Account','Enabled','Weight','Concurrent requests','In flight'],rows.map(x=>[x.a.id,x.enabled,x.weight,x.limit,(S.status.accounts||[]).find(a=>a.id===x.a.id)?.active||0]))],[button('Review pool changes',()=>{
+  const next=clone(base);next.providers.find(p=>p.id===provider.id).pool_strategy=strategy.value;
+  for(const x of rows){const a=next.accounts.find(a=>a.id===x.a.id);Object.assign(a,{enabled:x.enabled.checked,weight:Number(x.weight.value),max_inflight:Number(x.limit.value)})}
+  return preview(next,'Update account pool '+provider.id,()=>editPool(provider),base,revision);
+ },'primary')]);
+}
+function editQuota(domain){
+ const base=clone(S.config),revision=S.revision,limit=h('input',{type:'number',min:1,max:10000,value:domain.limit});
+ dialog('Edit shared quota',[h('p',{},domain.id+' · '+domain.sources.length+' sources · '+domain.active+' requests currently in flight'),field('Shared concurrent requests',limit),h('p',{class:'muted'},'Updates every source in this domain in one transaction. Lowering the limit lets existing requests finish and restricts new requests until capacity is available.')],[button('Review quota changes',()=>{
+  const next=clone(base);for(const source of next.sources){if(source.quota_domain===domain.id)source.quota_max_inflight=Number(limit.value)}
+  return preview(next,'Update shared quota '+domain.id,()=>editQuota(domain),base,revision);
  },'primary')]);
 }
 function credentials(){
@@ -411,7 +430,7 @@ function health(){
  return [pageHead('Health','Recorded outcomes, cooldowns and account capacity.'),table(['Source','State','In flight','Success / failure','Average duration','Cooldown until'],S.config.sources.map(source=>{
   const s=S.status.sources.find(x=>x.id===source.id)||{};
   return [source.id,state(source),s.active||0,(s.completed||0)+' / '+(s.failures||0),s.latency_ms?Math.round(s.latency_ms)+' ms':'Not measured',Date.parse(s.cooldown)>Date.now()?new Date(s.cooldown).toLocaleString():'—'];
- }))];
+ })),h('h2',{},'Shared quota domains'),h('p',{class:'muted'},'Each domain is counted once, including requests finishing after a configuration change.'),table(['Domain','In flight / limit','Sources','Actions'],(S.status.quota_domains||[]).map(q=>[q.id+(q.retired?' (retiring)':''),q.active+' / '+q.limit,q.sources.join(', ')||'Finishing previous configuration',q.retired?null:button('Edit shared quota',()=>editQuota(q))]))];
 }
 function metrics(){
  const s=S.status;

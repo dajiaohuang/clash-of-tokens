@@ -41,8 +41,8 @@ must be checked again before final acceptance.
 | 30. Discovery hub | Separate browser/export/environment/CLI import actions | Unified Discover Accounts candidates and import/bind flow |
 | 31. Shared credential | Account reference shared by multiple sources and quota domain | End-to-end reference reuse/capacity display |
 | 32. Manual binding override | Matching and incompatible-type rejection | Explicit reviewed type-override requested by the synthesis is absent |
-| 33. Quota domain view | Quota configuration and shared router counters | Domain tree, runtime totals and transactional shared-domain editor |
-| 34. Account pools | Four router strategies and account weights | Pool view with per-account switches/capacity/weights |
+| 33. Quota domain view | Batch 26 adds domain members/shared counters, retiring leases and atomic all-member limit editing | Account/domain moves and rename behavior still need complete UX/runtime audit |
+| 34. Account pools | Four router strategies; batch 26 adds pool editor, account switches/capacity/weights and UI persistence tests | Broader end-to-end dispatch/strategy acceptance |
 | 35. Sessions | ChatGPT metadata and expire/clear | Other stateful adapter inventories and controls |
 | 36. Browsers | Registry, CDP status, account login | Owned-process launch/stop/open-provider and session capacity view |
 | 37. Login wizard | Separate account/profile/import/login controls | Unified existing/isolated/import/manual path ending in Save account |

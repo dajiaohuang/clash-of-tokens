@@ -68,7 +68,8 @@ func (p *ControlPlane) bindingWithMetadata(c config.Config, s config.Source, met
 }
 
 func (s *Server) runtimeStatus() map[string]any {
-	return map[string]any{"sources": s.Router.Status(), "requests": s.requests.Load(), "rejected": s.rejected.Load(), "buffered_bytes": s.buffered.Load(), "output_bytes": s.outputBytes.Load(), "stream_errors": s.streamErrors.Load(), "live_verified_sources": 0, "verification": []sourceVerification{}}
+	accounts, domains := s.Router.CapacityStatus()
+	return map[string]any{"accounts": accounts, "quota_domains": domains, "sources": s.Router.Status(), "requests": s.requests.Load(), "rejected": s.rejected.Load(), "buffered_bytes": s.buffered.Load(), "output_bytes": s.outputBytes.Load(), "stream_errors": s.streamErrors.Load(), "live_verified_sources": 0, "verification": []sourceVerification{}}
 }
 
 func (p *ControlPlane) controlStatus(s *Server) map[string]any {

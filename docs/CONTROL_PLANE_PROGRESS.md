@@ -112,12 +112,17 @@ CLI format references: [Codex auth fixture](https://github.com/openai/codex/blob
     catalog/configuration/generation layers. Synthetic UI regression confirms
     count 1 after validation and 0 after credential replacement.
     See [verification semantics](VERIFICATION.md).
+26. Account and shared-domain runtime capacity snapshots, including retiring
+    leases; provider account-pool editor and transactional shared-domain limit
+    editor. Router tests cover shared counting and reductions below active use;
+    UI regression covers preview/apply and persisted pool/domain values.
+    See [capacity controls](CAPACITY_CONTROLS.md).
 
 Discovery protocol references: [Anthropic models](https://platform.claude.com/docs/en/api/models/list),
 [Gemini models](https://ai.google.dev/api/models),
 [OpenAI models](https://platform.openai.com/docs/api-reference/models).
 
-Validation: `go test ./...` passed, 538 tests in 38 packages on Windows.
+Validation: `go test ./...` passed, 540 tests in 38 packages on Windows.
 Windows and Linux-target `govulncheck` reported no vulnerabilities.
 Browser regression: credential creation/redaction, account binding, source
 creation, group membership, preview/apply, every navigation destination and
