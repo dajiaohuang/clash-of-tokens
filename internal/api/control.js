@@ -394,7 +394,7 @@ async function providerDetail(provider){
   const result=await api('/admin/routing/simulate',{method:'POST',body:JSON.stringify({model:group.value,protocol:protocol.value,bytes:100})});
   explanations.replaceChildren(table(['Source / model','Eligibility'],Object.entries(result).filter(([id])=>sources.some(s=>id.startsWith(s.id+'/'))).map(([id,reason])=>[id,reason]),'No configured models for this provider.'));
  });
- const rows=[['Type',provider.kind],['Adapter',provider.adapter],['Protocols',(provider.protocols||[]).join(', ')],['Implementation',provider.implementation],['Credential types',(descriptor?.credential_modes||[]).join(', ')],['Browser login check',descriptor?.browser_auth_check?'Supported':'Not implemented'],['Upstream verification',provider.live_verified?'Catalog contains live evidence':'Not live verified']];
+ const rows=[['Type',providerTypeLabel(provider)],['Adapter',provider.adapter],['Protocols',(provider.protocols||[]).join(', ')],['Implementation',provider.implementation],['Credential types',(descriptor?.credential_modes||[]).join(', ')],['Browser login check',descriptor?.browser_auth_check?'Supported':'Not implemented'],['Upstream verification',provider.live_verified?'Catalog contains live evidence':'Not live verified']];
  dialog(provider.id,[
   h('dl',{class:'key-value'},rows.flatMap(([k,v])=>[h('dt',{},k),h('dd',{},v)])),
   h('p',{class:'muted'},provider.notes||''),

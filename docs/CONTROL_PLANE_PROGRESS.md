@@ -813,6 +813,10 @@ Batch 149 adds browser regression assertions for both an Official API row and a
 Browser reverse row, covering descriptor-driven type classification in the
 Provider filter and list.
 
+Batch 152 applies the normalized Provider type to Provider Detail, keeping the
+catalog list, detail dialog, Sources table and Source Detail consistent while
+retaining the machine-readable enum values in configuration forms.
+
 Batch 150 adds a direct configuration-service rollback lifecycle regression.
 An expected-revision conflict and a missing target revision now prove that no
 runtime preparation, journal write, commit callback or revision advance occurs.
