@@ -538,3 +538,8 @@ Batch 99 derives account credential posture from effective source bindings when
 an account has no direct reference. Protected, missing, environment-backed,
 browser-profile, and multiple-source states remain metadata-only; a focused
 API regression covers protected and environment source bindings.
+
+Batch 100 makes the account wizard provider-aware. It filters stored protected
+credentials to the selected adapter's declared modes, clears a binding when
+the provider changes, and labels the compatible credential types without
+showing secret values.
