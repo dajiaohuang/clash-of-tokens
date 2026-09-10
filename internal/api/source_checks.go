@@ -27,6 +27,16 @@ type ValidationEvidence struct {
 	OutputObserved  bool                     `json:"output_observed"`
 	Result          protocol.ExecutionResult `json:"result"`
 	Verified        bool                     `json:"verified"`
+	Checks          ValidationChecks         `json:"checks"`
+}
+
+type ValidationChecks struct {
+	Connection string  `json:"connection"`
+	Auth       string  `json:"auth"`
+	Request    string  `json:"request"`
+	Streaming  string  `json:"streaming"`
+	Completion string  `json:"completion"`
+	DurationMS float64 `json:"duration_ms"`
 }
 
 func (p *ControlPlane) sourceCheckAdmin(w http.ResponseWriter, r *http.Request, s *Server) bool {
@@ -123,23 +133,40 @@ func (p *ControlPlane) sourceCheckAdmin(w http.ResponseWriter, r *http.Request, 
 	}
 	status := 502
 	defer func() { lease.Release(status, 0) }()
-	evidence := ValidationEvidence{Binding: p.sourceBinding(s.cfg, source), Account: source.AccountID, Source: source.ID, Model: model.ID, Protocol: input.Protocol, CheckedAt: time.Now().UTC(), Method: "explicit_stream_generation"}
+	started := time.Now()
+	evidence := ValidationEvidence{Binding: p.sourceBinding(s.cfg, source), Account: source.AccountID, Source: source.ID, Model: model.ID, Protocol: input.Protocol, CheckedAt: started.UTC(), Method: "explicit_stream_generation", Checks: ValidationChecks{Connection: "pending", Auth: "pending", Request: "pending", Streaming: "pending", Completion: "pending"}}
 	resp, err := s.client(index).Do(ctx, input.Protocol, model.Upstream, true, body, nil)
 	if err != nil {
+		evidence.Checks.Connection = "failed"
 		evidence.Result.UpstreamError = "transport_or_adapter_error"
 	} else {
+		evidence.Checks.Connection = "pass"
 		defer resp.Body.Close()
 		evidence.Result.UpstreamStatus = resp.StatusCode
 		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 			status = resp.StatusCode
+			evidence.Checks.Auth = map[bool]string{true: "rejected", false: "unknown"}[resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden]
+			evidence.Checks.Request = "rejected"
 			evidence.Result.UpstreamError = "upstream_rejected"
 		} else if !strings.HasPrefix(resp.Header.Get("Content-Type"), "text/event-stream") {
+			evidence.Checks.Auth = "pass"
+			evidence.Checks.Request = "pass"
+			evidence.Checks.Streaming = "failed"
 			evidence.Result.UpstreamError = "expected_stream"
 		} else {
+			evidence.Checks.Auth = "pass"
+			evidence.Checks.Request = "pass"
+			evidence.Checks.Streaming = "pass"
 			evidence.Result, evidence.OutputObserved = observeValidation(ctx, resp.Body, input.Protocol, min(s.cfg.Runtime.MaxOutputBytes, 1<<20), lease)
 			evidence.Result.UpstreamStatus = resp.StatusCode
+			if evidence.Result.ProtocolComplete {
+				evidence.Checks.Completion = "pass"
+			} else {
+				evidence.Checks.Completion = "failed"
+			}
 		}
 	}
+	evidence.Checks.DurationMS = float64(time.Since(started).Microseconds()) / 1000
 	evidence.Result.ClientCanceled = ctx.Err() != nil
 	evidence.Result = evidence.Result.Redacted()
 	evidence.Verified = evidence.Result.Successful() && evidence.OutputObserved

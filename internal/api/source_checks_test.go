@@ -42,6 +42,9 @@ func TestExplicitValidationOfDisabledSource(t *testing.T) {
 			if json.Unmarshal(w.Body.Bytes(), &evidence) != nil || w.Code != 200 || evidence.Verified != complete || !evidence.OutputObserved {
 				t.Fatal(w.Code, w.Body.String())
 			}
+			if evidence.Checks.Connection != "pass" || evidence.Checks.Auth != "pass" || evidence.Checks.Request != "pass" || evidence.Checks.Streaming != "pass" || (complete && evidence.Checks.Completion != "pass") || evidence.Checks.DurationMS <= 0 {
+				t.Fatalf("missing validation stage evidence: %+v", evidence.Checks)
+			}
 			if calls != 1 || p.current.server.Router.Status()[0].Enabled || p.current.server.Router.Status()[0].Active != 0 {
 				t.Fatal("validation changed routing or leaked capacity")
 			}

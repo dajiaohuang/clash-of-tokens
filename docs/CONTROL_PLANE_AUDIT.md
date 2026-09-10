@@ -36,7 +36,7 @@ must be checked again before final acceptance.
 | 25. Explain exclusions | Router Explain in simulator; batches 29/30 add filtered Source/Provider Detail explanations | Full policy-reason acceptance across configured adapters |
 | 26. Simulator | Model/protocol/tools/vision/size without upstream request | Ordered candidates and distinction between eligibility and final choice |
 | 27. Health | Runtime outcome, TTFT, last status/timestamps and account health/auth aggregation exist | Surface all source/account fields and distinguish degraded/exhausted/broken states consistently |
-| 28. Test Provider | Explicit one-request stream validation | Separate connection/auth/request/stream/completion/latency presentation |
+| 28. Test Provider | Explicit one-request stream validation now records separate connection/auth/request/stream/completion stages and duration | Provider-specific phase detail and live compatibility still require operator checks |
 | 29. Live verification | Batch 25 derives status/counts from model/protocol evidence and source/credential-version bindings; rotation invalidation tested | Real configured-provider checks and complete account/capability evidence still require verification |
 | 30. Discovery hub | Batch 27 returns import results to account setup with single-result binding; batch 43 adds bounded metadata-only account candidates from vault, configured environments and optional standard-browser profile scan | End-to-end candidate binding and broader provider matching |
 | 31. Shared credential | Account reference shared by multiple sources and quota domain | End-to-end reference reuse/capacity display |

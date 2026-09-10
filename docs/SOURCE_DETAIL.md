@@ -24,6 +24,11 @@ the additional tool, vision and stateful request inputs.
 capacity, switches and memberships. **Validate source** and **Verification
 details** reuse the existing explicit validation and evidence flows.
 
+Validation evidence separates connection, authentication, request acceptance,
+streaming, and completion stages and reports the measured admin round-trip
+duration. A failed stage is reported without exposing provider response bodies;
+an incomplete stream is never labeled verified.
+
 ## Optional benchmark
 
 **Benchmark → Run 3 samples** sends up to three sequential validation requests

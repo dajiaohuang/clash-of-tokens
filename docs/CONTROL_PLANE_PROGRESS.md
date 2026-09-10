@@ -243,3 +243,7 @@ runtime evidence are displayed as separate fields. See
 Batch 45 extends provider matching with an explicit, host-exact alias allowlist
 for official product and API consoles. Case and trailing-dot normalization are
 safe; suffix lookalikes remain unmatched. See [provider matching](PROVIDER_MATCHING.md).
+
+Batch 47 enriches source validation evidence with connection, authentication,
+request, streaming, completion, and measured duration fields; the UI presents
+these stages separately and never treats an incomplete stream as verified.
