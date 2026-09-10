@@ -49,7 +49,16 @@ Acceptance scope: [complete synthesis](CONTROL_PLANE_REQUIREMENTS.md).
     never replay. Each attempt rewrites the original input and excludes all
     previously attempted sources.
 
-Validation: `go test ./...` passed, 509 tests in 35 packages on Windows.
+14. Selected CSV/JSON export import with redacted preview and atomic protected
+    batch storage (1f1f212); exact catalog-domain recommendations and effective
+    source credential-type validation (0b92b8f). Specialized manager formats,
+    environment/CLI import and browser-session discovery remain outstanding.
+15. Browser profile registry, account binding, per-profile CDP/session storage
+    and explicit dedicated Chrome/Edge/Chromium login launch. Authentication
+    detection and post-login validation remain outstanding; launch is never
+    reported as authenticated.
+
+Validation: `go test ./...` passed, 515 tests in 35 packages on Windows.
 Browser regression: credential creation/redaction, account binding, source
 creation, group membership, preview/apply, every navigation destination and
 390px viewport passed via `scripts/ui_fixture.py --test` after building
@@ -69,9 +78,9 @@ Race detection is outstanding: the current Go environment has cgo disabled.
 - E: Request-level safe fallback, protocol completion tracking, verification
   provenance, documentation and end-to-end regression validation.
 
-The console's Browser/Device/Session destinations currently expose environment
-settings. Profile launching, login, session operations, imports, discovery and
-live validation are still required. Account pool strategies now execute in the router. Activity
+Browser profiles and login launching now have management controls. Device and
+Session destinations still primarily expose settings. Login detection, session
+operations, specialized imports, discovery and live validation remain required. Account pool strategies now execute in the router. Activity
 currently covers configuration history, not a complete runtime event log.
 
 The current application is not yet the completed control plane. Credentials
