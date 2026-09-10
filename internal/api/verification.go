@@ -50,20 +50,23 @@ type accountHealth struct {
 }
 
 type providerHealth struct {
-	ID                string     `json:"id"`
-	Enabled           bool       `json:"enabled"`
-	Health            string     `json:"health"`
-	AuthStatus        string     `json:"auth_status"`
-	Active            int        `json:"active"`
-	Limit             int        `json:"limit"`
-	Accounts          []string   `json:"accounts"`
-	Sources           []string   `json:"sources"`
-	Completed         uint64     `json:"completed"`
-	Failures          uint64     `json:"failures"`
-	LastSuccess       *time.Time `json:"last_success,omitempty"`
-	LastFailure       *time.Time `json:"last_failure,omitempty"`
-	LastValidatedAt   *time.Time `json:"last_validated_at,omitempty"`
-	LastAuthCheckedAt *time.Time `json:"last_auth_checked_at,omitempty"`
+	ID                  string     `json:"id"`
+	Enabled             bool       `json:"enabled"`
+	CatalogImplemented  bool       `json:"catalog_implemented"`
+	CatalogLiveVerified bool       `json:"catalog_live_verified"`
+	VerifiedSources     int        `json:"verified_sources"`
+	Health              string     `json:"health"`
+	AuthStatus          string     `json:"auth_status"`
+	Active              int        `json:"active"`
+	Limit               int        `json:"limit"`
+	Accounts            []string   `json:"accounts"`
+	Sources             []string   `json:"sources"`
+	Completed           uint64     `json:"completed"`
+	Failures            uint64     `json:"failures"`
+	LastSuccess         *time.Time `json:"last_success,omitempty"`
+	LastFailure         *time.Time `json:"last_failure,omitempty"`
+	LastValidatedAt     *time.Time `json:"last_validated_at,omitempty"`
+	LastAuthCheckedAt   *time.Time `json:"last_auth_checked_at,omitempty"`
 }
 
 func (p *ControlPlane) credentialMetadata(ref string) credentials.Metadata {
@@ -185,7 +188,27 @@ func (p *ControlPlane) controlStatus(s *Server) map[string]any {
 	out["live_verified_sources"] = verifiedSources
 	accounts := p.accountHealth(s, entries)
 	out["account_health"] = accounts
-	out["provider_health"] = p.providerHealth(s, accounts, entries)
+	providerRows := p.providerHealth(s, accounts, entries)
+	catalogByID := map[string]catalog.Entry{}
+	for _, entry := range catalog.All() {
+		catalogByID[entry.ID] = entry
+	}
+	verifiedByProvider := map[string]int{}
+	for _, source := range verification {
+		for _, model := range source.Models {
+			if model.Status == "verified" {
+				verifiedByProvider[source.Provider]++
+				break
+			}
+		}
+	}
+	for i := range providerRows {
+		entry, known := catalogByID[providerRows[i].ID]
+		providerRows[i].CatalogImplemented = known && entry.Implementation != "not_implemented"
+		providerRows[i].CatalogLiveVerified = known && entry.LiveVerified
+		providerRows[i].VerifiedSources = verifiedByProvider[providerRows[i].ID]
+	}
+	out["provider_health"] = providerRows
 	out["revision"] = p.service.Current().Revision
 	return out
 }

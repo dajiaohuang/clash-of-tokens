@@ -82,13 +82,16 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 	}
 	var out struct {
 		Providers []struct {
-			ID              string     `json:"id"`
-			Health          string     `json:"health"`
-			AuthStatus      string     `json:"auth_status"`
-			Accounts        []string   `json:"accounts"`
-			Sources         []string   `json:"sources"`
-			LastValidated   *time.Time `json:"last_validated_at"`
-			LastAuthChecked *time.Time `json:"last_auth_checked_at"`
+			ID                  string     `json:"id"`
+			CatalogImplemented  bool       `json:"catalog_implemented"`
+			CatalogLiveVerified bool       `json:"catalog_live_verified"`
+			VerifiedSources     int        `json:"verified_sources"`
+			Health              string     `json:"health"`
+			AuthStatus          string     `json:"auth_status"`
+			Accounts            []string   `json:"accounts"`
+			Sources             []string   `json:"sources"`
+			LastValidated       *time.Time `json:"last_validated_at"`
+			LastAuthChecked     *time.Time `json:"last_auth_checked_at"`
 		} `json:"provider_health"`
 		Accounts []struct {
 			ID              string     `json:"id"`
@@ -144,5 +147,38 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 	cHealth := out.Accounts[2]
 	if cHealth.ID != "c" || cHealth.Health != "disabled" || cHealth.AuthStatus != "not_checked" {
 		t.Fatalf("provider-disabled account was not classified: %+v", cHealth)
+	}
+}
+
+func TestProviderHealthIncludesCatalogProvenance(t *testing.T) {
+	dir := t.TempDir()
+	c := config.Default()
+	c.Providers = []config.Provider{{ID: "openai", Enabled: true}}
+	vault, err := credentials.Open(filepath.Join(dir, "vault"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, err := NewControlPlane(filepath.Join(dir, "config.json"), c, testKey, adminKey, vault)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer p.Close()
+	r := httptest.NewRequest("GET", "/admin/status", nil)
+	r.Header.Set("Authorization", "Bearer "+adminKey)
+	w := httptest.NewRecorder()
+	p.ServeHTTP(w, r)
+	var out struct {
+		Providers []struct {
+			ID                  string `json:"id"`
+			CatalogImplemented  bool   `json:"catalog_implemented"`
+			CatalogLiveVerified bool   `json:"catalog_live_verified"`
+			VerifiedSources     int    `json:"verified_sources"`
+		} `json:"provider_health"`
+	}
+	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &out) != nil || len(out.Providers) != 1 {
+		t.Fatalf("status=%d body=%s", w.Code, w.Body.String())
+	}
+	if out.Providers[0].ID != "openai" || !out.Providers[0].CatalogImplemented || out.Providers[0].CatalogLiveVerified || out.Providers[0].VerifiedSources != 0 {
+		t.Fatalf("unexpected catalog provenance: %+v", out.Providers[0])
 	}
 }

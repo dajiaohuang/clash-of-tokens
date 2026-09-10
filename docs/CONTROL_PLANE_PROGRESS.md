@@ -446,3 +446,7 @@ Batch 79 fixes verification provenance for account-bound sources. Status now
 resolves the inherited credential reference before reporting protected/missing
 state and credential version, matching the binding used for evidence invalidation
 without exposing the secret.
+
+Batch 80 adds catalog implementation/live flags and the count of currently
+verified sources to provider health. Health keeps catalog declarations beside
+runtime evidence and capacity instead of collapsing them into one status.
