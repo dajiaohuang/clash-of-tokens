@@ -37,6 +37,14 @@ restart when its complete binding matches. Unrelated configuration revisions
 alone do not invalidate a binding; the check still displays its original
 revision and timestamp. Old evidence without a binding identifier is historical.
 
+The binding is computed from the effective source configuration. A source that
+inherits an account Base URL, organization, or project therefore gets new
+verification provenance when that account default changes. The verification
+view also reports the safe credential reference and whether it is owned by the
+source, inherited from the account, supplied by an environment, backed by a
+browser session, anonymous, or absent. These fields expose provenance without
+revealing a credential value.
+
 Credential configuration states such as `protected_reference`,
 `environment_present` or `browser_configured` establish only configuration or
 presence. They are not authentication checks. Browser authentication has its
