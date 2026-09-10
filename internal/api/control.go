@@ -174,6 +174,9 @@ func restartFields(active, desired config.Config) []string {
 func (p *ControlPlane) configAdmin(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		switch r.URL.Path {
+		case "/admin/config/schema":
+			reply(w, config.Schema())
+			return
 		case "/admin/config":
 			v := p.service.Current()
 			reply(w, map[string]any{"revision": v.Revision, "config": v.Config, "restart_required": restartFields(p.startup, v.Config)})

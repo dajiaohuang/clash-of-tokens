@@ -19,6 +19,7 @@ import (
 	"clash-of-tokens/internal/config"
 	"clash-of-tokens/internal/credentials"
 	"clash-of-tokens/internal/protocol"
+	"clash-of-tokens/internal/providerdef"
 	"clash-of-tokens/internal/routing"
 	"clash-of-tokens/internal/upstream"
 )
@@ -444,6 +445,8 @@ func (s *Server) admin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	switch {
+	case r.Method == "GET" && r.URL.Path == "/admin/descriptors":
+		reply(w, providerdef.All())
 	case r.Method == "GET" && r.URL.Path == "/admin/catalog":
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write(catalog.Data)

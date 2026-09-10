@@ -1,6 +1,7 @@
 package config
 
 import (
+	"clash-of-tokens/internal/providerdef"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -189,15 +190,8 @@ func (c Config) Validate() error {
 			return fmt.Errorf("invalid or duplicate source id: %s", s.ID)
 		}
 		ids[s.ID] = true
-		switch s.Adapter {
-		case "app-device":
-		case "tencent-aistudio-web", "tencent-ima", "weread-ai":
-		case "flowith", "langfast", "liaobots":
-		case "freebuff", "codebuddy-cn", "zed-hosted":
-		case "claude-web", "grok-web", "grok-console", "grok-build", "genspark", "zenmux-web", "blackbox", "conol-web", "adapta-web", "pi", "reka-web", "huggingchat", "hyperagent", "inner-ai", "uc-web", "easemate", "gemini-web", "gigachat-web", "copilot-web", "perplexity-web", "t3-web", "you", "poe-web", "meta-ai", "arena", "tinycms-web", "merlin", "sider", "monica", "raycast", "duckduckgo-web", "emohaa", "spark-web", "qwen-web-cn", "metaso", "maxai", "notion-web", "opera-aria", "google-ai-mode", "phindai", "whiterabbitneo", "cloudflare-playground", "cursor", "windsurf", "trae", "v0-web", "warp", "zcode", "qoder", "gemini-business", "aistudio-playground", "aistudio-build", "copilot-m365", "promptql":
-		case "kiro", "antigravity", "amazon-q", "augment", "devin-cli", "minimax-web", "mimo", "stepchat":
-		case "openai", "anthropic", "gemini", "copilot", "codex", "claude-code", "gemini-cli", "qwen-code", "kimi-code", "chatgpt-web", "venice-web", "inkeep", "gptanon", "perfectassistant", "chataigpt", "chatgptfree", "aifreeforever", "toolbaz", "tabbit", "fanzha", "kimi-web", "qwen-web-intl", "glm-web", "zai-web", "dola-web", "yuanbao", "deepseek-web", "doubao":
-		default:
+		descriptor, known := providerdef.Lookup(s.Adapter)
+		if !known {
 			return fmt.Errorf("source %s: unsupported adapter", s.ID)
 		}
 		if s.Adapter == "chatgpt-web" {
@@ -327,37 +321,11 @@ func (c Config) Validate() error {
 			if m.Tools != "native" && m.Tools != "none" && m.Tools != "unknown" {
 				return fmt.Errorf("source %s: invalid tools capability", s.ID)
 			}
-			if s.Adapter == "chatgpt-web" && (m.Tools != "none" || m.Vision) {
-				return errors.New("ChatGPT web currently supports text conversation only; tools must be none and vision false")
+			if descriptor.TextOnly && (m.Tools != "none" || m.Vision) {
+				return fmt.Errorf("source %s: text adapter requires tools none and vision false", s.ID)
 			}
-			if s.Adapter == "kiro" && m.Tools != "none" {
-				return fmt.Errorf("source %s: Kiro tool round-trip is not implemented; tools must be none", s.ID)
-			}
-			switch s.Adapter {
-			case "tencent-aistudio-web", "tencent-ima", "weread-ai", "app-device":
-				if m.Tools != "none" || m.Vision {
-					return fmt.Errorf("source %s: %s requires text only and tools none", s.ID, s.Adapter)
-				}
-			case "flowith", "langfast", "liaobots":
-				if m.Tools != "none" || m.Vision {
-					return fmt.Errorf("source %s: web adapter requires text only and tools none", s.ID)
-				}
-			case "zed-hosted":
-				if m.Tools != "none" || m.Vision {
-					return fmt.Errorf("source %s: Zed currently requires text only and tools none", s.ID)
-				}
-			case "amazon-q", "augment", "devin-cli", "minimax-web", "mimo", "stepchat":
-				if m.Tools != "none" || m.Vision {
-					return fmt.Errorf("source %s: Amazon Q currently requires tools none and vision false", s.ID)
-				}
-			case "claude-web", "grok-web", "grok-console", "grok-build", "genspark", "zenmux-web", "blackbox", "conol-web", "adapta-web", "pi", "reka-web", "huggingchat", "hyperagent", "inner-ai", "uc-web", "easemate", "gemini-web", "gigachat-web", "copilot-web", "perplexity-web", "t3-web", "you", "poe-web", "meta-ai", "arena", "tinycms-web", "merlin", "sider", "monica", "raycast", "duckduckgo-web", "emohaa", "spark-web", "qwen-web-cn", "metaso", "maxai", "notion-web", "opera-aria", "google-ai-mode", "phindai", "whiterabbitneo", "cloudflare-playground", "cursor", "windsurf", "trae", "v0-web", "warp", "zcode", "qoder", "gemini-business", "aistudio-playground", "aistudio-build", "copilot-m365", "promptql":
-				if m.Tools != "none" || m.Vision {
-					return fmt.Errorf("source %s: text adapter requires tools none and vision false", s.ID)
-				}
-			case "venice-web", "inkeep", "gptanon", "perfectassistant", "chataigpt", "chatgptfree", "aifreeforever", "toolbaz", "tabbit", "fanzha", "kimi-web", "qwen-web-intl", "glm-web", "zai-web", "dola-web", "yuanbao", "deepseek-web", "doubao":
-				if m.Tools != "none" || m.Vision {
-					return fmt.Errorf("source %s: text adapter requires tools none and vision false", s.ID)
-				}
+			if !descriptor.ToolsAllowed && m.Tools != "none" {
+				return fmt.Errorf("source %s: adapter requires tools none", s.ID)
 			}
 			for _, p := range m.Protocols {
 				if !Supports(s.Adapter, p) {
@@ -401,42 +369,4 @@ func (c Config) Validate() error {
 	}
 	return nil
 }
-func Supports(adapter, p string) bool {
-	switch adapter {
-	case "app-device":
-		return p == "chat"
-	case "tencent-aistudio-web", "tencent-ima", "weread-ai":
-		return p == "chat"
-	case "flowith", "langfast", "liaobots":
-		return p == "chat"
-	case "freebuff", "codebuddy-cn", "zed-hosted":
-		return p == "chat"
-	case "amazon-q", "augment", "devin-cli", "minimax-web", "mimo", "stepchat":
-		return p == "chat"
-	case "claude-web", "grok-web", "genspark", "zenmux-web", "blackbox", "conol-web", "adapta-web", "pi", "reka-web", "huggingchat", "hyperagent", "inner-ai", "uc-web", "easemate", "gemini-web", "gigachat-web", "copilot-web", "perplexity-web", "t3-web", "you", "poe-web", "meta-ai", "arena", "tinycms-web", "merlin", "sider", "monica", "raycast", "duckduckgo-web", "emohaa", "spark-web", "qwen-web-cn", "metaso", "maxai", "notion-web", "opera-aria", "google-ai-mode", "phindai", "whiterabbitneo", "cloudflare-playground", "cursor", "windsurf", "trae", "v0-web", "warp", "zcode", "qoder", "gemini-business", "aistudio-playground", "aistudio-build", "copilot-m365", "promptql":
-		return p == "chat"
-	case "grok-console", "grok-build":
-		return p == "chat" || p == "responses"
-	case "kiro":
-		return p == "chat" || p == "messages"
-	case "antigravity":
-		return p == "gemini"
-	case "venice-web", "inkeep", "gptanon", "perfectassistant", "chataigpt", "chatgptfree", "aifreeforever", "toolbaz", "tabbit", "fanzha", "kimi-web", "qwen-web-intl", "glm-web", "zai-web", "dola-web", "yuanbao", "deepseek-web", "doubao":
-		return p == "chat"
-	case "openai", "chatgpt-web":
-		return p == "chat" || p == "responses"
-	case "anthropic", "claude-code":
-		return p == "messages"
-	case "gemini", "gemini-cli":
-		return p == "gemini"
-	case "copilot":
-		return p == "chat" || p == "responses" || p == "messages"
-	case "codex":
-		return p == "responses"
-	case "qwen-code":
-		return p == "chat"
-	case "kimi-code":
-		return p == "chat" || p == "messages"
-	}
-	return false
-}
+func Supports(adapter, p string) bool { return providerdef.Supports(adapter, p) }

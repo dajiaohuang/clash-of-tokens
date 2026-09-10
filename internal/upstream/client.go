@@ -19,97 +19,21 @@ import (
 
 	"clash-of-tokens/internal/chatgptweb"
 	"clash-of-tokens/internal/config"
-	"clash-of-tokens/internal/providers/appdevice"
-	"clash-of-tokens/internal/providers/businessweb"
-	"clash-of-tokens/internal/providers/china"
-	"clash-of-tokens/internal/providers/chinaapps"
-	"clash-of-tokens/internal/providers/chinafinal"
-	"clash-of-tokens/internal/providers/chinamore"
-	"clash-of-tokens/internal/providers/chinanext"
-	"clash-of-tokens/internal/providers/chinaremaining"
-	"clash-of-tokens/internal/providers/coding"
-	"clash-of-tokens/internal/providers/codingfinal"
-	"clash-of-tokens/internal/providers/codingmore"
-	"clash-of-tokens/internal/providers/codingnext"
-	"clash-of-tokens/internal/providers/embedded"
-	"clash-of-tokens/internal/providers/enterpriseweb"
-	"clash-of-tokens/internal/providers/majorweb"
-	"clash-of-tokens/internal/providers/playground"
-	"clash-of-tokens/internal/providers/webhttp"
-	"clash-of-tokens/internal/providers/webnext"
 )
 
 type Client struct {
-	http    *http.Client
-	source  config.Source
-	token   *copilotToken
-	web     *chatgptweb.Driver
-	adapter interface {
+	initError error
+	http      *http.Client
+	source    config.Source
+	token     *copilotToken
+	web       *chatgptweb.Driver
+	adapter   interface {
 		Do(context.Context, string, string, bool, []byte, http.Header) (*http.Response, error)
 		Close()
 	}
 }
 
-func NewConfigured(s config.Source, b config.Browser, d config.Device) *Client {
-	if s.Adapter == "app-device" {
-		return &Client{source: s, adapter: appdevice.New(s, d)}
-	}
-	return New(s, b)
-}
-
-func New(s config.Source, browser ...config.Browser) *Client {
-	if s.Adapter == "cloudflare-playground" {
-		b := config.Default().Browser
-		if len(browser) > 0 {
-			b = browser[0]
-		}
-		return &Client{source: s, adapter: playground.New(b)}
-	}
-	switch s.Adapter {
-	case "app-device":
-		return &Client{source: s, adapter: appdevice.New(s, config.Device{})}
-	case "tencent-ima", "weread-ai":
-		return &Client{source: s, adapter: chinaapps.New(s)}
-	case "gemini-business", "aistudio-playground", "aistudio-build", "copilot-m365", "promptql":
-		return &Client{source: s, adapter: businessweb.New(s, browser...)}
-	case "cursor", "windsurf", "trae", "v0-web", "warp", "zcode", "qoder":
-		return &Client{source: s, adapter: codingfinal.New(s)}
-	case "emohaa", "spark-web", "qwen-web-cn", "metaso":
-		return &Client{source: s, adapter: chinaremaining.New(s, browser...)}
-	case "maxai", "notion-web", "opera-aria", "google-ai-mode":
-		return &Client{source: s, adapter: enterpriseweb.New(s, browser...)}
-	case "tencent-aistudio-web":
-		return &Client{source: s, adapter: chinafinal.New(s)}
-	case "flowith", "langfast", "liaobots":
-		return &Client{source: s, adapter: webnext.New(s)}
-	case "freebuff", "codebuddy-cn", "zed-hosted":
-		return &Client{source: s, adapter: codingnext.New(s)}
-	case "minimax-web", "mimo", "stepchat":
-		return &Client{source: s, adapter: chinamore.New(s)}
-	case "amazon-q", "augment", "devin-cli":
-		return &Client{source: s, adapter: codingmore.New(s)}
-	case "claude-web", "grok-web", "grok-console", "grok-build", "genspark", "zenmux-web", "blackbox", "conol-web", "adapta-web", "pi", "reka-web", "huggingchat", "hyperagent", "inner-ai", "uc-web", "easemate", "gemini-web", "gigachat-web", "copilot-web", "perplexity-web", "t3-web", "you", "poe-web", "meta-ai", "arena", "tinycms-web", "merlin", "sider", "monica", "raycast", "duckduckgo-web":
-		return &Client{source: s, adapter: majorweb.New(s, browser...)}
-	case "dola-web", "yuanbao", "deepseek-web", "doubao":
-		return &Client{source: s, adapter: chinanext.New(s, browser...)}
-	case "kiro", "antigravity":
-		return &Client{source: s, adapter: coding.New(s)}
-	case "kimi-web", "qwen-web-intl", "glm-web", "zai-web":
-		return &Client{source: s, adapter: china.New(s)}
-	}
-	if s.Adapter == "tabbit" || s.Adapter == "fanzha" || s.Adapter == "chataigpt" || s.Adapter == "chatgptfree" {
-		return &Client{source: s, adapter: embedded.New(s)}
-	}
-	if webhttp.Supports(s.Adapter) {
-		return &Client{source: s, adapter: webhttp.New(s)}
-	}
-	if s.Adapter == "chatgpt-web" {
-		b := config.Default().Browser
-		if len(browser) > 0 {
-			b = browser[0]
-		}
-		return &Client{source: s, web: chatgptweb.New(b, s.ID)}
-	}
+func newHTTP(s config.Source) *Client {
 	// Retain a bounded concurrent wave instead of closing most sockets after each burst.
 	idle := max(4, min(s.MaxInflight, 256))
 	tr := &http.Transport{Proxy: http.ProxyFromEnvironment, DialContext: (&net.Dialer{Timeout: 10 * time.Second, KeepAlive: 30 * time.Second}).DialContext, ForceAttemptHTTP2: true, MaxIdleConns: idle, MaxIdleConnsPerHost: idle, MaxConnsPerHost: s.MaxInflight, IdleConnTimeout: 60 * time.Second, TLSHandshakeTimeout: 10 * time.Second, ResponseHeaderTimeout: 60 * time.Second, ExpectContinueTimeout: time.Second, MaxResponseHeaderBytes: 64 << 10, DisableCompression: true}
@@ -124,6 +48,9 @@ func (c *Client) Close() {
 	}
 }
 func (c *Client) Do(ctx context.Context, protocol, model string, stream bool, body []byte, clientHeaders http.Header) (*http.Response, error) {
+	if c.initError != nil {
+		return nil, c.initError
+	}
 	if c.adapter != nil {
 		return c.adapter.Do(ctx, protocol, model, stream, body, clientHeaders)
 	}
