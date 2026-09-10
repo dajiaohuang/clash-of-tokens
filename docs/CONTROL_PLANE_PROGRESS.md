@@ -630,3 +630,8 @@ manual credential form. OpenAI setup now labels the protected input `API key`,
 while adapters without a specialized field retain the generic label; the
 underlying value remains write-only and the credential kind still follows the
 declared mode list.
+
+Batch 118 extends the browser regression to multiple group membership. It
+creates a second fallback group, adds the same two sources already ordered in
+Auto, and verifies that the membership persists independently of the Auto
+group's ordering transaction.
