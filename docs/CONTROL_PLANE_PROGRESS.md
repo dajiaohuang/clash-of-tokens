@@ -808,3 +808,7 @@ Batch 148 carries the same taxonomy into the Sources table and Source Detail.
 Badges and detail values now explain `vendor_api`, `browser_reverse`,
 `app_reverse`, `cli_reverse`, `local_model` and `custom_api` in operator-facing
 language while configuration forms continue to submit their stable enum values.
+
+Batch 149 adds browser regression assertions for both an Official API row and a
+Browser reverse row, covering descriptor-driven type classification in the
+Provider filter and list.

@@ -60,6 +60,10 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     provider_row.get_by_role("button", name="Remove Auto", exact=True).click()
     page.get_by_role("button", name="Apply changes", exact=True).click()
     auth_status = {"claude-web": 200, "blackbox": 200}
+    page.get_by_role("searchbox", name="Filter providers").fill("claude-web")
+    claude_provider_row = page.get_by_role("row").filter(has=page.get_by_role("button", name="claude-web", exact=True))
+    expect(claude_provider_row).to_contain_text("Browser reverse")
+    page.get_by_role("searchbox", name="Filter providers").fill("openai")
     auth_requests = []
     existing_browser_pages = len(browser.pages)
     def synthetic_auth(route):
