@@ -18,6 +18,7 @@ type Metadata struct {
 	ID         string     `json:"id"`
 	Kind       string     `json:"kind"`
 	Source     string     `json:"source"`
+	Domain     string     `json:"domain,omitempty"`
 	CreatedAt  time.Time  `json:"created_at"`
 	UpdatedAt  time.Time  `json:"updated_at"`
 	LastUsedAt *time.Time `json:"last_used_at,omitempty"`

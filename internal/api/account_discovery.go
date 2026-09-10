@@ -90,8 +90,12 @@ func (p *ControlPlane) accountDiscoveryAdmin(w http.ResponseWriter, r *http.Requ
 		}
 	}
 	for _, m := range s.vault.List() {
-		providers := candidateProviders(m.Source, m.Kind, entries)
-		items = append(items, accountCandidate{ID: m.ID, Kind: m.Kind, Label: m.ID, Origin: m.Source, Providers: providers, Confidence: "stored", Action: "bind_credential", Available: true})
+		origin := m.Domain
+		if origin == "" {
+			origin = m.Source
+		}
+		providers := candidateProviders(origin, m.Kind, entries)
+		items = append(items, accountCandidate{ID: m.ID, Kind: m.Kind, Label: m.ID, Origin: origin, Providers: providers, Confidence: "stored", Action: "bind_credential", Available: true})
 	}
 	for _, source := range s.cfg.Sources {
 		if source.KeyEnv == "" || source.KeyEnv == s.cfg.APIKeyEnv || source.KeyEnv == s.cfg.AdminKeyEnv {

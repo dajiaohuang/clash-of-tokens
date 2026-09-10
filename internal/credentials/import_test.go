@@ -41,3 +41,21 @@ func TestImportSelectionAtomicFailure(t *testing.T) {
 		}
 	}
 }
+
+func TestImportSelectionRetainsNonSensitiveDomainMetadata(t *testing.T) {
+	dir := t.TempDir()
+	s, err := open(dir+"/vault", func(b []byte) ([]byte, error) { return append([]byte(nil), b...), nil }, func(b []byte) ([]byte, error) { return append([]byte(nil), b...), nil })
+	if err != nil {
+		t.Fatal(err)
+	}
+	entries := []ImportEntry{{URL: "https://chat.openai.com/login", Username: "user", Password: "secret"}}
+	items, err := s.ImportSelected(entries, []int{0})
+	if err != nil || len(items) != 1 || items[0].Domain != "chat.openai.com" {
+		t.Fatalf("domain metadata missing: err=%v items=%+v", err, items)
+	}
+	if strings.Contains(string(mustJSON(items[0])), "secret") {
+		t.Fatal("secret entered metadata")
+	}
+}
+
+func mustJSON(v any) []byte { b, _ := json.Marshal(v); return b }

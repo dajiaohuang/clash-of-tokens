@@ -4,6 +4,9 @@ Open **Credentials → Import export**, choose the format and a local export fil
 preview the candidates, then select the entries to save. Imports create new
 protected references. Bind those references from Accounts. Imported passwords
 are login material, not API keys or proof of authentication.
+The protected metadata retains only the normalized source domain for later
+provider matching; usernames and passwords remain encrypted and are never
+included in previews or discovery responses.
 See [platform storage requirements](CREDENTIAL_STORAGE.md) for protected-vault
 backends and recovery limits.
 
