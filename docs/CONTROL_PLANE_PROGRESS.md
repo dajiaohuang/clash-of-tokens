@@ -877,3 +877,8 @@ Detail now offers `Refresh session` beside `Login`, and Credentials offers
 `Re-login` when a protected reference is bound to a browser-profile account;
 the latter presents the eligible accounts before launching the same isolated
 profile flow, without exposing the protected value.
+
+Batch 161 gives account deletion its own reviewed lifecycle action. The
+Accounts and Provider Detail views now inventory bound sources, reject deletion
+with an actionable migration message while references remain, and preserve the
+existing account on Cancel.

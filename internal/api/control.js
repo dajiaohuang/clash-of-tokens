@@ -279,6 +279,13 @@ function removeProvider(provider){
  const review=()=>{if(accounts.length||sources.length)throw Error('Provider '+provider.id+' still has bound accounts or sources; migrate those references before deleting it.');return preview(next,'Delete providers/'+provider.id,()=>removeProvider(provider),base,revision)};
  dialog('Delete provider',[h('p',{class:'warning'},'Delete '+provider.id+' from the configured provider registry? Bound accounts and sources must be migrated first; existing requests can finish under their retained configuration.'),table(['Affected configuration','Entries'],[['Accounts',accounts.map(a=>a.display_name||a.id).join(', ')||'None'],['Sources',sources.map(s=>s.id).join(', ')||'None']])],[button('Cancel',()=>$('dialog').close()),button('Review deletion',review,'danger')]);
 }
+function removeAccount(account){
+ const base=clone(S.config),revision=S.revision;
+ const sources=(base.sources||[]).filter(s=>s.account_id===account.id);
+ const next=clone(base);next.accounts=(next.accounts||[]).filter(a=>a.id!==account.id);
+ const review=()=>{if(sources.length)throw Error('Account '+account.id+' still has bound sources; migrate those references before deleting it.');return preview(next,'Delete accounts/'+account.id,()=>removeAccount(account),base,revision)};
+ dialog('Delete account',[h('p',{class:'warning'},'Delete '+(account.display_name||account.id)+' from the account registry? Bound sources must be migrated first; existing requests can finish under their retained configuration.'),table(['Affected configuration','Entries'],[['Sources',sources.map(s=>s.id).join(', ')||'None']])],[button('Cancel',()=>$('dialog').close()),button('Review deletion',review,'danger')]);
+}
 async function toggleAuto(kind,item){
  const next=clone(S.config),entry=next[kind].find(x=>x.id===item.id);
  if(!entry)throw Error('Resource is no longer configured. Refresh and try again.');
@@ -421,7 +428,7 @@ async function providerDetail(provider){
    const capacity=(S.status.accounts||[]).find(c=>c.id===a.id);
    const credentialState=capacity?.credential_state||'not_configured';
    const credentialVersion=capacity?.credential_version?(' · v'+capacity.credential_version):'';
-   return [a.display_name||a.id,(a.enabled?'Yes':'No')+' / '+(a.auto_approved?'Yes':'No'),a.credential_ref||'Not bound',credentialState+credentialVersion,a.credential_type_override?'Yes':'No',accountAuth(a),(capacity?.active||0)+' / '+a.max_inflight,[button('Edit account',()=>edit('accounts',a)),a.browser_profile_id?button('Login',()=>launchAccountLogin(a)):null,a.browser_profile_id?button('Refresh session',()=>loginEvidence(a)):null]];
+   return [a.display_name||a.id,(a.enabled?'Yes':'No')+' / '+(a.auto_approved?'Yes':'No'),a.credential_ref||'Not bound',credentialState+credentialVersion,a.credential_type_override?'Yes':'No',accountAuth(a),(capacity?.active||0)+' / '+a.max_inflight,[button('Edit account',()=>edit('accounts',a)),a.browser_profile_id?button('Login',()=>launchAccountLogin(a)):null,a.browser_profile_id?button('Refresh session',()=>loginEvidence(a)):null,button('Delete account',()=>removeAccount(a),'danger')]];
   }),'No accounts. Add an account to keep credentials and routing policy together.'),
   h('h3',{},'Sources'),table(['Source','Account','Routing state','Models','Matching generation evidence','Actions'],sources.map(s=>[s.id,s.account_id||'No account',state(s),s.models.length,verified.has(s.id)?'At least one model/protocol':'Not established',[button('Source details',()=>sourceDetail(s)),button('Validate source',()=>validateSource(s)),button('Discover models',()=>discoverModels(s))]]),'No sources configured.'),
   h('h3',{},'Provider routing eligibility'),h('p',{class:'muted'},'Read-only simulation for a 100-byte text request. Results explain eligibility, not final candidate selection.'),field('Provider group',group),field('Provider protocol',protocol),explain,explanations
@@ -530,7 +537,7 @@ function accounts(){
  };
  return [pageHead('Accounts','Account switches and capacity apply across their sources.',button('Discover candidates',discoverAccounts),button('Account pools',accountPools),button('Refresh capacity',refresh),button('Add account',()=>addAccount(),'primary')),table(['Account','Provider','Health','Auth status','Browser authentication','Credential','Credential state','Routing defaults','Reviewed override','Quota / in flight','Auto','Actions'],(S.config.accounts||[]).map(a=>[
   a.display_name||a.id,a.provider_id,badge(healthFor(a).health||'untested',healthFor(a).health==='healthy'?'good':healthFor(a).health==='disabled'?'':'warn'),healthFor(a).auth_status||'not_checked',accountAuth(a),a.credential_ref||'Not bound',(healthFor(a).credential_state||'not_configured')+(healthFor(a).credential_version?' · v'+healthFor(a).credential_version:''),[a.base_url&&'Base URL: '+a.base_url,a.organization&&'Organization: '+a.organization,a.project&&'Project: '+a.project].filter(Boolean).join(' · ')||'Not set',a.credential_type_override?'Yes':'No',a.quota_domain+' · '+((S.status.accounts||[]).find(x=>x.id===a.id)?.active||0)+' / '+a.max_inflight,badge(a.auto_approved?'Approved':'Manual',a.auto_approved?'accent':''),
-   [button(a.enabled?'Disable':'Enable',()=>toggle('accounts',a)),button(a.auto_approved?'Remove Auto':'Allow Auto',()=>toggleAuto('accounts',a)),button('Edit',()=>edit('accounts',a)),button('Validate account',()=>validateAccount(a)),a.browser_profile_id?button('Re-authenticate',()=>launchAccountLogin(a)):null,a.browser_profile_id?button('Check login',()=>loginEvidence(a)):null,button('Delete',()=>remove('accounts',a),'danger')]
+   [button(a.enabled?'Disable':'Enable',()=>toggle('accounts',a)),button(a.auto_approved?'Remove Auto':'Allow Auto',()=>toggleAuto('accounts',a)),button('Edit',()=>edit('accounts',a)),button('Validate account',()=>validateAccount(a)),a.browser_profile_id?button('Re-authenticate',()=>launchAccountLogin(a)):null,a.browser_profile_id?button('Check login',()=>loginEvidence(a)):null,button('Delete',()=>removeAccount(a),'danger')]
  ]),'No accounts. Add an account and bind a credential before enabling its sources.')];
 }
 async function discoverAccounts(){
