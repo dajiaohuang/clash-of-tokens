@@ -459,3 +459,7 @@ Batch 82 fixes System > Implementation runtime totals to consume the validation
 evidence emitted by explicit source/provider checks. Verified and failed checks
 now appear under the matching catalog provider without changing catalog live
 claims.
+
+Batch 83 makes source verification choose the newest validation by its recorded
+timestamp. Out-of-order evidence writes no longer let an older result replace a
+newer status.
