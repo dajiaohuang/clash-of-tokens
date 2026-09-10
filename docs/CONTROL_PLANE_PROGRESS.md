@@ -58,7 +58,20 @@ Acceptance scope: [complete synthesis](CONTROL_PLANE_REQUIREMENTS.md).
     detection and post-login validation remain outstanding; launch is never
     reported as authenticated.
 
-Validation: `go test ./...` passed, 515 tests in 35 packages on Windows.
+16. ChatGPT Web authentication evidence without generation or token extraction
+    (73148a3). Other providers return explicitly unsupported login checks.
+17. Native OpenAI/Anthropic/Gemini model discovery with bounded pagination,
+    explicit partial-list reporting and disabled model configuration; manual
+    source validation observes output and protocol completion under a lease.
+    Disabled sources remain disabled. Validation does not retry. Discovery
+    does not imply generation, tool or quality support. Evidence is returned
+    to the caller; durable validation history remains outstanding.
+
+Discovery protocol references: [Anthropic models](https://platform.claude.com/docs/en/api/models/list),
+[Gemini models](https://ai.google.dev/api/models),
+[OpenAI models](https://platform.openai.com/docs/api-reference/models).
+
+Validation: `go test ./...` passed, 524 tests in 35 packages on Windows.
 Browser regression: credential creation/redaction, account binding, source
 creation, group membership, preview/apply, every navigation destination and
 390px viewport passed via `scripts/ui_fixture.py --test` after building
