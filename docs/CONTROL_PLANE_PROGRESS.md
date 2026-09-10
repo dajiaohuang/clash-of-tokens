@@ -796,3 +796,10 @@ It selects one configured model, applies a disabled state through the bulk
 editor and confirms the Models page reflects it, then restores the model to
 enabled before continuing the source validation journey. This keeps model
 enablement independently reviewable from provider, account and source gates.
+
+Batch 147 normalizes Provider list type badges and filters from catalog kind plus
+descriptor capabilities. Official APIs, cloud and aggregator endpoints,
+browser and web reverse adapters, app and CLI subscriptions, local runtimes and
+research entries now have stable human-readable labels while the underlying
+machine metadata remains unchanged. The browser regression asserts the OpenAI
+row renders `Official API`.

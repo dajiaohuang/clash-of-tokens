@@ -414,6 +414,19 @@ async function providerDetail(provider){
   button('Add account',()=>addAccount(provider.id)),button('Add source',()=>addSource(provider.id),'primary')
  ]);
 }
+function providerTypeLabel(provider){
+ const descriptor=S.descriptors.find(d=>d.id===provider.adapter);
+ if(provider.kind==='api')return 'Official API';
+ if(provider.kind==='cloud')return 'Cloud API';
+ if(provider.kind==='aggregator')return 'Aggregator';
+ if(provider.kind==='device')return 'App reverse';
+ if(provider.kind==='research')return 'Research';
+ if(provider.kind==='local')return ['devin-cli','zcode'].includes(provider.adapter)?'CLI reverse':'Local';
+ if(provider.kind==='subscription')return ['devin-cli','zcode','codex','claude-code','gemini-cli','qwen-code','kimi-code','kiro','antigravity','amazon-q'].includes(provider.adapter)?'CLI / subscription':'Subscription';
+ if(provider.kind==='web'&&(descriptor?.browser_required||descriptor?.browser_auth_check))return 'Browser reverse';
+ if(provider.kind==='web')return 'Web reverse';
+ return provider.kind||'Custom';
+}
 async function validateProvider(provider){
  const result=await api('/admin/providers/'+encodeURIComponent(provider.id)+'/validate',{method:'POST'});
  await refresh();
@@ -443,13 +456,13 @@ function workloadSummary(s){
 }
 function providers(){
  const query=h('input',{type:'search',placeholder:'Filter providers','aria-label':'Filter providers'});
- const type=select(['all',...new Set(S.catalog.map(p=>p.kind))],'all');
+ const type=select(['all',...new Set(S.catalog.map(providerTypeLabel))].sort((a,b)=>a==='all'?-1:b==='all'?1:a.localeCompare(b)),'all');
  const target=h('div',{});
  function draw(){
-  const entries=S.catalog.filter(p=>(type.value==='all'||p.kind===type.value)&&p.id.toLowerCase().includes(query.value.toLowerCase()));
+  const entries=S.catalog.filter(p=>(type.value==='all'||providerTypeLabel(p)===type.value)&&p.id.toLowerCase().includes(query.value.toLowerCase()));
   target.replaceChildren(table(['Provider','Type','Protocols','Accounts','Implementation','State / actions'],entries.map(p=>{
    const configured=(S.config.providers||[]).find(x=>x.id===p.id);
-  return [button(p.id,()=>providerDetail(p)),badge(p.kind),(p.protocols||[]).join(', '),(S.config.accounts||[]).filter(a=>a.provider_id===p.id).length,p.implementation,[configured?button(configured.enabled?'Disable':'Enable',()=>toggle('providers',configured)):badge('Not configured'),configured?button(configured.auto_approved?'Remove Auto':'Allow Auto',()=>toggleAuto('providers',configured)):null,configured?button('Validate',()=>validateProvider(p)):null,button('Open',()=>providerDetail(p))]];
+  return [button(p.id,()=>providerDetail(p)),badge(providerTypeLabel(p)),(p.protocols||[]).join(', '),(S.config.accounts||[]).filter(a=>a.provider_id===p.id).length,p.implementation,[configured?button(configured.enabled?'Disable':'Enable',()=>toggle('providers',configured)):badge('Not configured'),configured?button(configured.auto_approved?'Remove Auto':'Allow Auto',()=>toggleAuto('providers',configured)):null,configured?button('Validate',()=>validateProvider(p)):null,button('Open',()=>providerDetail(p))]];
   })));
  }
  query.oninput=draw;type.onchange=draw;draw();
