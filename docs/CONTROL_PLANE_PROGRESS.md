@@ -529,3 +529,7 @@ health rows. Accounts and Health can now distinguish an unconfigured account,
 a missing protected reference, a protected reference with its current version,
 and a browser-profile account without exposing secret values. Provider Detail
 shows the same account-level state beside its credential binding.
+
+Batch 98 carries the same redacted account credential state/version into the
+main Accounts table, keeping the account list consistent with Health and
+Provider Detail.
