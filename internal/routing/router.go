@@ -582,7 +582,7 @@ func (r *Router) Status() []Status {
 			health = "blocked"
 		case now.Before(cooldown):
 			health = "cooldown"
-		case s.active >= r.cfg.Sources[i].MaxInflight:
+		case s.active >= r.cfg.Sources[i].MaxInflight || r.quotas[i].active >= r.quotas[i].limit:
 			health = "exhausted"
 		case s.failures > 0 && s.completed == 0:
 			health = "broken"
