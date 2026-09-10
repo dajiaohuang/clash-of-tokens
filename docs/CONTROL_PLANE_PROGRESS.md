@@ -65,13 +65,25 @@ Acceptance scope: [complete synthesis](CONTROL_PLANE_REQUIREMENTS.md).
     source validation observes output and protocol completion under a lease.
     Disabled sources remain disabled. Validation does not retry. Discovery
     does not imply generation, tool or quality support. Evidence is returned
-    to the caller; durable validation history remains outstanding.
+    to the caller and persisted in bounded revision-linked history (f2bd6a6).
+
+18. Local ChatGPT session metadata and lease-protected expire/clear operations
+    (c31a76a). Upstream conversations are not deleted. Other session adapters
+    explicitly report unsupported management.
+19. Configured-source environment import and selected Codex/Gemini/OAuth JSON
+    access-token import. Preview never returns tokens; imports allocate new
+    references. CLI refresh tokens and account IDs are not imported and there
+    is no automatic refresh. The user must re-import current access tokens and
+    configure supplementary account fields separately.
+
+CLI format references: [Codex auth fixture](https://github.com/openai/codex/blob/main/codex-rs/model-provider/src/auth.rs),
+[Gemini OAuth implementation](https://github.com/google-gemini/gemini-cli/blob/main/packages/core/src/code_assist/oauth2.ts).
 
 Discovery protocol references: [Anthropic models](https://platform.claude.com/docs/en/api/models/list),
 [Gemini models](https://ai.google.dev/api/models),
 [OpenAI models](https://platform.openai.com/docs/api-reference/models).
 
-Validation: `go test ./...` passed, 524 tests in 35 packages on Windows.
+Validation: `go test ./...` passed, 528 tests in 36 packages on Windows.
 Browser regression: credential creation/redaction, account binding, source
 creation, group membership, preview/apply, every navigation destination and
 390px viewport passed via `scripts/ui_fixture.py --test` after building
