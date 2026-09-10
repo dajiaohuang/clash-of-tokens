@@ -56,6 +56,39 @@ func Preset(id, model string, baseOverride ...string) (config.Source, error) {
 		}
 		s := config.Source{ID: id, Provider: id, Adapter: p.Adapter, BaseURL: p.BaseURL, KeyEnv: "COT_" + strings.ToUpper(strings.ReplaceAll(id, "-", "_")) + "_KEY", Local: p.Kind == "local", Paid: p.Kind != "local", MaxInflight: 1, QuotaDomain: id + "-account", QuotaMaxInflight: 1, Models: []config.Model{{ID: model, Upstream: model, Protocols: p.Protocols, Tier: "unrated", Tools: "unknown", MaxInputBytes: 1 << 20}}}
 		s.Anonymous = p.Anonymous
+		s.SourceKind = "product_reverse"
+		s.ExecutionLocation = "local"
+		s.InferenceLocation = "unknown"
+		s.BillingMode = "unknown"
+		s.CredentialMode = "api_key"
+		switch p.Kind {
+		case "api":
+			s.SourceKind = "vendor_api"
+			s.InferenceLocation = "remote"
+			s.BillingMode = "metered"
+		case "aggregator":
+			s.SourceKind = "aggregator_api"
+			s.InferenceLocation = "remote"
+			s.BillingMode = "metered"
+		case "subscription":
+			s.BillingMode = "subscription"
+		case "device":
+			s.SourceKind = "app_reverse"
+			s.CredentialMode = "device_session"
+		}
+		if p.Kind == "local" && (p.Adapter == "openai" || p.Adapter == "anthropic" || p.Adapter == "gemini") {
+			s.SourceKind = "local_model"
+			s.InferenceLocation = "local"
+			s.BillingMode = "local"
+		}
+		if p.Adapter == "devin-cli" || p.Adapter == "zcode" {
+			s.SourceKind = "cli_reverse"
+			s.CredentialMode = "cli_session"
+		}
+		if p.Anonymous {
+			s.CredentialMode = "anonymous"
+		}
+		s.Paid = s.BillingMode == "metered" || s.BillingMode == "subscription"
 		if p.Adapter == "app-device" {
 			selectors := map[string]string{"meituan-xiaotuan": "meituan_xiaotuan", "wangzhe-lingbao": "wangzhe_lingbao", "douyin-xiaohuoren": "douyin_xiaohuoren"}
 			s.Models[0].ID = selectors[p.ID]

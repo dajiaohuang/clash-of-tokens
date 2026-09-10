@@ -17,6 +17,7 @@ func fixture(n int) config.Config {
 		id := fmt.Sprint("s", i)
 		c.Sources = append(c.Sources, config.Source{ID: id, Enabled: true, AutoApproved: true, MaxInflight: 1, QuotaDomain: id, QuotaMaxInflight: 1, Models: []config.Model{{ID: "model", Upstream: "model", Protocols: []string{"chat"}, Tier: "silver", RatingBasis: "manual", Tools: "native", MaxInputBytes: 1024}}})
 		c.Groups[0].Sources = append(c.Groups[0].Sources, id)
+		c.Sources[i].BillingMode = "free_allowance"
 	}
 	return c
 }
@@ -48,11 +49,13 @@ func TestPolicyAndDisable(t *testing.T) {
 	c := fixture(2)
 	c.Sources[0].Models[0].Tier = "bronze"
 	c.Sources[1].Paid = true
+	c.Sources[1].BillingMode = "metered"
 	r := New(c)
 	if _, e := r.Acquire(context.Background(), query()); !errors.Is(e, ErrUnavailable) {
 		t.Fatal(e)
 	}
 	c.Sources[1].Paid = false
+	c.Sources[1].BillingMode = "free_allowance"
 	r = New(c)
 	l, e := r.Acquire(context.Background(), query())
 	if e != nil || l.Target.Source != 1 {

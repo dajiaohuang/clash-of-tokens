@@ -161,11 +161,14 @@ func (r *Router) eligible(t Target, q Query) (bool, string) {
 		if !s.AutoApproved || !member {
 			return false, "not_approved"
 		}
-		if g.LocalOnly && !s.Local {
+		if g.LocalOnly && !s.LocalInference() {
 			return false, "local_only"
 		}
-		if s.Paid && !g.AllowPaid {
+		if !g.BillingAllowed(s) {
 			return false, "paid_not_allowed"
+		}
+		if len(g.AllowedSourceKinds) > 0 && !contains(g.AllowedSourceKinds, s.SourceKind) {
+			return false, "source_kind"
 		}
 		if g.RequireTools && t.Model.Tools != "native" {
 			return false, "native_tools_required"

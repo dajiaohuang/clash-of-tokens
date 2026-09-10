@@ -58,22 +58,27 @@ type Runtime struct {
 	BodyReadTimeoutMS int   `json:"body_read_timeout_ms"`
 }
 type Source struct {
-	ID               string  `json:"id"`
-	Provider         string  `json:"provider"`
-	Adapter          string  `json:"adapter"`
-	BaseURL          string  `json:"base_url"`
-	KeyEnv           string  `json:"key_env,omitempty"`
-	AccountIDEnv     string  `json:"account_id_env,omitempty"`
-	Project          string  `json:"project,omitempty"`
-	Enabled          bool    `json:"enabled"`
-	AutoApproved     bool    `json:"auto_approved"`
-	Local            bool    `json:"local"`
-	Anonymous        bool    `json:"anonymous,omitempty"`
-	Paid             bool    `json:"paid"`
-	MaxInflight      int     `json:"max_inflight"`
-	QuotaDomain      string  `json:"quota_domain"`
-	QuotaMaxInflight int     `json:"quota_max_inflight"`
-	Models           []Model `json:"models"`
+	SourceKind        string  `json:"source_kind,omitempty"`
+	ExecutionLocation string  `json:"execution_location,omitempty"`
+	InferenceLocation string  `json:"inference_location,omitempty"`
+	BillingMode       string  `json:"billing_mode,omitempty"`
+	CredentialMode    string  `json:"credential_mode,omitempty"`
+	ID                string  `json:"id"`
+	Provider          string  `json:"provider"`
+	Adapter           string  `json:"adapter"`
+	BaseURL           string  `json:"base_url"`
+	KeyEnv            string  `json:"key_env,omitempty"`
+	AccountIDEnv      string  `json:"account_id_env,omitempty"`
+	Project           string  `json:"project,omitempty"`
+	Enabled           bool    `json:"enabled"`
+	AutoApproved      bool    `json:"auto_approved"`
+	Local             bool    `json:"local"`
+	Anonymous         bool    `json:"anonymous,omitempty"`
+	Paid              bool    `json:"paid"`
+	MaxInflight       int     `json:"max_inflight"`
+	QuotaDomain       string  `json:"quota_domain"`
+	QuotaMaxInflight  int     `json:"quota_max_inflight"`
+	Models            []Model `json:"models"`
 }
 type Model struct {
 	ID            string   `json:"id"`
@@ -86,14 +91,18 @@ type Model struct {
 	MaxInputBytes int64    `json:"max_input_bytes"`
 }
 type Group struct {
-	ID           string   `json:"id"`
-	Type         string   `json:"type"`
-	Sources      []string `json:"sources"`
-	MinTier      string   `json:"min_tier"`
-	AllowUnrated bool     `json:"allow_unrated"`
-	AllowPaid    bool     `json:"allow_paid"`
-	LocalOnly    bool     `json:"local_only"`
-	RequireTools bool     `json:"require_tools"`
+	AllowMetered       *bool    `json:"allow_metered,omitempty"`
+	AllowSubscription  *bool    `json:"allow_subscription,omitempty"`
+	AllowUnknownCost   *bool    `json:"allow_unknown_cost,omitempty"`
+	AllowedSourceKinds []string `json:"allowed_source_kinds,omitempty"`
+	ID                 string   `json:"id"`
+	Type               string   `json:"type"`
+	Sources            []string `json:"sources"`
+	MinTier            string   `json:"min_tier"`
+	AllowUnrated       bool     `json:"allow_unrated"`
+	AllowPaid          bool     `json:"allow_paid"`
+	LocalOnly          bool     `json:"local_only"`
+	RequireTools       bool     `json:"require_tools"`
 }
 
 func Default() Config {
@@ -160,6 +169,9 @@ func (c Config) Validate() error {
 	gigaChatBrowserCount := 0
 	buildBrowserCount := 0
 	for _, s := range c.Sources {
+		if err := s.ValidateMetadata(); err != nil {
+			return fmt.Errorf("source %s: %w", s.ID, err)
+		}
 		if !identifier.MatchString(s.ID) || ids[s.ID] {
 			return fmt.Errorf("invalid or duplicate source id: %s", s.ID)
 		}
