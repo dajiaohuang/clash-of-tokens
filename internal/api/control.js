@@ -567,7 +567,8 @@ function editQuota(domain){
 function unbindCredential(credential){
  const base=clone(S.config),revision=S.revision;
  const accounts=(base.accounts||[]).filter(a=>a.credential_ref===credential.id);
- const sources=(base.sources||[]).filter(s=>s.credential_ref===credential.id);
+ const accountIDs=new Set(accounts.map(a=>a.id));
+ const sources=(base.sources||[]).filter(s=>s.credential_ref===credential.id||(!s.credential_ref&&accountIDs.has(s.account_id)));
  if(!accounts.length&&!sources.length)throw Error('This credential is already unbound.');
  const next=clone(base);
  for(const account of next.accounts||[])if(account.credential_ref===credential.id)account.credential_ref='';
