@@ -49,6 +49,9 @@ func schemaFields(t reflect.Type) []FieldSchema {
 		if name == "protocols" && s.Item != nil {
 			s.Item.Enum = []string{"chat", "responses", "messages", "gemini"}
 		}
+		if name == "preferences" && s.Item != nil {
+			s.Item.Enum = []string{"lower_latency", "existing_subscription", "lower_cost", "official_api", "reverse_source"}
+		}
 		out = append(out, s)
 	}
 	return out
@@ -75,6 +78,8 @@ func schemaType(t reflect.Type) FieldSchema {
 		s.Type = "boolean"
 	case reflect.Int, reflect.Int64, reflect.Uint64:
 		s.Type = "integer"
+	case reflect.Float64:
+		s.Type = "number"
 	default:
 		s.Type = "string"
 	}

@@ -110,13 +110,14 @@ async function preview(next,summary,back,base=clone(S.config),revision=S.revisio
   await applied?.();
  },'primary')]);
 }
+Object.assign(names,{input_usd_per_million:'Input USD per million tokens',output_usd_per_million:'Output USD per million tokens',max_usd_per_million:'Maximum USD per million tokens',require_vision:'Require vision',preferences:'Preferences in priority order'});
 function schemaFor(name){return S.schema.find(x=>x.name===name)}
 function blank(schema){
  if(schema.nullable)return null;
  if(schema.type==='object')return Object.fromEntries((schema.fields||[]).map(f=>[f.name,blank(f)]));
  if(schema.type==='array')return [];
  if(schema.type==='boolean')return false;
- if(schema.type==='integer')return 0;
+ if(schema.type==='integer'||schema.type==='number')return 0;
  if(schema.type==='datetime')return new Date().toISOString();
  return '';
 }
@@ -141,6 +142,15 @@ function formField(schema,value,label=schema.name){
   return {element:h('details',{open:true},h('summary',{},title(label),' ',schema.restart_required?badge('Restart required','warn'):null),form.element),read:form.read};
  }
  if(schema.type==='array'){
+  if(schema.name==='preferences'){
+   const root=h('div',{class:'array'}),rows=h('div',{});let selected=[...(value||[])];
+   const draw=()=>rows.replaceChildren(...selected.map((entry,i)=>{
+    const choice=select(schema.item.enum,entry);choice.setAttribute('aria-label','Preference '+(i+1));choice.onchange=()=>{selected[i]=choice.value};
+    const move=offset=>{const j=i+offset;if(j>=0&&j<selected.length){[selected[i],selected[j]]=[selected[j],selected[i]];draw()}};
+    return h('div',{class:'array-row'},choice,button('Up',()=>move(-1)),button('Down',()=>move(1)),button('Remove',()=>{selected.splice(i,1);draw()}));
+   }));
+   root.append(h('h3',{},title(label)),h('p',{class:'muted'},'Auto, latency and load-balance compare these preferences first, in order. Unknown latency or price ranks last. A cost ceiling requires both declared input and output rates; it is not a per-request spending limit.'),rows,button('Add preference',()=>{const next=schema.item.enum.find(x=>!selected.includes(x));if(next){selected.push(next);draw()}}));draw();return {element:root,read:()=>selected};
+  }
   if(schema.name==='sources'&&schema.item.type==='string'){const list=members(value);return {element:h('div',{class:'array'},h('h3',{},'Sources and order'),h('p',{class:'muted'},'Drag selected sources, or use Up and Down. Fallback uses this order.'),list.element),read:list.read}}
   const root=h('div',{class:'array'}),rows=h('div',{});let entries=[];
   const add=v=>{
@@ -168,8 +178,10 @@ function formField(schema,value,label=schema.name){
  if(schema.name==='credential_ref')choices=[...new Set([...S.credentials.map(c=>c.id),...(value?[value]:[])])];
  if(schema.name==='browser_profile_id')choices=(S.config.browser_profiles||[]).map(p=>p.id);
  if(choices)input=select(choices,value,true);
- else input=h('input',{type:schema.type==='integer'?'number':'text',value:value??'',step:schema.type==='integer'?'1':null});
+ else input=h('input',{type:['integer','number'].includes(schema.type)?'number':'text',value:value??'',step:schema.type==='integer'?'1':schema.type==='number'?'any':null});
  return {element:field(title(label)+(schema.restart_required?' (restart required)':''),input),read:()=>{
+  if(schema.nullable&&input.value.trim()==='')return null;
+  if(schema.type==='number'){const n=Number(input.value);if(!Number.isFinite(n)||n<0)throw Error(title(label)+' must be a nonnegative number.');return n}
   if(schema.type==='integer'){const n=Number(input.value);if(!Number.isSafeInteger(n))throw Error(title(label)+' must be a whole number.');return n}
   return input.value;
  }};

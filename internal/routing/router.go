@@ -254,6 +254,18 @@ func (r *Router) eligible(t Target, q Query) (bool, string) {
 		if g.RequireTools && t.Model.Tools != "native" {
 			return false, "native_tools_required"
 		}
+		if g.RequireVision && !t.Model.Vision {
+			return false, "vision_required"
+		}
+		if g.MaxUSDPerMillion != nil {
+			cost, known := t.Model.UnitCost()
+			if !known {
+				return false, "cost_unknown"
+			}
+			if cost > *g.MaxUSDPerMillion {
+				return false, "cost_ceiling"
+			}
+		}
 		if g.Type == "select" && (len(g.Sources) == 0 || g.Sources[0] != s.ID) {
 			return false, "not_selected"
 		}
@@ -333,12 +345,13 @@ func (r *Router) choose(q Query, now time.Time) (int, bool) {
 		case "auto":
 			value += st.latency / 1e6
 		}
-		if value < score {
+		preference := r.comparePreferences(idx, best, g.Preferences)
+		if best < 0 || preference < 0 || (preference == 0 && value < score) {
 			score = value
 			best = idx
 			// Every policy's score is nonnegative. The first zero in rotated
 			// order is therefore also the winner of a complete scan.
-			if value == 0 {
+			if value == 0 && len(g.Preferences) == 0 {
 				break
 			}
 		}

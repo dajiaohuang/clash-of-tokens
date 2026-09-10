@@ -20,10 +20,10 @@ must be checked again before final acceptance.
 | 9. Launch login | Dedicated browser launch and bounded UI watcher | Broader provider detection and complete account creation flow |
 | 10. Profile registry | Profile CRUD, per-account CDP/session isolation | Existing-profile onboarding and lifecycle status |
 | 11. Full management pages | Embedded UI, provider/account/credential pages | Overview queue/rate/memory/process/session data; account health/capacity; credential last use/status; complete Provider Detail actions |
-| 12. Groups | Group CRUD, billing/kind/tier/tool policies | Vision requirement, cost ceiling and policy coverage |
+| 12. Groups | Batch 28 adds vision requirement, declared input/output rate ceiling and ordered preferences to configuration/UI/router | Total-request cost accounting and full policy acceptance still outstanding |
 | 13. Multiple memberships | Source editor and group membership controls | Explicit end-to-end multiple-group routing verification |
 | 14. Source Detail | Source/model forms, validation | Consolidated detail view, capability/health/TTFT data, optional explicit benchmark |
-| 15. Routing editor | Group strategies, attempt limits, runtime queue fields | Requested preference/cost controls and clear strategy semantics |
+| 15. Routing editor | Batch 28 adds five ordered preferences with explicit rate/latency semantics and dispatch tests | Complete cross-strategy acceptance and total-request cost limits |
 | 16. Drag order | Ordered group source widget | Browser drag/drop and actual fallback order test |
 | 17. Independent switches | Provider/account/source/model enable/Auto gates | Full UI-to-runtime four-level acceptance test |
 | 18. All frontend configuration | Schema-driven forms and config transactions | Missing requested settings must first exist in schema/runtime |

@@ -123,12 +123,17 @@ CLI format references: [Codex auth fixture](https://github.com/openai/codex/blob
     regression covers login-to-save and token-import-to-binding; draft checks
     are tested to leave configuration and evidence history unchanged.
     See [account setup wizard](BROWSER_LOGIN.md#account-setup-wizard).
+28. Group vision requirements, declared USD input/output rate metadata and
+    ceilings, and five ordered routing preferences. Includes dispatch/capacity,
+    unknown-price/latency, validation and browser editing coverage. This rate
+    ceiling is not a total-request spending budget.
+    See [routing policies](ROUTING_POLICIES.md).
 
 Discovery protocol references: [Anthropic models](https://platform.claude.com/docs/en/api/models/list),
 [Gemini models](https://ai.google.dev/api/models),
 [OpenAI models](https://platform.openai.com/docs/api-reference/models).
 
-Validation: `go test ./...` passed, 541 tests in 38 packages on Windows.
+Validation: `go test ./...` passed, 548 tests in 38 packages on Windows.
 Windows and Linux-target `govulncheck` reported no vulnerabilities.
 Browser regression: credential creation/redaction, account binding, source
 creation, group membership, preview/apply, every navigation destination and

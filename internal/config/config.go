@@ -89,20 +89,25 @@ type Source struct {
 	Models             []Model             `json:"models"`
 }
 type Model struct {
-	Enabled        *bool    `json:"enabled,omitempty"`
-	AutoApproved   *bool    `json:"auto_approved,omitempty"`
-	DeclaredModel  string   `json:"declared_model,omitempty"`
-	CanonicalModel string   `json:"canonical_model,omitempty"`
-	ID             string   `json:"id"`
-	Upstream       string   `json:"upstream"`
-	Protocols      []string `json:"protocols"`
-	Tier           string   `json:"tier"`
-	RatingBasis    string   `json:"rating_basis"`
-	Tools          string   `json:"tools"`
-	Vision         bool     `json:"vision"`
-	MaxInputBytes  int64    `json:"max_input_bytes"`
+	InputUSDPerMillion  *float64 `json:"input_usd_per_million,omitempty"`
+	OutputUSDPerMillion *float64 `json:"output_usd_per_million,omitempty"`
+	Enabled             *bool    `json:"enabled,omitempty"`
+	AutoApproved        *bool    `json:"auto_approved,omitempty"`
+	DeclaredModel       string   `json:"declared_model,omitempty"`
+	CanonicalModel      string   `json:"canonical_model,omitempty"`
+	ID                  string   `json:"id"`
+	Upstream            string   `json:"upstream"`
+	Protocols           []string `json:"protocols"`
+	Tier                string   `json:"tier"`
+	RatingBasis         string   `json:"rating_basis"`
+	Tools               string   `json:"tools"`
+	Vision              bool     `json:"vision"`
+	MaxInputBytes       int64    `json:"max_input_bytes"`
 }
 type Group struct {
+	RequireVision      bool     `json:"require_vision"`
+	MaxUSDPerMillion   *float64 `json:"max_usd_per_million,omitempty"`
+	Preferences        []string `json:"preferences,omitempty"`
 	MaxAttempts        int      `json:"max_attempts,omitempty"`
 	AllowMetered       *bool    `json:"allow_metered,omitempty"`
 	AllowSubscription  *bool    `json:"allow_subscription,omitempty"`
@@ -328,6 +333,9 @@ func (c Config) Validate() error {
 				return fmt.Errorf("source %s: invalid model", s.ID)
 			}
 			models[m.ID] = true
+			if !ValidPrice(m.InputUSDPerMillion) || !ValidPrice(m.OutputUSDPerMillion) {
+				return fmt.Errorf("source %s: invalid model USD rate", s.ID)
+			}
 			if m.Tier != "unrated" && (Tier(m.Tier) < 0 || m.RatingBasis == "") {
 				return fmt.Errorf("source %s: rated models require rating_basis", s.ID)
 			}
@@ -362,6 +370,21 @@ func (c Config) Validate() error {
 	}
 	gids := map[string]bool{}
 	for _, g := range c.Groups {
+		if !ValidPrice(g.MaxUSDPerMillion) {
+			return fmt.Errorf("group %s: invalid maximum USD rate", g.ID)
+		}
+		seenPreferences := map[string]bool{}
+		for _, preference := range g.Preferences {
+			switch preference {
+			case "lower_latency", "existing_subscription", "lower_cost", "official_api", "reverse_source":
+			default:
+				return fmt.Errorf("group %s: invalid preference", g.ID)
+			}
+			if seenPreferences[preference] || (g.Type != "auto" && g.Type != "latency" && g.Type != "load-balance") {
+				return fmt.Errorf("group %s: preferences must be unique and require auto, latency or load-balance", g.ID)
+			}
+			seenPreferences[preference] = true
+		}
 		if g.MaxAttempts < 0 || g.MaxAttempts > 8 {
 			return fmt.Errorf("group %s: max_attempts must be between 0 and 8", g.ID)
 		}
