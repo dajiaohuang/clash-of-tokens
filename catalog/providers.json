@@ -1,5 +1,60 @@
 [
   {
+    "id": "volcengine-ark",
+    "adapter": "openai",
+    "base_url": "https://ark.cn-beijing.volces.com/api/v3",
+    "protocols": ["chat", "responses"],
+    "kind": "cloud",
+    "reference": "https://www.volcengine.com/docs/82379/1795150",
+    "notes": "Volcengine Ark metered API in Beijing. Use an Ark API key and your enabled model or endpoint ID. Responses support is model-dependent. This is not the Coding Plan endpoint or the Doubao browser product.",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "tencent-hunyuan",
+    "adapter": "openai",
+    "base_url": "https://api.hunyuan.cloud.tencent.com/v1",
+    "protocols": ["chat"],
+    "kind": "cloud",
+    "reference": "https://cloud.tencent.cn/document/product/1729/111007",
+    "notes": "Legacy Hunyuan OpenAI-compatible API-key endpoint. Tencent is migrating new model services to TokenHub; existing purchased services may continue here. Use a Hunyuan API key, not a cloud SecretId/SecretKey signing pair. Check your console entitlement.",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "baidu-qianfan",
+    "adapter": "openai",
+    "base_url": "https://qianfan.baidubce.com/v2",
+    "protocols": ["chat"],
+    "kind": "cloud",
+    "reference": "https://cloud.baidu.com/doc/qianfan/s/rmh4stn9m",
+    "notes": "Qianfan v2 API-key Bearer endpoint. Select an enabled model ID. This does not use the legacy v1 access-token flow and is not the Coding Plan endpoint. Optional appid billing headers are not configured by this preset.",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "tencent-tokenhub",
+    "adapter": "openai",
+    "base_url": "https://tokenhub.tencentmaas.com/v1",
+    "protocols": ["chat", "responses"],
+    "kind": "cloud",
+    "reference": "https://cloud.tencent.com/document/product/1823/130079",
+    "notes": "TokenHub Guangzhou metered endpoint. API key and model access must belong to this service region/site. Responses support is model-dependent. This is not the Token Plan endpoint; no automatic region failover is performed.",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
+    "id": "tencent-tokenhub-sg",
+    "adapter": "openai",
+    "base_url": "https://tokenhub-intl.tencentmaas.com/v1",
+    "protocols": ["chat", "responses"],
+    "kind": "cloud",
+    "reference": "https://cloud.tencent.com/document/product/1823/130078",
+    "notes": "TokenHub Singapore endpoint documented for the China-site service. API keys and entitlement are region/site-specific. International-site accounts may have a different console-provided domain; use an explicit Base URL override rather than assuming cross-site compatibility. Responses support is model-dependent.",
+    "implementation": "native_http",
+    "live_verified": false
+  },
+  {
     "id": "openai",
     "adapter": "openai",
     "base_url": "https://api.openai.com/v1",

@@ -76,6 +76,10 @@ func Preset(id, model string, baseOverride ...string) (config.Source, error) {
 			s.SourceKind = "vendor_api"
 			s.InferenceLocation = "remote"
 			s.BillingMode = "metered"
+		case "cloud":
+			s.SourceKind = "cloud_api"
+			s.InferenceLocation = "remote"
+			s.BillingMode = "metered"
 		case "aggregator":
 			s.SourceKind = "aggregator_api"
 			s.InferenceLocation = "remote"

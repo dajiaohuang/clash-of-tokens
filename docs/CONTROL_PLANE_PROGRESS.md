@@ -153,12 +153,16 @@ CLI format references: [Codex auth fixture](https://github.com/openai/codex/blob
     request rate. Global active now includes removed sources' held leases.
     Router/API/browser tests cover retention, cancellation, access and display.
     See [workload metrics](WORKLOAD_METRICS.md).
+34. Added official Ark, legacy Hunyuan, Qianfan v2 and TokenHub region presets
+    with explicit cloud classification, protected API-key support, disabled
+    defaults, current migration/region notes and synthetic path/auth tests.
+    See [China cloud APIs](providers/china-cloud-apis.md).
 
 Discovery protocol references: [Anthropic models](https://platform.claude.com/docs/en/api/models/list),
 [Gemini models](https://ai.google.dev/api/models),
 [OpenAI models](https://platform.openai.com/docs/api-reference/models).
 
-Validation: `go test ./...` passed, 553 tests in 38 packages on Windows.
+Validation: `go test ./...` passed, 559 tests in 38 packages on Windows.
 Windows and Linux-target `govulncheck` reported no vulnerabilities.
 Browser regression: credential creation/redaction, account binding, source
 creation, group membership, preview/apply, every navigation destination and

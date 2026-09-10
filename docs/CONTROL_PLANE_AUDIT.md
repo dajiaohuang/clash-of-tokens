@@ -31,7 +31,7 @@ must be checked again before final acceptance.
 | 20. Versions/rollback | Version history and Compare/restore | Browser rollback/conflict acceptance test |
 | 21. Model management | Native API ID discovery and disabled model setup | Rich metadata where available; bulk operations; reverse-provider discovery |
 | 22. Discovery approval | New models disabled, unrated and not Auto-approved | Verify persisted discovery selections through routing |
-| 23. Official sources | Generic drivers and many official presets | Check every named provider and custom profile; Ark/Hunyuan/Qianfan not found in this pass |
+| 23. Official sources | Generic drivers; batch 34 adds Ark, legacy Hunyuan, Qianfan v2 and two TokenHub region presets with official references and path/auth tests | Live account/model compatibility, other named provider/custom-profile acceptance and optional service-specific parameters |
 | 24. Visible source types | Source-kind badge and provider-kind filter | Consistent complete official/cloud/browser/app/CLI/local/custom taxonomy |
 | 25. Explain exclusions | Router Explain in simulator; batches 29/30 add filtered Source/Provider Detail explanations | Full policy-reason acceptance across configured adapters |
 | 26. Simulator | Model/protocol/tools/vision/size without upstream request | Ordered candidates and distinction between eligibility and final choice |

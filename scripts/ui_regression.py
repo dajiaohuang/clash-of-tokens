@@ -227,6 +227,7 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     page.get_by_role("button", name="Close", exact=True).click()
     page.get_by_role("link", name="Activity", exact=True).click()
     page.get_by_role("button", name="Refresh history", exact=True).click()
+    expect(page.get_by_role("button", name="Refresh history", exact=True)).to_be_enabled()
     expect(page.get_by_text("explicit_stream_generation", exact=True)).to_have_count(4)
     expect(page.get_by_role("heading", name="Execution events", exact=True)).to_be_visible()
     page.get_by_label("Event source", exact=True).select_option("openai")
@@ -376,6 +377,19 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     expect(page.get_by_role("heading", name="Overview", exact=True)).to_be_visible()
     page.screenshot(path=str(output / "mobile.png"), full_page=True)
     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth"), "Mobile page overflows"
+    assert not errors, errors
+    page.get_by_role("link", name="Providers", exact=True).click()
+    for cloud_provider in ["volcengine-ark", "tencent-hunyuan", "baidu-qianfan", "tencent-tokenhub", "tencent-tokenhub-sg"]:
+        page.get_by_role("searchbox", name="Filter providers").fill(cloud_provider)
+        page.get_by_role("button", name=cloud_provider, exact=True).click()
+        expect(page.get_by_role("heading", name=cloud_provider, exact=True)).to_be_visible()
+        page.get_by_role("dialog").get_by_role("button", name="Add source", exact=True).click()
+        expect(page.get_by_label("Provider", exact=True)).to_have_value(cloud_provider)
+        page.get_by_label("Model", exact=True).fill("synthetic-model-id")
+        page.get_by_role("button", name="Continue", exact=True).click()
+        expect(page.get_by_label("Source type", exact=True)).to_have_value("cloud_api")
+        expect(page.get_by_role("checkbox", name="Enabled", exact=True).first).not_to_be_checked()
+        page.get_by_role("button", name="Close", exact=True).click()
     assert not errors, errors
     browser.close()
 print("UI smoke passed: credential redaction, account binding, source creation, group membership, preview/apply, navigation and responsive layout.")
