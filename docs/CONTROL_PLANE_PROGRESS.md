@@ -331,3 +331,9 @@ Batch 58 extends that invariant to source edits. Changing the quota domain on a
 bound source now moves its account and sibling sources together; moving a source
 to another account adopts the destination account's existing domain. The API
 regression covers both paths and confirms unrelated account domains stay fixed.
+
+Batch 59 adds the aggregated account-health table to the Health page. It shows
+provider, bounded health and authentication state, account capacity, member
+sources, success/failure counters and the latest validation timestamp beside
+the existing source and shared-domain views. The data remains the same
+redacted runtime snapshot exposed by `/admin/status`.
