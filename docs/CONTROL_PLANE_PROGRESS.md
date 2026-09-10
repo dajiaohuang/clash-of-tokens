@@ -378,3 +378,9 @@ Account and Source enabled switches. Each action still uses the central
 preview/apply transaction, and enabling Auto for a metered provider, account
 or source displays the possible billing impact. The browser regression toggles
 all three levels and confirms their state without changing enabled state.
+
+Batch 68 verifies configured fallback ordering end to end. Router coverage
+selects the first eligible member in the group's declared order and advances
+to the next member after a retryable rejection. The browser regression checks
+the selected-member drag affordance and persists a reordered two-source group
+through the normal review/apply flow.

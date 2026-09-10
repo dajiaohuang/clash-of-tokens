@@ -442,6 +442,22 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     page.get_by_role("button", name="Review changes", exact=True).click()
     page.get_by_role("button", name="Apply changes", exact=True).click()
     expect(page.get_by_role("dialog")).not_to_be_visible()
+    # Dragging selected members persists fallback order in the group.
+    page.get_by_role("link", name="Groups", exact=True).click()
+    page.get_by_role("button", name="Edit", exact=True).first.click()
+    page.get_by_role("checkbox", name="openai", exact=True).check()
+    page.get_by_role("checkbox", name="bulk-source", exact=True).check()
+    members = page.locator("ul.member-list li")
+    # Selected members expose the browser drag affordance; use the adjacent
+    # ordering control for deterministic headless persistence of the same list.
+    expect(members.nth(1)).to_have_attribute("draggable", "true")
+    members.nth(0).get_by_role("button", name="Down", exact=True).click()
+    members = page.locator("ul.member-list li")
+    members.nth(1).get_by_role("button", name="Up", exact=True).click()
+    expect(members.nth(0)).to_contain_text("bulk-source")
+    page.get_by_role("button", name="Review changes", exact=True).click()
+    page.get_by_role("button", name="Apply changes", exact=True).click()
+    expect(page.get_by_role("row").filter(has=page.get_by_text("auto", exact=True))).to_contain_text("bulk-source → openai")
     page.get_by_role("link", name="Models", exact=True).click()
     page.get_by_role("button", name="Select filtered models", exact=True).click()
     expect(page.get_by_text("2 models selected, including selections outside the current filter.", exact=True)).to_be_visible()

@@ -97,6 +97,29 @@ func TestStatefulRequiresExplicitSource(t *testing.T) {
 	}
 	l.Release(200, 0)
 }
+
+func TestFallbackFollowsConfiguredMemberOrder(t *testing.T) {
+	c := fixture(3)
+	c.Groups = []config.Group{{ID: "fallback", Type: "fallback", Sources: []string{"s2", "s0", "s1"}, MinTier: "silver"}}
+	r := New(c)
+	l, err := r.Acquire(context.Background(), Query{Model: "fallback", Protocol: "chat", Bytes: 100})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := c.Sources[l.Target.Source].ID; got != "s2" {
+		t.Fatalf("fallback ignored configured order: got %s", got)
+	}
+	l.Release(429, 0)
+	l, err = r.Acquire(context.Background(), Query{Model: "fallback", Protocol: "chat", Bytes: 100})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := c.Sources[l.Target.Source].ID; got != "s0" {
+		t.Fatalf("fallback did not advance after rejection: got %s", got)
+	}
+	l.Release(200, 0)
+}
+
 func BenchmarkChoose(b *testing.B) {
 	for _, n := range []int{8, 100, 1000} {
 		b.Run(fmt.Sprint(n), func(b *testing.B) {

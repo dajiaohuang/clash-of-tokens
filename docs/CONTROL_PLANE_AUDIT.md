@@ -24,7 +24,7 @@ must be checked again before final acceptance.
 | 13. Multiple memberships | Source editor and group membership controls | Explicit end-to-end multiple-group routing verification |
 | 14. Source Detail | Batch 29 consolidates configuration/models/capacity/runtime/TTFT/evidence and edit/check actions; explicit three-sample benchmark with cancellation tests | Full live-adapter acceptance and aggregate benchmark persistence remain unverified |
 | 15. Routing editor | Batch 28 adds five ordered preferences with explicit rate/latency semantics and dispatch tests; Batch 54 exposes bounded runtime token/cost accounting | Complete cross-strategy acceptance and any hard per-request budget controls |
-| 16. Drag order | Ordered group source widget | Browser drag/drop and actual fallback order test |
+| 16. Drag order | Ordered group source widget; Batch 68 verifies persisted two-source ordering in the browser flow and first/next fallback dispatch in the router | Native drag event coverage remains limited in headless regression; physical-browser drag and broader fallback matrices remain |
 | 17. Independent switches | Provider/account/source/model enable/Auto gates; Batch 67 adds direct Provider, Account and Source Auto actions with central preview/apply and billing notice | Full UI-to-runtime four-level acceptance test |
 | 18. All frontend configuration | Schema-driven forms and config transactions | Missing requested settings must first exist in schema/runtime |
 | 19. Configuration service | Journal, compile/prepare, atomic runtime publication tests | Fault and rollback lifecycle audit across all managed resources |
