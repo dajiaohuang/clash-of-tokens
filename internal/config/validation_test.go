@@ -60,3 +60,23 @@ func TestLocalModelRequiresExplicitLocalInference(t *testing.T) {
 		t.Fatalf("local billing on a remote source was accepted: %v", err)
 	}
 }
+
+func TestSourceMetadataRejectsUnsafeOrganizationAndProject(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		set  func(*Source)
+	}{
+		{"organization newline", func(s *Source) { s.Organization = "org\nheader" }},
+		{"project newline", func(s *Source) { s.Project = "project\rvalue" }},
+		{"organization nul", func(s *Source) { s.Organization = "org\x00value" }},
+		{"project too long", func(s *Source) { s.Project = strings.Repeat("p", 257) }},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			source := Source{}
+			test.set(&source)
+			if err := source.ValidateMetadata(); err == nil {
+				t.Fatal("unsafe metadata accepted")
+			}
+		})
+	}
+}

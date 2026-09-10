@@ -21,8 +21,15 @@ func (s Source) EffectiveBilling() string {
 }
 
 func (s Source) ValidateMetadata() error {
-	if len(s.Organization) > 256 || strings.ContainsAny(s.Organization, "\r\n\x00") {
-		return fmt.Errorf("invalid organization")
+	for _, field := range []struct {
+		name, value string
+	}{
+		{"organization", s.Organization},
+		{"project", s.Project},
+	} {
+		if len(field.value) > 256 || strings.ContainsAny(field.value, "\r\n\x00") {
+			return fmt.Errorf("invalid %s", field.name)
+		}
 	}
 	for _, field := range []struct {
 		name, value string

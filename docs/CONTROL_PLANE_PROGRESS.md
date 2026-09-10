@@ -703,3 +703,9 @@ and Arc. The schema-driven editor and discovered-profile flow expose the same
 engine list. Dedicated launches use Chromium's isolated user-data directory or
 Firefox's isolated profile flag; all require an explicit loopback CDP endpoint
 and remain separate from authentication evidence.
+
+Batch 130 applies the same bounded metadata validation to both OpenAI
+organization and project fields. Control characters and overlong values are
+rejected before configuration preview or persistence, so provider-specific
+routing headers and Cloud Code Assist project metadata cannot inject a header
+or oversized configuration value.
