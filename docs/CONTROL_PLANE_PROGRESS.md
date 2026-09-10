@@ -561,3 +561,7 @@ Batch 104 applies that contract before a new protected credential is written,
 too. The PUT path validates the candidate metadata even when the reference did
 not previously exist, so an incompatible account binding cannot be created by
 ordering credential and account mutations around the wizard.
+
+Batch 105 extends global search to credential provenance metadata (import
+source and normalized domain) while keeping the existing ID and kind matches.
+Selecting a result still opens the redacted credential editor.

@@ -774,7 +774,7 @@ function searchResults(query){
  for(const source of S.config.sources)for(const model of source.models)if([model.id,model.upstream,model.canonical_model,model.declared_model,source.id,source.provider].filter(Boolean).join(' ').toLowerCase().includes(q))results.push([model.id+' · '+source.id,'Model',()=>bulkModels([{source,model}])]);
  for(const profile of S.config.browser_profiles||[])if((profile.id+' '+profile.engine).toLowerCase().includes(q))results.push([profile.id,'Browser profile',()=>edit('browser_profiles',profile)]);
  if(('device android '+(S.config.device?.serial||'')).toLowerCase().includes(q))results.push(['Android device settings','Device',()=>{$('search').value='';location.hash='devices';render()}]);
- for(const c of S.credentials)if((c.id+' '+c.kind).toLowerCase().includes(q))results.push([c.id,'Credential',()=>credentialForm(c)]);
+ for(const c of S.credentials)if([c.id,c.kind,c.source,c.domain].filter(Boolean).join(' ').toLowerCase().includes(q))results.push([c.id,'Credential',()=>credentialForm(c)]);
  return [pageHead('Search',results.length+' matching entries'),h('div',{class:'search-results'},results.map(([name,type,action])=>h('div',{class:'search-result'},button(name,action),h('span',{},type))))];
 }
 function render(){
