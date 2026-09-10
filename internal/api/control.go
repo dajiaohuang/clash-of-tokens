@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"reflect"
+	"sort"
 	"strings"
 	"sync"
 
@@ -291,7 +292,37 @@ func previewImpact(before, after config.Config) map[string]any {
 		"groups":         rows,
 		"sources_before": len(before.Sources), "sources_after": len(after.Sources),
 		"accounts_before": len(before.Accounts), "accounts_after": len(after.Accounts),
+		"sources_changed":  changedResourceIDs(before.Sources, after.Sources, func(v config.Source) string { return v.ID }),
+		"accounts_changed": changedResourceIDs(before.Accounts, after.Accounts, func(v config.Account) string { return v.ID }),
+		"groups_changed":   changedResourceIDs(before.Groups, after.Groups, func(v config.Group) string { return v.ID }),
 	}
+}
+
+// changedResourceIDs gives the preview a bounded impact summary even when the
+// number of configured resources stays constant. IDs are safe to expose and
+// make a same-count replacement or switch change reviewable in the UI.
+func changedResourceIDs[T any](before, after []T, id func(T) string) []string {
+	oldByID, nextByID := map[string]T{}, map[string]T{}
+	for _, value := range before {
+		oldByID[id(value)] = value
+	}
+	for _, value := range after {
+		nextByID[id(value)] = value
+	}
+	ids := make([]string, 0)
+	for key, old := range oldByID {
+		next, ok := nextByID[key]
+		if !ok || !reflect.DeepEqual(old, next) {
+			ids = append(ids, key)
+		}
+	}
+	for key := range nextByID {
+		if _, ok := oldByID[key]; !ok {
+			ids = append(ids, key)
+		}
+	}
+	sort.Strings(ids)
+	return ids
 }
 func (p *ControlPlane) configAdmin(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {

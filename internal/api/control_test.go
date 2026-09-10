@@ -137,7 +137,10 @@ func TestConfigPreviewReportsRoutingImpact(t *testing.T) {
 	}
 	var response struct {
 		Impact struct {
-			Groups []struct {
+			SourcesChanged  []string `json:"sources_changed"`
+			AccountsChanged []string `json:"accounts_changed"`
+			GroupsChanged   []string `json:"groups_changed"`
+			Groups          []struct {
 				Group          string `json:"group"`
 				Protocol       string `json:"protocol"`
 				BeforeEligible int    `json:"before_eligible"`
@@ -150,5 +153,8 @@ func TestConfigPreviewReportsRoutingImpact(t *testing.T) {
 	}
 	if len(response.Impact.Groups) != 1 || response.Impact.Groups[0].Group != "auto" || response.Impact.Groups[0].Protocol != "chat" || response.Impact.Groups[0].BeforeEligible != 1 || response.Impact.Groups[0].AfterEligible != 0 {
 		t.Fatalf("unexpected preview impact: %+v", response.Impact.Groups)
+	}
+	if len(response.Impact.SourcesChanged) != 1 || response.Impact.SourcesChanged[0] != "preview-source" || len(response.Impact.AccountsChanged) != 0 || len(response.Impact.GroupsChanged) != 0 {
+		t.Fatalf("unexpected changed-resource impact: %+v", response.Impact)
 	}
 }

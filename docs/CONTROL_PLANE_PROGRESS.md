@@ -301,6 +301,10 @@ Batch 134 makes Source Detail display the effective account endpoint defaults
 used by runtime routing and the same safe credential binding provenance shown
 in Health and verification details.
 
+Batch 135 extends configuration previews with sorted changed-resource IDs for
+sources, accounts and groups, so a same-count edit remains reviewable alongside
+the bounded routing eligibility impact.
+
 Batch 52 adds a direct **Use in account** action for stored credentials and
 configured browser profiles discovered by the Accounts page. It pre-fills the
 existing transactional account wizard without enabling the account or source.
