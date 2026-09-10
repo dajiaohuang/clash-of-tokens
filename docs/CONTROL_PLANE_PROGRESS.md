@@ -597,3 +597,8 @@ covers each sensitive shape.
 Batch 111 closes the Zed Hosted expiry path: expiring a retained session now
 rotates its provider thread ID before the next request, so the control action
 cannot accidentally continue the previous conversation.
+
+Batch 112 adds an upstream dispatch regression proving stateful adapter
+inventory is available through the shared client while native API adapters
+return an explicit unsupported capability instead of an empty, misleading
+session list.
