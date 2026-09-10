@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -95,9 +96,26 @@ func authorized(r *http.Request, key [32]byte) bool {
 	return subtle.ConstantTimeCompare(h[:], key[:]) == 1
 }
 func fail(w http.ResponseWriter, status int, msg string) {
+	msg = publicError(msg)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(map[string]any{"error": map[string]string{"message": msg, "type": "gateway_error"}})
+}
+
+var secretShapedError = regexp.MustCompile(`(?i)(?:api[_-]?key|access[_-]?token|refresh[_-]?token|password|authorization|cookie)\s*[:=]\s*[^\s,;&]+|\bbearer\s+[A-Za-z0-9._~+/=-]{8,}`)
+
+// publicError keeps dynamic failure paths useful while ensuring secret-shaped
+// values cannot cross the HTTP boundary if an adapter or storage backend
+// accidentally includes one in an error string.
+func publicError(msg string) string {
+	msg = strings.TrimSpace(strings.Join(strings.Fields(msg), " "))
+	if msg == "" {
+		return "request failed"
+	}
+	if len(msg) > 512 || secretShapedError.MatchString(msg) {
+		return "request failed"
+	}
+	return msg
 }
 func reply(w http.ResponseWriter, v any) {
 	w.Header().Set("Content-Type", "application/json")

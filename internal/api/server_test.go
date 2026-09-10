@@ -76,6 +76,24 @@ func TestEmbeddedControlPlaneAssets(t *testing.T) {
 	}
 }
 
+func TestFailureBoundaryRedactsSecretShapedMessages(t *testing.T) {
+	for _, msg := range []string{
+		"upstream rejected api_key=private-key-value",
+		"authorization: Bearer private-token-value",
+		"cookie=session-private-value",
+		"password=private-password",
+	} {
+		w := httptest.NewRecorder()
+		fail(w, http.StatusBadRequest, msg)
+		if strings.Contains(w.Body.String(), "private-") || strings.Contains(w.Body.String(), msg) {
+			t.Fatalf("secret-shaped error crossed boundary: %s", w.Body.String())
+		}
+		if !strings.Contains(w.Body.String(), "request failed") {
+			t.Fatalf("safe error category missing: %s", w.Body.String())
+		}
+	}
+}
+
 func TestStreamingPassthroughAndSecrets(t *testing.T) {
 	wire := []byte("data: {\"text\":\"你好\"}\r\n\r\ndata: [DONE]\n\n")
 	s, g := setup(t, func(w http.ResponseWriter, r *http.Request) {

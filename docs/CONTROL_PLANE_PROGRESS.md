@@ -587,3 +587,9 @@ adapters. Explicit
 provider conversation identifiers remain metadata and no credential is
 returned. Adapters that do not retain gateway session state continue to report
 an explicit unsupported capability.
+
+Batch 110 hardens the shared HTTP failure boundary. Dynamic error strings are
+normalized and messages containing API-key, access-token, refresh-token,
+password, Cookie, Authorization, or Bearer-shaped values are replaced with a
+stable `request failed` category before JSON encoding; a focused regression
+covers each sensitive shape.
