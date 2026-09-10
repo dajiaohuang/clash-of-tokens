@@ -170,6 +170,9 @@ func contains(a []string, v string) bool {
 func (r *Router) eligible(t Target, q Query) (bool, string) {
 	s := r.cfg.Sources[t.Source]
 	st := r.state[t.Source]
+	if t.Model.Enabled != nil && !*t.Model.Enabled {
+		return false, "model_disabled"
+	}
 	if !st.enabled {
 		return false, "disabled"
 	}
@@ -201,6 +204,9 @@ func (r *Router) eligible(t Target, q Query) (bool, string) {
 		}
 	}
 	if g, ok := r.groups[groupID]; ok {
+		if t.Model.AutoApproved != nil && !*t.Model.AutoApproved {
+			return false, "model_not_approved"
+		}
 		if q.Stateful {
 			return false, "stateful_requires_explicit_source"
 		}

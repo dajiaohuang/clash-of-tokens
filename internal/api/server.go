@@ -103,9 +103,19 @@ func reply(w http.ResponseWriter, v any) {
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("Cache-Control", "no-store")
+	if r.Method == "GET" && (r.URL.Path == "/assets/control.js" || r.URL.Path == "/assets/control.css") {
+		if r.URL.Path == "/assets/control.js" {
+			w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
+			_, _ = io.WriteString(w, controlJS)
+		} else {
+			w.Header().Set("Content-Type", "text/css; charset=utf-8")
+			_, _ = io.WriteString(w, controlCSS)
+		}
+		return
+	}
 	if (r.URL.Path == "/" || r.URL.Path == "/chat") && r.Method == "GET" {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Header().Set("Content-Security-Policy", "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'")
+		w.Header().Set("Content-Security-Policy", "default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'")
 		page := dashboard
 		if r.URL.Path == "/chat" {
 			page = chatPage
@@ -418,6 +428,9 @@ func (s *Server) models(w http.ResponseWriter) {
 			continue
 		}
 		for _, m := range src.Models {
+			if m.Enabled != nil && !*m.Enabled {
+				continue
+			}
 			out = append(out, modelEntry{src.ID + "/" + m.ID, "model", src.Provider})
 		}
 	}
@@ -445,6 +458,13 @@ func (s *Server) admin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	switch {
+	case r.Method == "GET" && r.URL.Path == "/admin/preset":
+		source, err := catalog.Preset(r.URL.Query().Get("provider"), r.URL.Query().Get("model"), r.URL.Query().Get("base_url"))
+		if err != nil {
+			fail(w, 400, err.Error())
+			return
+		}
+		reply(w, source)
 	case r.Method == "GET" && r.URL.Path == "/admin/descriptors":
 		reply(w, providerdef.All())
 	case r.Method == "GET" && r.URL.Path == "/admin/catalog":

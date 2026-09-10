@@ -87,14 +87,18 @@ type Source struct {
 	Models             []Model             `json:"models"`
 }
 type Model struct {
-	ID            string   `json:"id"`
-	Upstream      string   `json:"upstream"`
-	Protocols     []string `json:"protocols"`
-	Tier          string   `json:"tier"`
-	RatingBasis   string   `json:"rating_basis"`
-	Tools         string   `json:"tools"`
-	Vision        bool     `json:"vision"`
-	MaxInputBytes int64    `json:"max_input_bytes"`
+	Enabled        *bool    `json:"enabled,omitempty"`
+	AutoApproved   *bool    `json:"auto_approved,omitempty"`
+	DeclaredModel  string   `json:"declared_model,omitempty"`
+	CanonicalModel string   `json:"canonical_model,omitempty"`
+	ID             string   `json:"id"`
+	Upstream       string   `json:"upstream"`
+	Protocols      []string `json:"protocols"`
+	Tier           string   `json:"tier"`
+	RatingBasis    string   `json:"rating_basis"`
+	Tools          string   `json:"tools"`
+	Vision         bool     `json:"vision"`
+	MaxInputBytes  int64    `json:"max_input_bytes"`
 }
 type Group struct {
 	AllowMetered       *bool    `json:"allow_metered,omitempty"`
