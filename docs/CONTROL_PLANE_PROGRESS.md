@@ -483,3 +483,7 @@ verified provider row after an explicit validation.
 Batch 87 adds provider and account enabled/Auto policy flags to the health API
 and Health tables. These policy switches remain visible beside runtime health,
 capacity and validation evidence, with API coverage for the configured values.
+
+Batch 88 adds an embedded-frontend serving regression. The compiled Go server
+must return the dashboard, JavaScript and CSS with their expected content types,
+asset markers and same-origin connect policy; the test uses no Node runtime.

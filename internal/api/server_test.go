@@ -45,6 +45,37 @@ func request(t *testing.T, url, path, body, key string) *http.Response {
 	}
 	return res
 }
+
+func TestEmbeddedControlPlaneAssets(t *testing.T) {
+	s, err := NewWithKeys(config.Default(), testKey, adminKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	gateway := httptest.NewServer(s)
+	defer gateway.Close()
+	for _, tc := range []struct {
+		path, contentType, marker string
+	}{
+		{"/", "text/html; charset=utf-8", "/assets/control.js"},
+		{"/assets/control.js", "text/javascript; charset=utf-8", "'use strict'"},
+		{"/assets/control.css", "text/css; charset=utf-8", ":root"},
+	} {
+		res, err := http.Get(gateway.URL + tc.path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		body, readErr := io.ReadAll(res.Body)
+		res.Body.Close()
+		if readErr != nil || res.StatusCode != http.StatusOK || res.Header.Get("Content-Type") != tc.contentType || !bytes.Contains(body, []byte(tc.marker)) {
+			t.Fatalf("embedded asset %s: status=%d content-type=%q read=%v marker=%q", tc.path, res.StatusCode, res.Header.Get("Content-Type"), readErr, tc.marker)
+		}
+		if tc.path == "/" && !strings.Contains(res.Header.Get("Content-Security-Policy"), "connect-src 'self'") {
+			t.Fatalf("dashboard CSP missing same-origin connect restriction: %q", res.Header.Get("Content-Security-Policy"))
+		}
+	}
+}
+
 func TestStreamingPassthroughAndSecrets(t *testing.T) {
 	wire := []byte("data: {\"text\":\"你好\"}\r\n\r\ndata: [DONE]\n\n")
 	s, g := setup(t, func(w http.ResponseWriter, r *http.Request) {
