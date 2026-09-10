@@ -73,6 +73,9 @@ type Router struct {
 // Capacity survives configuration generations, including leases held by
 // retired routers. A hot update never doubles an account's available slots.
 type capacity struct {
+	events           []ExecutionEvent
+	eventCursor      int
+	eventSequence    uint64
 	mu               sync.Mutex
 	active           int
 	dispatchSequence uint64
@@ -93,6 +96,10 @@ type Query struct {
 	Vision          bool     `json:"vision"`
 }
 type Lease struct {
+	protocol    string
+	probe       bool
+	execution   *protocol.ExecutionResult
+	ttftMS      float64
 	firstOutput sync.Once
 	router      *Router
 	Target      Target
@@ -390,7 +397,7 @@ func (r *Router) Acquire(ctx context.Context, q Query) (*Lease, error) {
 				a.virtualFinish += 1 / r.accountWeights[t.Source]
 			}
 			r.cursor++
-			return &Lease{router: r, Target: t, started: time.Now(), state: r.state[t.Source], quota: r.quotas[t.Source], account: r.accounts[t.Source]}, nil
+			return &Lease{router: r, Target: t, protocol: q.Protocol, probe: q.Probe, started: time.Now(), state: r.state[t.Source], quota: r.quotas[t.Source], account: r.accounts[t.Source]}, nil
 		}
 		if !eligible {
 			return nil, ErrUnavailable
@@ -474,6 +481,7 @@ func (l *Lease) Release(status int, retryAfter time.Duration) {
 			r.current.signal()
 			return
 		}
+		l.recordEvent(status)
 		st := l.state
 		st.lastHTTPStatus = status
 		if status == 401 || status == 403 {

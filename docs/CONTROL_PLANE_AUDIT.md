@@ -51,13 +51,13 @@ must be checked again before final acceptance.
 | 40. Descriptor registry | Shared validation/factory/schema contract | More provider-specific credential/discovery/auth capabilities; eliminate residual setup switches |
 | 41. Administration API | Persistent CRUD, config, simulator, source checks | Account validate and complete browser/device lifecycle operations |
 | 42. Embedded frontend | Go-embedded static HTML/CSS/JS, no Node runtime | Packaging/build verification |
-| 43. Navigation | All named destinations represented; Activity for logs | Complete content on each destination; runtime log view |
+| 43. Navigation | All named destinations; batch 32 adds bounded runtime execution events and source/outcome filters in Activity | Complete content on every destination and broader event coverage |
 | 44. Search | Global search implementation | Each required entity search + navigation browser test |
 | 45. Preview | Config diff and optimistic revision preview | Eligibility/account impact before apply; credential replacement preview |
 | 46. Central validation | Schema validation plus runtime prepare before apply | All special actions must retain the same invariants |
 | 47. Hot reload | Generation pinning and restart-required fields | Full browser confirmation of live vs pending runtime settings |
 | 48. Sensitive confirmation | Config preview, credential-delete confirmation, billing notices | All specified sensitive actions and cost warnings acceptance test |
-| 49. Secret-safe logs | Redacted vault/import/session/evidence responses; batch 31 allowlists execution error categories at runtime-status and validation boundaries | Global Secret representation, runtime event log and all adapter/error/log paths audit |
+| 49. Secret-safe logs | Redacted vault/import/session/evidence responses; fixed execution categories; batch 32 stores bounded structured events without raw error/body/credential fields | Global Secret representation and all adapter/error/log paths audit; pre-acquisition rejections not logged |
 | 50. Five epics | Work split into committed batches | A–E remain incomplete until their component rows are accepted |
 | 51. End-to-end workflow | Most core pieces exist separately | Install → discover → import/login → accounts → sources → Auto/groups → successful local API call without hand-editing JSON |
 

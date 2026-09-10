@@ -12,6 +12,7 @@ func (l *Lease) RecordExecution(result protocol.ExecutionResult) {
 	l.router.mu.Lock()
 	defer l.router.mu.Unlock()
 	l.state.lastExecution = &result
+	l.execution = &result
 }
 
 func (l *Lease) FirstOutput() {
@@ -19,6 +20,7 @@ func (l *Lease) FirstOutput() {
 		l.router.mu.Lock()
 		defer l.router.mu.Unlock()
 		ms := float64(time.Since(l.started).Microseconds()) / 1000
+		l.ttftMS = ms
 		if l.state.ttftMS == 0 {
 			l.state.ttftMS = ms
 		} else {

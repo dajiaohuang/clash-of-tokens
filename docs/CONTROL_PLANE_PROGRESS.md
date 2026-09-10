@@ -143,12 +143,17 @@ CLI format references: [Codex auth fixture](https://github.com/openai/codex/blob
     while preserving failure status. A synthetic URL/key/body regression verifies
     serialized status redaction and snapshot isolation. This is one boundary of
     the broader secret/log audit; runtime event logging remains outstanding.
+32. Bounded structured execution-event ring survives hot updates and records
+    exactly one event per released attempt, including finishing old leases.
+    Activity exposes source/outcome filters. Tests cover capacity/order,
+    redaction, cancellation, snapshot isolation, administrative exclusions and
+    UI visibility after credential rotation. See [execution events](EXECUTION_EVENTS.md).
 
 Discovery protocol references: [Anthropic models](https://platform.claude.com/docs/en/api/models/list),
 [Gemini models](https://ai.google.dev/api/models),
 [OpenAI models](https://platform.openai.com/docs/api-reference/models).
 
-Validation: `go test ./...` passed, 549 tests in 38 packages on Windows.
+Validation: `go test ./...` passed, 551 tests in 38 packages on Windows.
 Windows and Linux-target `govulncheck` reported no vulnerabilities.
 Browser regression: credential creation/redaction, account binding, source
 creation, group membership, preview/apply, every navigation destination and
