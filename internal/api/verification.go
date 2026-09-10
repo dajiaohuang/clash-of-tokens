@@ -33,6 +33,21 @@ type sourceVerification struct {
 	Models              []modelVerification `json:"models"`
 }
 
+type accountHealth struct {
+	ID              string     `json:"id"`
+	Provider        string     `json:"provider"`
+	Health          string     `json:"health"`
+	AuthStatus      string     `json:"auth_status"`
+	Active          int        `json:"active"`
+	Limit           int        `json:"limit"`
+	Sources         []string   `json:"sources"`
+	Completed       uint64     `json:"completed"`
+	Failures        uint64     `json:"failures"`
+	LastSuccess     *time.Time `json:"last_success,omitempty"`
+	LastFailure     *time.Time `json:"last_failure,omitempty"`
+	LastValidatedAt *time.Time `json:"last_validated_at,omitempty"`
+}
+
 func (p *ControlPlane) credentialMetadata(ref string) credentials.Metadata {
 	for _, m := range p.vault.List() {
 		if m.ID == ref {
@@ -149,6 +164,108 @@ func (p *ControlPlane) controlStatus(s *Server) map[string]any {
 	}
 	out["verification"] = verification
 	out["live_verified_sources"] = verifiedSources
+	out["account_health"] = p.accountHealth(s, entries)
 	out["revision"] = p.service.Current().Revision
 	return out
+}
+
+func (p *ControlPlane) accountHealth(s *Server, entries []audit.Entry) []accountHealth {
+	capacities, _ := s.Router.CapacityStatus()
+	capacityByID := map[string]routingCapacity{}
+	for _, value := range capacities {
+		capacityByID[value.ID] = routingCapacity{active: value.Active, limit: value.Limit}
+	}
+	type sourceAggregate struct {
+		completed, failures      uint64
+		lastSuccess, lastFailure time.Time
+		cooldown, blocked        bool
+	}
+	bySource := map[string]sourceAggregate{}
+	for _, value := range s.Router.Status() {
+		bySource[value.ID] = sourceAggregate{completed: value.Completed, failures: value.Failures, lastSuccess: value.LastSuccess, lastFailure: value.LastFailure, cooldown: !value.Cooldown.IsZero() && time.Now().Before(value.Cooldown), blocked: value.Blocked}
+	}
+	latestAuth := map[string]audit.Entry{}
+	latestValidation := map[string]audit.Entry{}
+	for _, entry := range entries {
+		switch entry.Kind {
+		case "authentication":
+			if current, ok := latestAuth[entry.Resource]; !ok || entry.CheckedAt.After(current.CheckedAt) {
+				latestAuth[entry.Resource] = entry
+			}
+		case "validation":
+			if current, ok := latestValidation[entry.Resource]; !ok || entry.CheckedAt.After(current.CheckedAt) {
+				latestValidation[entry.Resource] = entry
+			}
+		}
+	}
+	out := make([]accountHealth, 0, len(s.cfg.Accounts))
+	for _, account := range s.cfg.Accounts {
+		health := accountHealth{ID: account.ID, Provider: account.ProviderID, Health: "untested", AuthStatus: "not_checked", Limit: account.MaxInflight, Sources: []string{}}
+		if capacity, ok := capacityByID[account.ID]; ok {
+			health.Active = capacity.active
+			health.Limit = capacity.limit
+		}
+		for _, source := range s.cfg.Sources {
+			if source.AccountID != account.ID {
+				continue
+			}
+			health.Sources = append(health.Sources, source.ID)
+			aggregate := bySource[source.ID]
+			health.Completed += aggregate.completed
+			health.Failures += aggregate.failures
+			if aggregate.lastSuccess.After(valueTime(health.LastSuccess)) {
+				v := aggregate.lastSuccess
+				health.LastSuccess = &v
+			}
+			if aggregate.lastFailure.After(valueTime(health.LastFailure)) {
+				v := aggregate.lastFailure
+				health.LastFailure = &v
+			}
+			if entry, ok := latestValidation[source.ID]; ok && entry.CheckedAt.After(valueTime(health.LastValidatedAt)) {
+				v := entry.CheckedAt
+				health.LastValidatedAt = &v
+			}
+		}
+		if entry, ok := latestAuth[account.ID]; ok {
+			health.AuthStatus = entry.Status
+		}
+		switch {
+		case !account.Enabled:
+			health.Health = "disabled"
+		case health.AuthStatus == "unauthenticated" || health.AuthStatus == "expired" || health.AuthStatus == "rejected":
+			health.Health = "auth_required"
+		case health.Active >= health.Limit && health.Limit > 0:
+			health.Health = "exhausted"
+		default:
+			for _, source := range s.cfg.Sources {
+				if source.AccountID != account.ID {
+					continue
+				}
+				aggregate := bySource[source.ID]
+				if aggregate.blocked {
+					health.Health = "blocked"
+					break
+				}
+				if aggregate.cooldown {
+					health.Health = "cooldown"
+				}
+			}
+			if health.Health == "untested" && health.Completed > 0 {
+				health.Health = "healthy"
+			} else if health.Health == "untested" && health.Failures > 0 {
+				health.Health = "degraded"
+			}
+		}
+		out = append(out, health)
+	}
+	return out
+}
+
+type routingCapacity struct{ active, limit int }
+
+func valueTime(value *time.Time) time.Time {
+	if value == nil {
+		return time.Time{}
+	}
+	return *value
 }

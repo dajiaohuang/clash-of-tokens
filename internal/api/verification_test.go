@@ -1,11 +1,16 @@
 package api
 
 import (
-	"testing"
-	"time"
-
 	"clash-of-tokens/internal/config"
 	"clash-of-tokens/internal/credentials"
+	audit "clash-of-tokens/internal/evidence"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
 )
 
 func TestVerificationBindingTracksCredentialAndRuntime(t *testing.T) {
@@ -33,5 +38,59 @@ func TestVerificationBindingTracksCredentialAndRuntime(t *testing.T) {
 	p.runtimeID = "third-run"
 	if envBinding == p.bindingWithMetadata(c, source, credentials.Metadata{}) {
 		t.Fatal("environment evidence survived a restart without a credential version")
+	}
+}
+
+func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNotImplemented) }))
+	defer upstream.Close()
+	c := config.Default()
+	c.Providers = []config.Provider{{ID: "p"}}
+	c.Accounts = []config.Account{{ID: "a", ProviderID: "p", DisplayName: "Account", Enabled: true, MaxInflight: 1, Weight: 1, QuotaDomain: "q"}}
+	c.Sources = []config.Source{{ID: "s", Provider: "p", Adapter: "openai", BaseURL: upstream.URL, Local: true, Enabled: true, MaxInflight: 1, AccountID: "a", QuotaDomain: "q", QuotaMaxInflight: 1, Models: []config.Model{{ID: "m", Upstream: "m", Protocols: []string{"chat"}, Tier: "unrated", Tools: "none", MaxInputBytes: 1024}}}}
+	dir := t.TempDir()
+	vault, err := credentials.Open(filepath.Join(dir, "vault"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, err := NewControlPlane(filepath.Join(dir, "config.json"), c, testKey, adminKey, vault)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer p.Close()
+	checked := time.Now().UTC().Add(-time.Minute)
+	if err := p.evidence.Append(audit.Entry{Kind: "validation", Resource: "s", Status: "verified", CheckedAt: checked}); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.evidence.Append(audit.Entry{Kind: "authentication", Resource: "a", Status: "authenticated", CheckedAt: checked}); err != nil {
+		t.Fatal(err)
+	}
+	r := httptest.NewRequest("GET", "/admin/status", strings.NewReader(""))
+	r.Header.Set("Authorization", "Bearer "+adminKey)
+	w := httptest.NewRecorder()
+	p.ServeHTTP(w, r)
+	if w.Code != 200 {
+		t.Fatal(w.Code, w.Body.String())
+	}
+	var out struct {
+		Accounts []struct {
+			ID            string     `json:"id"`
+			Health        string     `json:"health"`
+			AuthStatus    string     `json:"auth_status"`
+			Active        int        `json:"active"`
+			Limit         int        `json:"limit"`
+			Sources       []string   `json:"sources"`
+			LastValidated *time.Time `json:"last_validated_at"`
+		} `json:"account_health"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &out); err != nil {
+		t.Fatal(err)
+	}
+	if len(out.Accounts) != 1 {
+		t.Fatalf("account health rows = %+v", out.Accounts)
+	}
+	a := out.Accounts[0]
+	if a.ID != "a" || a.Health != "untested" || a.AuthStatus != "authenticated" || a.Active != 0 || a.Limit != 1 || len(a.Sources) != 1 || a.Sources[0] != "s" || a.LastValidated == nil {
+		t.Fatalf("unexpected account health: %+v", a)
 	}
 }

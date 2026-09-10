@@ -11,7 +11,7 @@ must be checked again before final acceptance.
 | --- | --- | --- |
 | 1. Runtime correctness | `config/metadata.go`, router metadata/attempt/stream tests | End-to-end cross-adapter replay/completion audit; metadata preset accuracy |
 | 2. Account/credential separation | `config/accounts.go`, `credential.go`, injected adapter resolution | Finish provider-specific credential setup and migration UX |
-| 3. Account model | Account configuration and authentication evidence | Account health/capacity/last validation aggregation |
+| 3. Account model | Account configuration plus `/admin/status` account health aggregation: health/auth state, capacity, sources, counters, last success/failure and last validation | Account validate action and provider-specific health evidence |
 | 4. Protected store | DPAPI; Linux native Secret Service integration tests; AES-GCM envelope tests | Native macOS cgo build/runtime verification |
 | 5. Add any account | Batch 27 account wizard combines credential/import selection and profile login | Complete provider-specific forms, organization/project setup and broader login checks |
 | 6. Browser import | Standard profile metadata and selected CDP Cookie import | Selected existing-profile account candidates and all named browser import paths |
@@ -19,7 +19,7 @@ must be checked again before final acceptance.
 | 8. Provider matching | Exact catalog-domain/type suggestions | Complete domain aliases and direct binding workflow |
 | 9. Launch login | Dedicated browser launch and bounded UI watcher | Broader provider detection and complete account creation flow |
 | 10. Profile registry | Profile CRUD, per-account CDP/session isolation | Existing-profile onboarding and lifecycle status |
-| 11. Full management pages | Provider Detail; batch 33 adds global workload/queue, buffer and Go-memory metrics, uptime and explicit lifetime-average rate to Overview/Metrics | Process/session inventory; broader account health; credential last use/status; full end-to-end page acceptance |
+| 11. Full management pages | Provider Detail; global workload/queue, buffer and Go-memory metrics; account health/capacity rows in Accounts | Process/session inventory; credential last use/status; full end-to-end page acceptance |
 | 12. Groups | Batch 28 adds vision requirement, declared input/output rate ceiling and ordered preferences to configuration/UI/router | Total-request cost accounting and full policy acceptance still outstanding |
 | 13. Multiple memberships | Source editor and group membership controls | Explicit end-to-end multiple-group routing verification |
 | 14. Source Detail | Batch 29 consolidates configuration/models/capacity/runtime/TTFT/evidence and edit/check actions; explicit three-sample benchmark with cancellation tests | Full live-adapter acceptance and aggregate benchmark persistence remain unverified |
@@ -35,7 +35,7 @@ must be checked again before final acceptance.
 | 24. Visible source types | Source-kind badge and provider-kind filter | Consistent complete official/cloud/browser/app/CLI/local/custom taxonomy |
 | 25. Explain exclusions | Router Explain in simulator; batches 29/30 add filtered Source/Provider Detail explanations | Full policy-reason acceptance across configured adapters |
 | 26. Simulator | Model/protocol/tools/vision/size without upstream request | Ordered candidates and distinction between eligibility and final choice |
-| 27. Health | Runtime outcome, TTFT, last status/timestamps exist | Surface all fields; provider/account aggregation and distinct degraded/exhausted/broken states |
+| 27. Health | Runtime outcome, TTFT, last status/timestamps and account health/auth aggregation exist | Surface all source/account fields and distinguish degraded/exhausted/broken states consistently |
 | 28. Test Provider | Explicit one-request stream validation | Separate connection/auth/request/stream/completion/latency presentation |
 | 29. Live verification | Batch 25 derives status/counts from model/protocol evidence and source/credential-version bindings; rotation invalidation tested | Real configured-provider checks and complete account/capability evidence still require verification |
 | 30. Discovery hub | Batch 27 returns import results to account setup with single-result binding | Unified automatic Discover Accounts candidates and broader matching |

@@ -391,8 +391,9 @@ function loginEvidence(a,watch=false,launchMessage='',setup){
  run();
 }
 function accounts(){
- return [pageHead('Accounts','Account switches and capacity apply across their sources.',button('Account pools',accountPools),button('Refresh capacity',refresh),button('Add account',()=>addAccount(),'primary')),table(['Account','Provider','Credential','Browser authentication','Quota / in flight','Auto','Actions'],(S.config.accounts||[]).map(a=>[
-  a.display_name||a.id,a.provider_id,a.credential_ref||'Not bound',accountAuth(a),a.quota_domain+' · '+((S.status.accounts||[]).find(x=>x.id===a.id)?.active||0)+' / '+a.max_inflight,badge(a.auto_approved?'Approved':'Manual',a.auto_approved?'accent':''),
+ const healthFor=a=>(S.status.account_health||[]).find(x=>x.id===a.id)||{};
+ return [pageHead('Accounts','Account switches and capacity apply across their sources.',button('Account pools',accountPools),button('Refresh capacity',refresh),button('Add account',()=>addAccount(),'primary')),table(['Account','Provider','Health','Auth status','Browser authentication','Credential','Quota / in flight','Auto','Actions'],(S.config.accounts||[]).map(a=>[
+  a.display_name||a.id,a.provider_id,badge(healthFor(a).health||'untested',healthFor(a).health==='healthy'?'good':healthFor(a).health==='disabled'?'':'warn'),healthFor(a).auth_status||'not_checked',accountAuth(a),a.credential_ref||'Not bound',a.quota_domain+' · '+((S.status.accounts||[]).find(x=>x.id===a.id)?.active||0)+' / '+a.max_inflight,badge(a.auto_approved?'Approved':'Manual',a.auto_approved?'accent':''),
   [button(a.enabled?'Disable':'Enable',()=>toggle('accounts',a)),button('Edit',()=>edit('accounts',a)),a.browser_profile_id?button('Login',async()=>{const result=await api('/admin/accounts/'+encodeURIComponent(a.id)+'/login',{method:'POST'});loginEvidence(a,true,result.message)}):null,a.browser_profile_id?button('Check login',()=>loginEvidence(a)):null,button('Delete',()=>remove('accounts',a),'danger')]
  ]),'No accounts. Add an account and bind a credential before enabling its sources.')];
 }

@@ -179,12 +179,18 @@ CLI format references: [Codex auth fixture](https://github.com/openai/codex/blob
     opens an app, changes the clipboard or sends a message. Synthetic Go/API
     tests and the isolated UI regression cover the empty-device path.
     See [device controls](DEVICE_CONTROLS.md).
+39. Account status now aggregates the active account capacity, member sources,
+    runtime success/failure counters, last success/failure, last validation,
+    authentication evidence and a bounded health state (`disabled`,
+    `auth_required`, `exhausted`, `blocked`, `cooldown`, `healthy`,
+    `degraded` or `untested`). Accounts displays these fields without exposing
+    credential values, and a status test covers evidence and capacity joins.
 
 Discovery protocol references: [Anthropic models](https://platform.claude.com/docs/en/api/models/list),
 [Gemini models](https://ai.google.dev/api/models),
 [OpenAI models](https://platform.openai.com/docs/api-reference/models).
 
-Validation: `go test ./...` passed, 566 tests in 38 packages on Windows.
+Validation: `go test ./...` passed, 567 tests in 38 packages on Windows.
 Windows and Linux-target `govulncheck` reported no vulnerabilities.
 Browser regression: credential creation/redaction, account binding, source
 creation, group membership, preview/apply, every navigation destination and
@@ -196,8 +202,8 @@ Race detection is outstanding: the current Go environment has cgo disabled.
 
 The [51-section ledger](CONTROL_PLANE_AUDIT.md) now replaces the previous generic
 A–E checklist. The main gaps include unified account discovery/onboarding,
-complete provider-specific setup and checks, quota/account pool views, richer
-model management, broader session management, runtime log redaction, remaining
+complete provider-specific setup and checks, account validation actions,
+quota/account pool views, richer model management, broader session management, runtime log redaction, remaining
 routing policies and native macOS verification.
 All explicit subrequirements and the end-to-end install-to-routing workflow must
 be verified before completion.
