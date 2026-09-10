@@ -14,12 +14,13 @@ import (
 )
 
 type Metadata struct {
-	Version   uint64    `json:"version"`
-	ID        string    `json:"id"`
-	Kind      string    `json:"kind"`
-	Source    string    `json:"source"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	Version    uint64     `json:"version"`
+	ID         string     `json:"id"`
+	Kind       string     `json:"kind"`
+	Source     string     `json:"source"`
+	CreatedAt  time.Time  `json:"created_at"`
+	UpdatedAt  time.Time  `json:"updated_at"`
+	LastUsedAt *time.Time `json:"last_used_at,omitempty"`
 }
 type record struct {
 	Metadata
@@ -29,6 +30,7 @@ type Store struct {
 	mu        sync.RWMutex
 	path      string
 	records   map[string]record
+	lastUsed  map[string]time.Time
 	protect   func([]byte) ([]byte, error)
 	unprotect func([]byte) ([]byte, error)
 }
@@ -38,7 +40,7 @@ func Open(path string) (*Store, error) {
 	return open(path, seal, unseal)
 }
 func open(path string, seal, unseal func([]byte) ([]byte, error)) (*Store, error) {
-	s := &Store{path: path, records: map[string]record{}, protect: seal, unprotect: unseal}
+	s := &Store{path: path, records: map[string]record{}, lastUsed: map[string]time.Time{}, protect: seal, unprotect: unseal}
 	b, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return s, nil
@@ -71,15 +73,26 @@ func (s *Store) List() []Metadata {
 	defer s.mu.RUnlock()
 	out := make([]Metadata, 0, len(s.records))
 	for _, r := range s.records {
+		if used, ok := s.lastUsed[r.ID]; ok {
+			r.LastUsedAt = &used
+		}
 		out = append(out, r.Metadata)
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
 	return out
 }
 func (s *Store) Resolve(id string) string {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return s.records[id].Value
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	r, ok := s.records[id]
+	if !ok {
+		return ""
+	}
+	if s.lastUsed == nil {
+		s.lastUsed = make(map[string]time.Time)
+	}
+	s.lastUsed[id] = time.Now().UTC()
+	return r.Value
 }
 func (s *Store) Put(id, kind, source, value string) error {
 	if id == "" || !config.ValidCredentialRef(id) || !ValidKind(kind) || value == "" || len(value) > 1<<20 || len(source) > 256 {
@@ -99,6 +112,7 @@ func (s *Store) Put(id, kind, source, value string) error {
 		}
 	}
 	next[id] = record{Metadata: Metadata{Version: version, ID: id, Kind: kind, Source: source, CreatedAt: created, UpdatedAt: now}, Value: value}
+	delete(s.lastUsed, id)
 	return s.save(next)
 }
 func (s *Store) Delete(id string) error {
@@ -109,6 +123,7 @@ func (s *Store) Delete(id string) error {
 	}
 	next := s.copy()
 	delete(next, id)
+	delete(s.lastUsed, id)
 	return s.save(next)
 }
 func (s *Store) copy() map[string]record {

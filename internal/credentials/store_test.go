@@ -41,6 +41,9 @@ func TestEncryptedPersistenceRedactionAndFailedTransaction(t *testing.T) {
 	if err != nil || loaded.Resolve("cred://one") != "private-test-secret" {
 		t.Fatal("reload failed", err)
 	}
+	if loaded.List()[0].LastUsedAt == nil {
+		t.Fatal("credential use was not recorded")
+	}
 	s.protect = func([]byte) ([]byte, error) { return nil, errors.New("locked") }
 	if s.Put("cred://one", "api_key", "manual", "replacement") == nil {
 		t.Fatal("write should fail")
