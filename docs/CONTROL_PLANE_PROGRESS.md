@@ -837,3 +837,9 @@ streaming requests, verifies model rewriting and credential headers, and checks
 that each protocol's terminal event is required for a successful stream. This
 is a local contract audit; live provider compatibility remains an explicit
 operator check.
+
+Batch 155 adds a routing strategy matrix. Router regressions now cover ordered
+fallback advancement, select's no-fallthrough rule, latency and load-balance
+selection, shared source membership across groups, disabled-member simulator
+reasons, and the fact that simulation never acquires capacity. The matrix uses
+synthetic sources and does not claim live-provider behavior.
