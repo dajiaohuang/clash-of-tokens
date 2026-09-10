@@ -464,9 +464,11 @@ function editPool(provider){
  },'primary')]);
 }
 function editQuota(domain){
- const base=clone(S.config),revision=S.revision,limit=h('input',{type:'number',min:1,max:10000,value:domain.limit});
- dialog('Edit shared quota',[h('p',{},domain.id+' · '+domain.sources.length+' sources · '+domain.active+' requests currently in flight'),field('Shared concurrent requests',limit),h('p',{class:'muted'},'Updates every source in this domain in one transaction. Lowering the limit lets existing requests finish and restricts new requests until capacity is available.')],[button('Review quota changes',()=>{
-  const next=clone(base);for(const source of next.sources){if(source.quota_domain===domain.id)source.quota_max_inflight=Number(limit.value)}
+ const base=clone(S.config),revision=S.revision,name=h('input',{value:domain.id}),limit=h('input',{type:'number',min:1,max:10000,value:domain.limit});
+ dialog('Edit shared quota',[h('p',{},domain.id+' · '+domain.sources.length+' sources · '+domain.active+' requests currently in flight'),field('Quota domain',name),field('Shared concurrent requests',limit),h('p',{class:'muted'},'Renaming or changing the limit updates every account and source in this domain in one transaction. Existing requests finish under their retained generation; new requests use the new shared boundary.')],[button('Review quota changes',()=>{
+  const next=clone(base),renamed=name.value.trim();if(!renamed)throw Error('Quota domain is required.');
+  for(const account of next.accounts||[])if(account.quota_domain===domain.id)account.quota_domain=renamed;
+  for(const source of next.sources){if(source.quota_domain===domain.id){source.quota_domain=renamed;source.quota_max_inflight=Number(limit.value)}}
   return preview(next,'Update shared quota '+domain.id,()=>editQuota(domain),base,revision);
  },'primary')]);
 }

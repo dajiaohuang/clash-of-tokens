@@ -366,3 +366,9 @@ configuration. The schema-driven source editor exposes both fields, validates
 control characters and length, and the native OpenAI client forwards them as
 `OpenAI-Organization` and `OpenAI-Project` headers. The upstream contract test
 verifies the headers while keeping caller-controlled sensitive headers filtered.
+
+Batch 66 completes the shared quota-domain rename path. Health → Edit shared
+quota now renames the domain and changes its limit together, updating all
+matching accounts and sources in one reviewed configuration transaction. The
+browser regression renames the fixture domain and confirms the new shared row;
+existing-domain collisions remain subject to normal configuration validation.

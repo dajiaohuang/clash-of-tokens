@@ -20,9 +20,9 @@ moves every source bound to that account in the same validated transaction.
 The account and source rows therefore keep one shared capacity boundary. The
 Source editor follows the same rule: changing a bound source's domain moves its
 account and sibling sources, while moving a source to another account adopts
-that destination account's existing domain. The shared-domain limit editor
-still does not rename domains or move unrelated
-accounts between them.
+that destination account's existing domain. **Edit shared quota** can also
+rename a domain; the account and source rows move together, and validation
+rejects collisions with an incompatible existing limit.
 
 Lowering a limit does not cancel running requests. The displayed active count
 can temporarily exceed the new limit; new work waits until capacity is available.

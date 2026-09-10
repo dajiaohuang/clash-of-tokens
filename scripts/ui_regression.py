@@ -506,6 +506,13 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     expect(page.get_by_text("Restoring creates a new revision.", exact=False)).to_be_visible()
     page.get_by_role("button", name="Restore", exact=True).click()
     expect(page.get_by_role("dialog")).not_to_be_visible()
+    page.get_by_role("link", name="Health", exact=True).click()
+    page.get_by_role("button", name="Edit shared quota", exact=True).click()
+    page.get_by_label("Quota domain", exact=True).fill("ui-quota-renamed")
+    page.get_by_role("button", name="Review quota changes", exact=True).click()
+    page.get_by_role("button", name="Apply changes", exact=True).click()
+    expect(page.get_by_role("dialog")).not_to_be_visible()
+    expect(page.get_by_role("row").filter(has=page.get_by_text("ui-quota-renamed", exact=True))).to_contain_text("0 / 2")
     assert not errors, errors
     browser.close()
 print("UI smoke passed: credential redaction, account binding, source creation, group membership, preview/apply, navigation and responsive layout.")
