@@ -4,9 +4,11 @@ package catalog
 
 import (
 	"clash-of-tokens/internal/config"
+	"clash-of-tokens/internal/providerdef"
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strings"
 )
 
@@ -14,23 +16,31 @@ import (
 var Data []byte
 
 type Entry struct {
-	ID             string   `json:"id"`
-	Adapter        string   `json:"adapter"`
-	BaseURL        string   `json:"base_url"`
-	Protocols      []string `json:"protocols"`
-	Kind           string   `json:"kind"`
-	Implementation string   `json:"implementation"`
-	Reference      string   `json:"reference"`
-	Notes          string   `json:"notes"`
-	LiveVerified   bool     `json:"live_verified"`
-	Anonymous      bool     `json:"anonymous,omitempty"`
-	TextOnly       bool     `json:"text_only,omitempty"`
+	Credentials    CredentialPolicy `json:"credentials"`
+	ID             string           `json:"id"`
+	Adapter        string           `json:"adapter"`
+	BaseURL        string           `json:"base_url"`
+	Protocols      []string         `json:"protocols"`
+	Kind           string           `json:"kind"`
+	Implementation string           `json:"implementation"`
+	Reference      string           `json:"reference"`
+	Notes          string           `json:"notes"`
+	LiveVerified   bool             `json:"live_verified"`
+	Anonymous      bool             `json:"anonymous,omitempty"`
+	TextOnly       bool             `json:"text_only,omitempty"`
 }
 
 func All() []Entry {
 	var out []Entry
 	if e := json.Unmarshal(Data, &out); e != nil {
 		panic(e)
+	}
+	for i := range out {
+		d, _ := providerdef.Lookup(out[i].Adapter)
+		out[i].Credentials.Accepted = d.CredentialModes
+		if u, err := url.Parse(out[i].BaseURL); err == nil && u.Hostname() != "" && u.Scheme == "https" {
+			out[i].Credentials.Domains = []string{strings.ToLower(u.Hostname())}
+		}
 	}
 	return out
 }

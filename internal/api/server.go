@@ -496,8 +496,7 @@ func (s *Server) admin(w http.ResponseWriter, r *http.Request) {
 	case r.Method == "GET" && r.URL.Path == "/admin/descriptors":
 		reply(w, providerdef.All())
 	case r.Method == "GET" && r.URL.Path == "/admin/catalog":
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write(catalog.Data)
+		reply(w, catalog.All())
 	case r.Method == "GET" && r.URL.Path == "/admin/status":
 		reply(w, map[string]any{"sources": s.Router.Status(), "requests": s.requests.Load(), "rejected": s.rejected.Load(), "buffered_bytes": s.buffered.Load(), "output_bytes": s.outputBytes.Load(), "stream_errors": s.streamErrors.Load(), "live_verified_sources": 0})
 	case r.Method == "GET" && r.URL.Path == "/admin/explain":

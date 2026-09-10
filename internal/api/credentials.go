@@ -1,6 +1,7 @@
 package api
 
 import (
+	"clash-of-tokens/catalog"
 	"clash-of-tokens/internal/config"
 	"clash-of-tokens/internal/credentials"
 	"encoding/json"
@@ -10,6 +11,9 @@ import (
 )
 
 func NewWithVault(c config.Config, key, admin string, vault *credentials.Store) (*Server, error) {
+	if err := validateCredentialBindings(c, vault.List()); err != nil {
+		return nil, err
+	}
 	s, err := NewWithCredentials(c, key, admin, vault.Resolve)
 	if err != nil {
 		return nil, err
@@ -42,7 +46,15 @@ func (s *Server) credentialAdmin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if !p.Apply {
-			reply(w, credentials.PreviewImport(entries))
+			type preview struct {
+				credentials.ImportPreview
+				Matches []catalog.CredentialMatch `json:"matches"`
+			}
+			out := []preview{}
+			for _, item := range credentials.PreviewImport(entries) {
+				out = append(out, preview{item, catalog.MatchCredentials(item.Domain, item.Kind)})
+			}
+			reply(w, out)
 			return
 		}
 		items, err := s.vault.ImportSelected(entries, p.Selected)
@@ -78,6 +90,16 @@ func (s *Server) credentialAdmin(w http.ResponseWriter, r *http.Request) {
 		d.DisallowUnknownFields()
 		if d.Decode(&p) != nil || d.Decode(new(any)) != io.EOF {
 			fail(w, 400, "invalid credential input")
+			return
+		}
+		metadata := s.vault.List()
+		for i := range metadata {
+			if metadata[i].ID == id {
+				metadata[i].Kind = p.Kind
+			}
+		}
+		if err := validateCredentialBindings(s.cfg, metadata); err != nil {
+			fail(w, 409, err.Error())
 			return
 		}
 		if err := s.vault.Put(id, p.Kind, p.Source, p.Value); err != nil {
