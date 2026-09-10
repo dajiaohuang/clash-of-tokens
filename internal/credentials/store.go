@@ -112,8 +112,11 @@ func (s *Store) Put(id, kind, source, value string) error {
 		}
 	}
 	next[id] = record{Metadata: Metadata{Version: version, ID: id, Kind: kind, Source: source, CreatedAt: created, UpdatedAt: now}, Value: value}
+	if err := s.save(next); err != nil {
+		return err
+	}
 	delete(s.lastUsed, id)
-	return s.save(next)
+	return nil
 }
 func (s *Store) Delete(id string) error {
 	s.mu.Lock()
@@ -123,8 +126,11 @@ func (s *Store) Delete(id string) error {
 	}
 	next := s.copy()
 	delete(next, id)
+	if err := s.save(next); err != nil {
+		return err
+	}
 	delete(s.lastUsed, id)
-	return s.save(next)
+	return nil
 }
 func (s *Store) copy() map[string]record {
 	next := make(map[string]record, len(s.records))

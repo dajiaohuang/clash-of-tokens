@@ -45,6 +45,7 @@ func TestEncryptedPersistenceRedactionAndFailedTransaction(t *testing.T) {
 		t.Fatal("credential use was not recorded")
 	}
 	s.protect = func([]byte) ([]byte, error) { return nil, errors.New("locked") }
+	_ = s.Resolve("cred://one")
 	if s.Put("cred://one", "api_key", "manual", "replacement") == nil {
 		t.Fatal("write should fail")
 	}
@@ -53,6 +54,9 @@ func TestEncryptedPersistenceRedactionAndFailedTransaction(t *testing.T) {
 	}
 	if s.List()[0].Version != 1 {
 		t.Fatal("failed transaction changed credential version")
+	}
+	if s.List()[0].LastUsedAt == nil {
+		t.Fatal("failed transaction changed last-use state")
 	}
 	if err = loaded.Put("cred://one", "api_key", "manual", "rotated-secret"); err != nil || loaded.List()[0].Version != 2 {
 		t.Fatal("successful replacement did not increment version", err)
