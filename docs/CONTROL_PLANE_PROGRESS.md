@@ -233,3 +233,9 @@ metadata and configured environment names, with optional read-only standard
 browser profile metadata scanning. Suggestions are catalog matches only;
 binding, login, and source validation remain explicit actions. See
 [account discovery](ACCOUNT_DISCOVERY.md).
+
+Batch 44 adds authenticated implementation status at `/admin/implementation`
+and the System > Implementation page. Catalog implementation, descriptor
+factory, configured resource counts, catalog live metadata, and explicit
+runtime evidence are displayed as separate fields. See
+[implementation status](IMPLEMENTATION_STATUS.md).

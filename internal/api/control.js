@@ -5,9 +5,9 @@ const pages = [
  ['Workspace',['overview','providers','accounts','credentials','sources','models']],
  ['Traffic',['groups','routing','health','metrics']],
  ['Environment',['browsers','devices','sessions']],
- ['System',['config','logs','about']]
+ ['System',['config','logs','implementation','about']]
 ];
-const labels = {overview:'Overview',providers:'Providers',accounts:'Accounts',credentials:'Credentials',sources:'Sources',models:'Models',groups:'Groups',routing:'Routing',health:'Health',metrics:'Metrics',browsers:'Browsers',devices:'Devices',sessions:'Sessions',config:'Configuration',logs:'Activity',about:'About'};
+const labels = {overview:'Overview',providers:'Providers',accounts:'Accounts',credentials:'Credentials',sources:'Sources',models:'Models',groups:'Groups',routing:'Routing',health:'Health',metrics:'Metrics',browsers:'Browsers',devices:'Devices',sessions:'Sessions',config:'Configuration',logs:'Activity',implementation:'Implementation',about:'About'};
 const names = {id:'ID',provider_id:'Provider',account_id:'Account',credential_ref:'Credential',credential_type_override:'Reviewed credential type override',base_url:'Base URL',key_env:'Legacy credential environment variable',account_id_env:'Legacy account ID environment variable',auto_approved:'Allow Auto routing',allow_paid:'Legacy paid-source policy',allow_unknown_cost:'Allow unknown costs',max_inflight:'Concurrent requests',quota_max_inflight:'Shared quota concurrency',quota_domain:'Quota domain',max_input_bytes:'Maximum input bytes',cdp_url:'Browser connection URL',source_kind:'Source type',tools:'Tool capability',local:'Loopback / local transport',paid:'Legacy paid flag'};
 const title = text => names[text] || text.replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase());
 const clone = value => JSON.parse(JSON.stringify(value));
@@ -685,6 +685,12 @@ async function ownedBrowserProcesses(){
 function about(){
  return [pageHead('About','Clash of Tokens'),h('section',{class:'panel'},h('p',{},'A local gateway for model API sources and simulated providers.'),h('p',{},'Provider implementation, account credentials and live upstream verification are separate states. Catalog coverage does not establish live availability.'),h('p',{},'Changes are validated and written to a versioned configuration journal. Credentials are referenced, never included in that journal.'))];
 }
+function implementation(){
+ const target=h('div',{class:'table-wrap'},h('p',{class:'muted'},'Loading implementation status…'));
+ const load=async()=>{const result=await api('/admin/implementation');target.replaceChildren(table(['Provider','Kind','Adapter / factory','Catalog implementation','Configured accounts / sources','Catalog live evidence','Runtime checks','Reference / notes'],(result.items||[]).map(x=>[x.id,badge(x.kind),x.adapter+' / '+x.factory,x.implementation,x.configured_accounts+' / '+x.configured_sources,x.catalog_live_verified?'Recorded':'Not recorded',x.runtime_verified_models+' verified · '+x.runtime_failed_models+' failed',x.reference||x.notes||'—']),'No catalog entries.'));};
+ setTimeout(()=>load().catch(e=>message(e.message,true)),0);
+ return [pageHead('Implementation status','Catalog and runtime evidence are shown separately.',button('Refresh implementation',load)),h('p',{class:'muted'},'A factory means the shared adapter contract is available. Catalog live evidence is a published metadata flag. Runtime checks are point-in-time checks for configured sources and do not guarantee future availability.'),target];
+}
 function searchResults(query){
  const q=query.toLowerCase(),results=[];
  for(const p of S.catalog)if((p.id+' '+p.adapter).toLowerCase().includes(q))results.push([p.id,'Provider',()=>providerDetail(p)]);
@@ -700,7 +706,7 @@ function render(){
  for(const a of $('navigation').querySelectorAll('a'))a.setAttribute('aria-current',a.hash==='#'+route?'page':'false');
  if(!S.config){$('view').replaceChildren(connectView());return}
  if($('search').value){$('view').replaceChildren(...searchResults($('search').value));return}
- const renderers={overview,providers,accounts,credentials,sources,models,groups,routing,health,metrics,config:configuration,logs:activity,about,browsers,devices,sessions};
+ const renderers={overview,providers,accounts,credentials,sources,models,groups,routing,health,metrics,config:configuration,logs:activity,implementation,about,browsers,devices,sessions};
  $('view').replaceChildren(...(renderers[route]||overview)().filter(x=>x!=null));
 }
 for(const [group,items] of pages){$('navigation').append(h('div',{class:'nav-group'},group),...items.map(id=>h('a',{href:'#'+id},labels[id])))}

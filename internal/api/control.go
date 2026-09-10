@@ -157,6 +157,9 @@ func (p *ControlPlane) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if managedResource(r.URL.Path) {
+			if p.implementationAdmin(w, r, g.server) {
+				return
+			}
 			if p.accountDiscoveryAdmin(w, r, g.server) {
 				return
 			}

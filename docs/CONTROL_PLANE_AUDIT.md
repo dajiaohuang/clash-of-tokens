@@ -47,7 +47,7 @@ must be checked again before final acceptance.
 | 36. Browsers | Batch 37 retains launch handles/identities, lists owned processes, opens provider origins and confirms exact-launch stops; synthetic process/UI tests | Browser child-process lifecycle across platforms and session capacity view |
 | 37. Login wizard | Batch 27 unifies existing/isolated profile, import/manual credential and login-to-save with synthetic browser tests | All installed-browser account discovery, provider-specific setup and real provider compatibility |
 | 38. Devices | `POST /admin/device/check` read-only doctor reports ADB/OCR paths, connection, resolution, foreground package, app installation, and evidence-backed login/last-test rows; Devices page and synthetic API/UI tests | Physical-device login and live test evidence still require explicit operator action; no emulator operations |
-| 39. Implementation status | Catalog implementation field | Reference/factory/runtime/verified/broken/research view |
+| 39. Implementation status | `GET /admin/implementation` and System > Implementation join catalog kind/reference, descriptor factory, configured counts, catalog live flag and runtime check counts with separate provenance labels | Live compatibility and broken-state history still require explicit provider checks |
 | 40. Descriptor registry | Shared validation/factory/schema contract | More provider-specific credential/discovery/auth capabilities; eliminate residual setup switches |
 | 41. Administration API | Persistent CRUD, config, simulator, source checks, account validation, browser process controls and device doctor | Broader browser/device lifecycle operations |
 | 42. Embedded frontend | Go-embedded static HTML/CSS/JS, no Node runtime | Packaging/build verification |
