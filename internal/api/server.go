@@ -35,6 +35,7 @@ type Server struct {
 	buffers          sync.Pool
 }
 type metrics struct {
+	started                                       time.Time
 	buffered                                      atomic.Int64
 	requests, rejected, outputBytes, streamErrors atomic.Uint64
 }
@@ -69,7 +70,7 @@ func NewWithCredentials(c config.Config, key, admin string, resolver func(string
 	if len(key) < 16 || len(admin) < 16 || key == admin {
 		return nil, errors.New("distinct API and admin secrets of at least 16 characters must be set")
 	}
-	s := &Server{metrics: &metrics{}, cfg: c, Router: routing.New(c), apiKey: sha256.Sum256([]byte(key)), adminKey: sha256.Sum256([]byte(admin)), ingress: make(chan struct{}, c.Runtime.MaxInflight+c.Runtime.MaxQueued), clients: make([]clientSlot, len(c.Sources))}
+	s := &Server{metrics: &metrics{started: time.Now()}, cfg: c, Router: routing.New(c), apiKey: sha256.Sum256([]byte(key)), adminKey: sha256.Sum256([]byte(admin)), ingress: make(chan struct{}, c.Runtime.MaxInflight+c.Runtime.MaxQueued), clients: make([]clientSlot, len(c.Sources))}
 	s.buffers.New = func() any { b := make([]byte, 32<<10); return &b }
 	return s, nil
 }

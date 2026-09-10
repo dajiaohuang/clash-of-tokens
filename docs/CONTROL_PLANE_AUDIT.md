@@ -19,7 +19,7 @@ must be checked again before final acceptance.
 | 8. Provider matching | Exact catalog-domain/type suggestions | Complete domain aliases and direct binding workflow |
 | 9. Launch login | Dedicated browser launch and bounded UI watcher | Broader provider detection and complete account creation flow |
 | 10. Profile registry | Profile CRUD, per-account CDP/session isolation | Existing-profile onboarding and lifecycle status |
-| 11. Full management pages | Embedded UI; batch 30 expands Provider Detail with accounts/sources/observations and direct detail/check/edit actions | Overview queue/rate/memory/process/session data; broader account health; credential last use/status; full end-to-end page acceptance |
+| 11. Full management pages | Provider Detail; batch 33 adds global workload/queue, buffer and Go-memory metrics, uptime and explicit lifetime-average rate to Overview/Metrics | Process/session inventory; broader account health; credential last use/status; full end-to-end page acceptance |
 | 12. Groups | Batch 28 adds vision requirement, declared input/output rate ceiling and ordered preferences to configuration/UI/router | Total-request cost accounting and full policy acceptance still outstanding |
 | 13. Multiple memberships | Source editor and group membership controls | Explicit end-to-end multiple-group routing verification |
 | 14. Source Detail | Batch 29 consolidates configuration/models/capacity/runtime/TTFT/evidence and edit/check actions; explicit three-sample benchmark with cancellation tests | Full live-adapter acceptance and aggregate benchmark persistence remain unverified |

@@ -148,12 +148,17 @@ CLI format references: [Codex auth fixture](https://github.com/openai/codex/blob
     Activity exposes source/outcome filters. Tests cover capacity/order,
     redaction, cancellation, snapshot isolation, administrative exclusions and
     UI visibility after credential rotation. See [execution events](EXECUTION_EVENTS.md).
+33. Overview and Metrics expose global active leases/current queue, ingress,
+    buffer reservations, Go memory, goroutines, uptime and lifetime-average
+    request rate. Global active now includes removed sources' held leases.
+    Router/API/browser tests cover retention, cancellation, access and display.
+    See [workload metrics](WORKLOAD_METRICS.md).
 
 Discovery protocol references: [Anthropic models](https://platform.claude.com/docs/en/api/models/list),
 [Gemini models](https://ai.google.dev/api/models),
 [OpenAI models](https://platform.openai.com/docs/api-reference/models).
 
-Validation: `go test ./...` passed, 551 tests in 38 packages on Windows.
+Validation: `go test ./...` passed, 553 tests in 38 packages on Windows.
 Windows and Linux-target `govulncheck` reported no vulnerabilities.
 Browser regression: credential creation/redaction, account binding, source
 creation, group membership, preview/apply, every navigation destination and

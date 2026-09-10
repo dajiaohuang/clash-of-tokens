@@ -334,13 +334,19 @@ function overview(){
   ['Providers',S.catalog.length,(c.providers||[]).length+' configured'],
   ['Accounts',accounts.length,accounts.filter(a=>a.enabled).length+' enabled'],
   ['Sources',sources.length,status.sources.filter(s=>s.enabled).length+' enabled'],
-  ['In flight',status.sources.reduce((n,s)=>n+s.active,0),'Requests using account capacity']
+  ['In flight',status.workload?.active??0,'Global source leases, including finishing old configurations']
  ].map(([label,n,sub])=>h('div',{class:'flow-cell'},h('span',{},label),h('strong',{},n),h('p',{},sub))));
  const attention=status.sources.filter(s=>s.blocked||s.failures||Date.parse(s.cooldown)>Date.now());
  return [pageHead('Overview','A direct view of your provider pool.',button('Add account',()=>addAccount()),button('Add source',()=>addSource(),'primary')),flow,h('div',{class:'split'},
   h('section',{class:'panel'},h('h2',{},'Needs attention'),attention.length?attention.map(s=>h('div',{class:'stat-line'},s.id,s.blocked?badge('Authentication / policy','bad'):badge(s.failures+' failures','warn'))):h('p',{class:'muted'},'No recorded failures. Untested sources still need verification.')),
   h('section',{class:'panel'},h('h2',{},'Routing groups'),c.groups.map(g=>h('div',{class:'stat-line'},h('a',{href:'#groups'},g.id),g.sources.length+' sources',badge(g.type))))
- ),h('section',{class:'panel'},h('h2',{},'Current gateway'),h('dl',{class:'key-value'},h('dt',{},'Listen'),h('dd',{},c.listen),h('dt',{},'Configuration'),h('dd',{},'Revision '+S.revision),h('dt',{},'Sources with matching validation'),h('dd',{},status.live_verified_sources||0),h('dt',{},'Requests / rejected'),h('dd',{},status.requests+' / '+status.rejected),h('dt',{},'Restart pending'),h('dd',{},S.restart.join(', ')||'No')))];
+ ),h('section',{class:'panel'},h('h2',{},'Workload and memory'),workloadSummary(status)),h('section',{class:'panel'},h('h2',{},'Current gateway'),h('dl',{class:'key-value'},h('dt',{},'Listen'),h('dd',{},c.listen),h('dt',{},'Configuration'),h('dd',{},'Revision '+S.revision),h('dt',{},'Sources with matching validation'),h('dd',{},status.live_verified_sources||0),h('dt',{},'Requests / rejected'),h('dd',{},status.requests+' / '+status.rejected),h('dt',{},'Restart pending'),h('dd',{},S.restart.join(', ')||'No')))];
+}
+function workloadSummary(s){
+ const mib=value=>(Number(value||0)/1048576).toFixed(2)+' MiB',w=s.workload||{};
+ return [h('p',{class:'muted'},'Live snapshots. Queue counts the current routing generation; active leases include finishing old generations. Reserved buffers are application accounting. Go memory is not total process RSS. Average request rate covers the gateway lifetime, not a recent interval.'),table(['Measure','Value'],[
+  ['Global in flight / limit',(w.active??0)+' / '+(w.active_limit??0)],['Routing queued / limit',(w.queued??0)+' / '+(w.queue_limit??0)],['Ingress occupied / limit',(s.ingress_active??0)+' / '+(s.ingress_limit??0)],['Reserved buffers / limit',mib(s.buffered_bytes)+' / '+mib(s.buffered_limit_bytes)],['Go heap allocated',mib(s.go_heap_bytes)],['Go runtime memory obtained',mib(s.go_runtime_bytes)],['Goroutines',s.goroutines??0],['Gateway uptime',Math.floor(s.uptime_seconds||0)+' seconds'],['Lifetime average request rate',Number(s.average_requests_per_second||0).toFixed(3)+' requests/s']
+ ])];
 }
 function providers(){
  const query=h('input',{type:'search',placeholder:'Filter providers','aria-label':'Filter providers'});
@@ -534,7 +540,7 @@ function health(){
 }
 function metrics(){
  const s=S.status;
- return [pageHead('Metrics','Gateway counters across live configuration revisions.'),h('section',{class:'panel'},[
+ return [pageHead('Metrics','Gateway counters across live configuration revisions.'),h('section',{class:'panel'},workloadSummary(s)),h('section',{class:'panel'},[
   ['Requests',s.requests],['Rejected at gateway',s.rejected],['Stream errors',s.stream_errors],['Response bytes',s.output_bytes],['Reserved request bytes',s.buffered_bytes]
  ].map(([key,value])=>h('div',{class:'stat-line'},key,h('strong',{},Number(value||0).toLocaleString()))))];
 }

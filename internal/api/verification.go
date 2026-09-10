@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"os"
+	"runtime"
 	"time"
 
 	"clash-of-tokens/catalog"
@@ -69,7 +70,17 @@ func (p *ControlPlane) bindingWithMetadata(c config.Config, s config.Source, met
 
 func (s *Server) runtimeStatus() map[string]any {
 	accounts, domains := s.Router.CapacityStatus()
-	return map[string]any{"execution_events": s.Router.ExecutionEvents(), "accounts": accounts, "quota_domains": domains, "sources": s.Router.Status(), "requests": s.requests.Load(), "rejected": s.rejected.Load(), "buffered_bytes": s.buffered.Load(), "output_bytes": s.outputBytes.Load(), "stream_errors": s.streamErrors.Load(), "live_verified_sources": 0, "verification": []sourceVerification{}}
+	var memory runtime.MemStats
+	runtime.ReadMemStats(&memory)
+	uptime, rate := 0.0, 0.0
+	requests := s.requests.Load()
+	if !s.started.IsZero() {
+		uptime = time.Since(s.started).Seconds()
+		if uptime > 0 {
+			rate = float64(requests) / uptime
+		}
+	}
+	return map[string]any{"workload": s.Router.WorkloadStatus(), "ingress_active": len(s.ingress), "ingress_limit": cap(s.ingress), "buffered_limit_bytes": s.cfg.Runtime.MaxBufferedBytes, "go_heap_bytes": memory.HeapAlloc, "go_runtime_bytes": memory.Sys, "goroutines": runtime.NumGoroutine(), "uptime_seconds": uptime, "average_requests_per_second": rate, "execution_events": s.Router.ExecutionEvents(), "accounts": accounts, "quota_domains": domains, "sources": s.Router.Status(), "requests": requests, "rejected": s.rejected.Load(), "buffered_bytes": s.buffered.Load(), "output_bytes": s.outputBytes.Load(), "stream_errors": s.streamErrors.Load(), "live_verified_sources": 0, "verification": []sourceVerification{}}
 }
 
 func (p *ControlPlane) controlStatus(s *Server) map[string]any {
