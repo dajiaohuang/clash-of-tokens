@@ -145,6 +145,14 @@ func (p *ControlPlane) resourceAdmin(w http.ResponseWriter, r *http.Request, ser
 		}
 		c.Providers, err = editResource(c.Providers, id, method, raw)
 	case "accounts":
+		if method == "DELETE" {
+			for _, source := range c.Sources {
+				if source.AccountID == id {
+					fail(w, 409, "account still has sources")
+					return
+				}
+			}
+		}
 		c.Accounts, err = editResource(c.Accounts, id, method, raw)
 		if err == nil && method != "DELETE" {
 			for _, account := range c.Accounts {

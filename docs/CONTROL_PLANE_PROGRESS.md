@@ -337,3 +337,8 @@ provider, bounded health and authentication state, account capacity, member
 sources, success/failure counters and the latest validation timestamp beside
 the existing source and shared-domain views. The data remains the same
 redacted runtime snapshot exposed by `/admin/status`.
+
+Batch 60 protects account lifecycle integrity in the administration API. An
+account with bound sources now returns a clear conflict instead of attempting a
+configuration that would fail later reference validation. The quota regression
+also verifies the guard before exercising source-domain moves.

@@ -121,6 +121,14 @@ func TestSourceQuotaMoveCascadesToAccountAndMembers(t *testing.T) {
 		p.ServeHTTP(w, req)
 		return w
 	}
+	deleteReq := httptest.NewRequest("DELETE", "/admin/accounts/a", nil)
+	deleteReq.Header.Set("Authorization", "Bearer "+adminKey)
+	deleteReq.Header.Set("If-Match", "1")
+	deleteResponse := httptest.NewRecorder()
+	p.ServeHTTP(deleteResponse, deleteReq)
+	if deleteResponse.Code != 409 || !strings.Contains(deleteResponse.Body.String(), "account still has sources") {
+		t.Fatalf("bound account deletion was not blocked: status=%d body=%s", deleteResponse.Code, deleteResponse.Body.String())
+	}
 	if w := call("/admin/sources/s1", `{"quota_domain":"new"}`, 1); w.Code != 200 {
 		t.Fatalf("source quota move status=%d body=%s", w.Code, w.Body.String())
 	}
