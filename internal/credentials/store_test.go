@@ -77,3 +77,23 @@ func TestEncryptedPersistenceRedactionAndFailedTransaction(t *testing.T) {
 		t.Fatal("delete failed")
 	}
 }
+
+func TestUsernamePasswordMaterialIsStructured(t *testing.T) {
+	seal := func(b []byte) ([]byte, error) { return append([]byte("sealed:"), b...), nil }
+	unseal := func(b []byte) ([]byte, error) { return bytes.TrimPrefix(b, []byte("sealed:")), nil }
+	s, err := open(filepath.Join(t.TempDir(), "vault"), seal, unseal)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, value := range []string{"secret", `{"username":"u"}`, `{"password":"p"}`, `{"username":"u","password":"p","extra":"x"}`} {
+		if err := s.Put("cred://bad", "username_password", "test", value); err == nil {
+			t.Fatalf("invalid username/password material accepted: %q", value)
+		}
+	}
+	if err := s.Put("cred://login", "username_password", "test", `{"username":"u","password":"p"}`); err != nil {
+		t.Fatal(err)
+	}
+	if got := s.Resolve("cred://login"); got != `{"username":"u","password":"p"}` {
+		t.Fatalf("structured material changed: %q", got)
+	}
+}

@@ -37,6 +37,10 @@ DPAPI identity or native keychain key is also required. Windows DPAPI vaults
 and `COTK1` vaults are different formats; cross-platform migration is not
 automatic. Gateway access-key storage is separate from this credential vault.
 
+Direct writes of `username_password` material are accepted only as a bounded
+JSON object containing non-empty username and password fields, matching the
+password-manager import representation.
+
 ## Verification
 
 The Windows suite covers envelope round trips, distinct nonces, every-byte

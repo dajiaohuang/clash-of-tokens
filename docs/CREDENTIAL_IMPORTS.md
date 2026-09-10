@@ -26,6 +26,9 @@ Files are bounded to 4 MiB, 10,000 scanned manager rows and 1,000 login
 candidates. The preview reports excluded non-web and non-password records.
 Only HTTP(S) website entries with passwords are eligible. Plain domain strings
 are normalized to HTTPS for matching; no connection is made during import.
+Imported login material is stored as a protected `username_password` reference
+whose value is one bounded JSON object with non-empty username and password
+fields; it is not treated as an API key or proof of authentication.
 Bitwarden multiple URIs become separate selectable candidates. Proton Pass uses
 the default-match `url` column, retains email inside encrypted credential data,
 and uses it as the username only when username is empty. It does not convert

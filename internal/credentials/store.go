@@ -4,9 +4,11 @@ package credentials
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -102,6 +104,9 @@ func (s *Store) Put(id, kind, source, value string) error {
 	if id == "" || !config.ValidCredentialRef(id) || !ValidKind(kind) || value == "" || len(value) > 1<<20 || len(source) > 256 {
 		return errors.New("invalid credential reference, type or size")
 	}
+	if err := validateValue(kind, value); err != nil {
+		return err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	next := s.copy()
@@ -120,6 +125,22 @@ func (s *Store) Put(id, kind, source, value string) error {
 		return err
 	}
 	delete(s.lastUsed, id)
+	return nil
+}
+
+func validateValue(kind, value string) error {
+	if kind != "username_password" {
+		return nil
+	}
+	var material struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+	decoder := json.NewDecoder(strings.NewReader(value))
+	decoder.DisallowUnknownFields()
+	if decoder.Decode(&material) != nil || decoder.Decode(new(any)) != io.EOF || material.Username == "" || material.Password == "" || len(material.Username) > 1024 || len(material.Password) > 64<<10 {
+		return errors.New("username_password credential must be JSON with non-empty username and password")
+	}
 	return nil
 }
 func (s *Store) Delete(id string) error {

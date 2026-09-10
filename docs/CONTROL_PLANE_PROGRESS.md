@@ -690,3 +690,9 @@ Batch 127 adds `scripts/redaction_audit.py` to the hosted CI checks. It scans
 production `internal/` and `cmd/` Go files for direct logger imports/calls while
 excluding tests, so adapter error details cannot bypass the existing fixed
 category boundary through a newly added logging sink.
+
+Batch 128 adds a storage-level shape check for `username_password` credentials.
+Manual API writes now require one bounded JSON object with non-empty username
+and password fields, while password-manager imports already produce that same
+representation. Invalid strings, incomplete objects and unknown fields are
+rejected before an encrypted vault transaction.
