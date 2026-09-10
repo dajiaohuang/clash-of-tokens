@@ -1,5 +1,6 @@
 """Browser smoke test against scripts/ui_fixture.py on port 18317."""
 from pathlib import Path
+import os
 from playwright.sync_api import sync_playwright, expect
 
 output = Path(__file__).resolve().parents[1] / ".clash-tokens" / "ui-artifacts"
@@ -72,6 +73,7 @@ with sync_playwright() as playwright:
     page.get_by_role("button", name="Add source", exact=True).click()
     page.get_by_label("Provider", exact=True).select_option("openai")
     page.get_by_label("Model", exact=True).fill("test-model")
+    page.get_by_label("Base URL", exact=True).fill(os.environ["COT_UI_UPSTREAM"])
     page.get_by_role("button", name="Continue", exact=True).click()
     page.get_by_label("Account", exact=True).select_option("ui-account")
     page.get_by_label("Quota domain", exact=True).fill("ui-quota")
@@ -80,6 +82,19 @@ with sync_playwright() as playwright:
     page.get_by_role("button", name="Apply changes", exact=True).click()
     expect(page.get_by_role("dialog")).not_to_be_visible()
     expect(page.get_by_text("openai", exact=True).first).to_be_visible()
+    page.get_by_role("button", name="Discover models", exact=True).click()
+    expect(page.get_by_role("heading", name="Discovered models", exact=True)).to_be_visible()
+    expect(page.get_by_text("discovered-model", exact=True)).to_be_visible()
+    page.get_by_role("button", name="Close", exact=True).click()
+    page.get_by_role("button", name="Validate", exact=True).click()
+    page.get_by_role("button", name="Run validation", exact=True).click()
+    expect(page.get_by_role("heading", name="Validation evidence", exact=True)).to_be_visible()
+    expect(page.get_by_role("row").filter(has=page.get_by_text("Verified", exact=True))).to_contain_text("Yes")
+    expect(page.get_by_role("row").filter(has=page.get_by_text("History saved", exact=True))).to_contain_text("Yes")
+    page.get_by_role("button", name="Close", exact=True).click()
+    page.get_by_role("link", name="Activity", exact=True).click()
+    page.get_by_role("button", name="Refresh history", exact=True).click()
+    expect(page.get_by_text("explicit_stream_generation", exact=True)).to_be_visible()
     page.get_by_role("link", name="Groups", exact=True).click()
     expect(page.get_by_role("heading", name="Groups", exact=True)).to_be_visible()
     page.get_by_role("button", name="Edit", exact=True).click()

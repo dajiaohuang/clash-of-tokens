@@ -11,6 +11,7 @@ import (
 
 	"clash-of-tokens/internal/config"
 	"clash-of-tokens/internal/credentials"
+	"clash-of-tokens/internal/evidence"
 )
 
 type generation struct {
@@ -21,6 +22,7 @@ type generation struct {
 
 // ControlPlane owns durable configuration and request-pinned runtime snapshots.
 type ControlPlane struct {
+	evidence   *evidence.Store
 	mu         sync.Mutex
 	changes    sync.Mutex
 	current    *generation
@@ -33,6 +35,11 @@ type ControlPlane struct {
 
 func NewControlPlane(path string, c config.Config, key, admin string, vault *credentials.Store) (*ControlPlane, error) {
 	p := &ControlPlane{startup: c, key: key, admin: admin, vault: vault}
+	history, historyErr := evidence.Open(path + ".evidence")
+	if historyErr != nil {
+		return nil, historyErr
+	}
+	p.evidence = history
 	svc, err := config.OpenService(path, c, p.prepare)
 	if err != nil {
 		return nil, err
@@ -139,6 +146,14 @@ func (p *ControlPlane) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if managedResource(r.URL.Path) {
+			if r.URL.Path == "/admin/evidence" {
+				if r.Method != "GET" {
+					fail(w, 405, "method not allowed")
+				} else {
+					reply(w, p.evidence.List())
+				}
+				return
+			}
 			if p.sourceCheckAdmin(w, r, g.server) {
 				return
 			}

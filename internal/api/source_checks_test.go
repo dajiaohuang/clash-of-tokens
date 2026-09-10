@@ -45,6 +45,9 @@ func TestExplicitValidationOfDisabledSource(t *testing.T) {
 			if calls != 1 || p.current.server.Router.Status()[0].Enabled || p.current.server.Router.Status()[0].Active != 0 {
 				t.Fatal("validation changed routing or leaked capacity")
 			}
+			if !evidence.HistoryRecorded || len(p.evidence.List()) != 1 || p.evidence.List()[0].Revision != 1 {
+				t.Fatal("validation evidence missing revision history")
+			}
 		})
 	}
 }

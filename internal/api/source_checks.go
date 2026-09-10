@@ -9,19 +9,22 @@ import (
 	"time"
 
 	"clash-of-tokens/internal/config"
+	audit "clash-of-tokens/internal/evidence"
 	"clash-of-tokens/internal/protocol"
 	"clash-of-tokens/internal/routing"
+	"clash-of-tokens/internal/upstream"
 )
 
 type ValidationEvidence struct {
-	Source         string                   `json:"source"`
-	Model          string                   `json:"model"`
-	Protocol       string                   `json:"protocol"`
-	CheckedAt      time.Time                `json:"checked_at"`
-	Method         string                   `json:"method"`
-	OutputObserved bool                     `json:"output_observed"`
-	Result         protocol.ExecutionResult `json:"result"`
-	Verified       bool                     `json:"verified"`
+	HistoryRecorded bool                     `json:"history_recorded"`
+	Source          string                   `json:"source"`
+	Model           string                   `json:"model"`
+	Protocol        string                   `json:"protocol"`
+	CheckedAt       time.Time                `json:"checked_at"`
+	Method          string                   `json:"method"`
+	OutputObserved  bool                     `json:"output_observed"`
+	Result          protocol.ExecutionResult `json:"result"`
+	Verified        bool                     `json:"verified"`
 }
 
 func (p *ControlPlane) sourceCheckAdmin(w http.ResponseWriter, r *http.Request, s *Server) bool {
@@ -56,11 +59,22 @@ func (p *ControlPlane) sourceCheckAdmin(w http.ResponseWriter, r *http.Request, 
 	defer s.buffered.Add(-budget)
 	if parts[1] == "discover" {
 		result, err := s.client(index).Discover(ctx)
+		status := "partial"
+		if result.Complete {
+			status = "complete"
+		}
+		if err != nil {
+			status = "failed"
+		}
+		recorded := p.evidence.Append(audit.Entry{Revision: p.service.Current().Revision, Kind: "discovery", Resource: parts[0], CheckedAt: result.CheckedAt, Method: result.Method, Status: status, Count: len(result.Models)}) == nil
 		if err != nil {
 			fail(w, 502, err.Error())
 			return true
 		}
-		reply(w, result)
+		reply(w, struct {
+			upstream.Discovery
+			HistoryRecorded bool `json:"history_recorded"`
+		}{result, recorded})
 		return true
 	}
 	var input struct {
@@ -125,6 +139,11 @@ func (p *ControlPlane) sourceCheckAdmin(w http.ResponseWriter, r *http.Request, 
 		status = 200
 	}
 	lease.RecordExecution(evidence.Result)
+	checkStatus := "failed"
+	if evidence.Verified {
+		checkStatus = "verified"
+	}
+	evidence.HistoryRecorded = p.evidence.Append(audit.Entry{Revision: p.service.Current().Revision, Kind: "validation", Resource: source.ID, Model: model.ID, Protocol: input.Protocol, CheckedAt: evidence.CheckedAt, Method: evidence.Method, Status: checkStatus, UpstreamStatus: evidence.Result.UpstreamStatus, ProtocolComplete: evidence.Result.ProtocolComplete, OutputObserved: evidence.OutputObserved}) == nil
 	reply(w, evidence)
 	return true
 }

@@ -53,10 +53,10 @@ async function api(path,options={}){
  return data;
 }
 async function refresh(){
- const [current,catalog,descriptors,schema,status,credentials,history]=await Promise.all([
-  api('/admin/config'),api('/admin/catalog'),api('/admin/descriptors'),api('/admin/config/schema'),api('/admin/status'),api('/admin/credentials'),api('/admin/config/history')
+ const [current,catalog,descriptors,schema,status,credentials,history,evidence]=await Promise.all([
+  api('/admin/config'),api('/admin/catalog'),api('/admin/descriptors'),api('/admin/config/schema'),api('/admin/status'),api('/admin/credentials'),api('/admin/config/history'),api('/admin/evidence')
  ]);
- Object.assign(S,{config:current.config,revision:current.revision,restart:current.restart_required||[],catalog,descriptors,schema,status,credentials,history});
+ Object.assign(S,{config:current.config,revision:current.revision,restart:current.restart_required||[],catalog,descriptors,schema,status,credentials,history,evidence});
  $('access').textContent='Connected';render();message('Updated at '+new Date().toLocaleTimeString()+'. Configuration revision '+S.revision+'.');
 }
 function connectView(){
@@ -292,7 +292,7 @@ function providers(){
 function accounts(){
  return [pageHead('Accounts','Account switches and capacity apply across their sources.',button('Add account',()=>addAccount(),'primary')),table(['Account','Provider','Credential','Quota / concurrency','Auto','Actions'],(S.config.accounts||[]).map(a=>[
   a.display_name||a.id,a.provider_id,a.credential_ref||'Not bound',a.quota_domain+' / '+a.max_inflight,badge(a.auto_approved?'Approved':'Manual',a.auto_approved?'accent':''),
-  [button(a.enabled?'Disable':'Enable',()=>toggle('accounts',a)),button('Edit',()=>edit('accounts',a)),a.browser_profile_id?button('Login',async()=>{const result=await api('/admin/accounts/'+encodeURIComponent(a.id)+'/login',{method:'POST'});message(result.message)}):null,a.browser_profile_id?button('Check login',async()=>{const result=await api('/admin/accounts/'+encodeURIComponent(a.id)+'/check-login',{method:'POST'});dialog('Login evidence',table(['Check','Result'],[['Status',result.status],['Checked at',result.checked_at||'Not checked'],['Method',result.method||'Not supported'],['Composer ready',result.composer_ready?'Yes':'Not established'],['Generation verified','No']]),[button('Close',()=>$('dialog').close())])}):null,button('Delete',()=>remove('accounts',a),'danger')]
+  [button(a.enabled?'Disable':'Enable',()=>toggle('accounts',a)),button('Edit',()=>edit('accounts',a)),a.browser_profile_id?button('Login',async()=>{const result=await api('/admin/accounts/'+encodeURIComponent(a.id)+'/login',{method:'POST'});message(result.message)}):null,a.browser_profile_id?button('Check login',async()=>{const result=await api('/admin/accounts/'+encodeURIComponent(a.id)+'/check-login',{method:'POST'});dialog('Login evidence',table(['Check','Result'],[['Status',result.status],['Checked at',result.checked_at||'Not checked'],['Method',result.method||'Not supported'],['Composer ready',result.composer_ready?'Yes':'Not established'],['Generation verified','No']]))}):null,button('Delete',()=>remove('accounts',a),'danger')]
  ]),'No accounts. Add an account and bind a credential before enabling its sources.')];
 }
 function credentials(){
@@ -323,11 +323,11 @@ function sources(){
 }
 async function discoverModels(source){
  const result=await api('/admin/sources/'+encodeURIComponent(source.id)+'/discover',{method:'POST'});
- dialog('Discovered models',[h('p',{class:'muted'},(result.complete?'Complete list':'Partial list: limit reached')+' · '+result.pages+' pages · '+result.checked_at+'. Listing does not verify generation, tools or quality.'),table(['Upstream model','Action'],result.models.map(m=>[m.id,button('Configure model',()=>{
+ dialog('Discovered models',[h('p',{class:'muted'},(result.complete?'Complete list':'Partial list: limit reached')+' · '+result.pages+' pages · '+result.checked_at+'. Listing does not verify generation, tools or quality.'+(result.history_recorded?' History saved.':' History could not be saved.')),table(['Upstream model','Action'],result.models.map(m=>[m.id,button('Configure model',()=>{
   const next=clone(source);if(next.models.some(x=>x.id===m.id||x.upstream===m.id))throw new Error('This model is already configured.');
   next.models.push({id:m.id,upstream:m.id,protocols:[],tier:'unrated',tools:'unknown',vision:false,max_input_bytes:65536,enabled:false,auto_approved:false});
   edit('sources',next);
- })]))],[button('Close',()=> $('dialog').close())]);
+ })]))]);
 }
 function validateSource(source){
  const model=h('select',{},source.models.map(m=>h('option',{value:m.id},m.id))),proto=h('select',{});
@@ -335,7 +335,7 @@ function validateSource(source){
  model.onchange=protocols;protocols();
  dialog('Validate source',[field('Model to validate',model),field('Protocol to validate',proto),h('p',{class:'muted'},'Sends one generation request: “Reply with OK.” Provider usage may be billed. This can check a disabled source without enabling its routes. No automatic retry is performed.')],[button('Run validation',async()=>{
   const result=await api('/admin/sources/'+encodeURIComponent(source.id)+'/validate',{method:'POST',body:JSON.stringify({model:model.value,protocol:proto.value})});
-  dialog('Validation evidence',table(['Check','Result'],[['Source / model',result.source+' / '+result.model],['Verified',result.verified?'Yes':'No'],['Checked at',result.checked_at],['Protocol complete',result.result.protocol_complete?'Yes':'No'],['Output observed',result.output_observed?'Yes':'No'],['Error',result.result.upstream_error||'None']]),[button('Close',()=> $('dialog').close())]);
+  dialog('Validation evidence',table(['Check','Result'],[['Source / model',result.source+' / '+result.model],['Verified',result.verified?'Yes':'No'],['Checked at',result.checked_at],['History saved',result.history_recorded?'Yes':'No: result was not persisted'],['Protocol complete',result.result.protocol_complete?'Yes':'No'],['Output observed',result.output_observed?'Yes':'No'],['Error',result.result.upstream_error||'None']]));
  },'primary')]);
 }
 function models(){
@@ -395,7 +395,7 @@ function browsers(){
  ]),'No profiles. Add a profile, bind it from Accounts, then use Login.'),...environment('browsers').slice(1)];
 }
 function activity(){
- return [pageHead('Activity','Persisted configuration changes.'),table(['Revision','Time','Change'],[...S.history].reverse().map(v=>[v.revision,new Date(v.created_at).toLocaleString(),v.summary]))];
+ return [pageHead('Activity','Configuration history and the latest 1,000 persisted check results.',button('Refresh history',refresh)),h('h2',{},'Checks'),table(['Time','Kind','Source / model','Configuration revision','Status','Method'],[...(S.evidence||[])].reverse().map(v=>[new Date(v.checked_at).toLocaleString(),v.kind,v.resource+(v.model?' / '+v.model:''),v.revision+(v.revision===S.revision?' (current)':' (historical)'),v.status,v.method]),'No recorded checks.'),h('h2',{},'Configuration changes'),table(['Revision','Time','Change'],[...S.history].reverse().map(v=>[v.revision,new Date(v.created_at).toLocaleString(),v.summary]))];
 }
 function about(){
  return [pageHead('About','Clash of Tokens'),h('section',{class:'panel'},h('p',{},'A local gateway for model API sources and simulated providers.'),h('p',{},'Provider implementation, account credentials and live upstream verification are separate states. Catalog coverage does not establish live availability.'),h('p',{},'Changes are validated and written to a versioned configuration journal. Credentials are referenced, never included in that journal.'))];
