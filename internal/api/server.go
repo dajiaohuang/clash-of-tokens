@@ -48,7 +48,8 @@ type clientSlot struct {
 func (s *Server) client(i int) *upstream.Client {
 	slot := &s.clients[i]
 	slot.once.Do(func() {
-		slot.client = upstream.NewConfigured(s.cfg.Sources[i], s.cfg.SourceBrowser(s.cfg.Sources[i]), s.cfg.Device)
+		source := s.cfg.EffectiveSource(s.cfg.Sources[i])
+		slot.client = upstream.NewConfigured(source, s.cfg.SourceBrowser(s.cfg.Sources[i]), s.cfg.Device)
 	})
 	return slot.client
 }

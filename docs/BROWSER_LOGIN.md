@@ -62,8 +62,10 @@ reference, an existing or new isolated browser profile, and login checking.
 Manual credential entry, password-manager import, token import and selected
 browser-cookie import return to the draft with its fields preserved. A single
 imported credential is selected automatically; multiple results require a
-selection. Provider-specific supplementary fields still use their existing
-configuration controls.
+selection. Provider-specific supplementary fields can be stored as account
+defaults. Base URL, Organization, and Project are shown in the wizard; a bound
+source inherits only an omitted value and can still set an explicit source
+override.
 
 The manual credential dialog follows the selected descriptor and credential
 kind. API-key providers show an API key field; username/password login material

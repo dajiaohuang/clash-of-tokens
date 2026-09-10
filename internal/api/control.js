@@ -226,6 +226,11 @@ function edit(kind,item,create=false){
     }
     if(kind==='sources'&&value.account_id){
      const account=(next.accounts||[]).find(a=>a.id===value.account_id),moved=value.account_id!==item.account_id;
+     if(account){
+      if(!value.base_url)value.base_url=account.base_url||'';
+      if(!value.organization)value.organization=account.organization||'';
+      if(!value.project)value.project=account.project||'';
+     }
      if(moved&&account)value.quota_domain=account.quota_domain;
      else if(!moved&&value.quota_domain!==item.quota_domain&&account){
       account.quota_domain=value.quota_domain;
@@ -271,7 +276,7 @@ function addAccount(provider=''){
 }
 function accountWizard(draft={}){
  const provider=select([...new Set([...S.catalog.map(p=>p.id),...(S.config.providers||[]).map(p=>p.id)])],draft.provider_id||'',true);
- const id=h('input',{value:draft.id||''}),name=h('input',{value:draft.display_name||''}),quota=h('input',{value:draft.quota_domain||''});
+ const id=h('input',{value:draft.id||''}),name=h('input',{value:draft.display_name||''}),quota=h('input',{value:draft.quota_domain||''}),baseURL=h('input',{value:draft.base_url||'',placeholder:'Optional HTTPS endpoint override'}),organization=h('input',{value:draft.organization||'',placeholder:'Optional'}),project=h('input',{value:draft.project||'',placeholder:'Optional'});
  const providerDescriptor=()=>{const p=S.catalog.find(p=>p.id===provider.value),d=S.descriptors.find(d=>d.id===p?.adapter);return d};
  const allowedModes=()=>{const d=providerDescriptor();return d?.credential_modes?.length?d.credential_modes:null};
  const supports=(...modes)=>{const allowed=allowedModes();return !allowed||modes.some(mode=>allowed.includes(mode))};
@@ -281,8 +286,8 @@ function accountWizard(draft={}){
  const profile=select(available.map(p=>({value:p.id,label:p.id+(p===draft.newProfile?' (new isolated profile)':'')})),draft.browser_profile_id||'',true);
  const hints=h('p',{class:'muted'});
  const authNotice=h('p',{},draft.authenticated?'Login detected for this selected profile. Review and save the account.':'Choose a protected credential or a browser profile. Import actions return here with the new reference.');
- const capture=()=>({...draft,id:id.value.trim(),display_name:name.value.trim(),quota_domain:quota.value.trim(),provider_id:provider.value,credential_ref:credential.value,browser_profile_id:profile.value,newProfile:draft.newProfile?.id===profile.value?draft.newProfile:undefined});
- const hint=()=>{const modes=allowedModes()||[];hints.textContent='Compatible credential types: '+(modes.join(', ')||'any declared type')+'. Incompatible protected references are hidden. Password imports are login material, not API keys. Accounts are saved disabled and excluded from Auto.'};
+ const capture=()=>({...draft,id:id.value.trim(),display_name:name.value.trim(),quota_domain:quota.value.trim(),provider_id:provider.value,credential_ref:credential.value,browser_profile_id:profile.value,base_url:baseURL.value.trim(),organization:organization.value.trim(),project:project.value.trim(),newProfile:draft.newProfile?.id===profile.value?draft.newProfile:undefined});
+ const hint=()=>{const modes=allowedModes()||[];hints.textContent='Compatible credential types: '+(modes.join(', ')||'any declared type')+'. Incompatible protected references are hidden. Password imports are login material, not API keys. Base URL, organization and project are optional account defaults; a source may override them. Accounts are saved disabled and excluded from Auto routing.'};
  const updateCredentialOptions=()=>{const current=credential.value,options=compatibleCredentials();credential.replaceChildren(h('option',{value:''},'Choose…'),...options.map(c=>h('option',{value:c.id},c.id+' · '+c.kind)));credential.value=options.some(c=>c.id===current)?current:''};
  const newCredentialAction=button('New credential',()=>credentialForm(undefined,imported,allowedModes,providerDescriptor));
  const passwordImportAction=button('Import password manager',()=>importCredentials(imported));
@@ -299,13 +304,13 @@ function accountWizard(draft={}){
  const updateSetupActions=()=>{const d=providerDescriptor(),browser=!!(d?.browser_required||d?.browser_auth_check||allowedModes()?.includes('browser_profile'));passwordImportAction.hidden=!supports('username_password');tokenImportAction.hidden=!supports('api_key','oauth');browserCookieAction.hidden=!(browser&&supports('cookie'));newProfileAction.hidden=!browser;loginAction.hidden=!browser;newCredentialAction.hidden=!!allowedModes()&&(!allowedModes().length||!d?.credential_fields?.length)};
  provider.onchange=()=>{draft.authenticated=false;updateCredentialOptions();authNotice.textContent='Selection changed. Check login again for this selection.';hint();updateSetupActions()};profile.onchange=()=>{draft.authenticated=false;authNotice.textContent='Selection changed. Check login again for this selection.'};hint();updateSetupActions();
  const imported=saved=>{const next=capture(),items=Array.isArray(saved)?saved:[saved];if(items.length===1)next.credential_ref=items[0].id;accountWizard(next)};
- dialog('Set up account',[h('div',{class:'form-grid'},field('Provider',provider),field('ID',id),field('Display Name',name),field('Quota domain',quota),field('Credential',credential),field('Browser Profile Id',profile)),hints,authNotice,h('div',{class:'toolbar'},setupActions)],[button('Review changes',async()=>{
+ dialog('Set up account',[h('div',{class:'form-grid'},field('Provider',provider),field('ID',id),field('Display Name',name),field('Quota domain',quota),field('Base URL',baseURL),field('Organization',organization),field('Project',project),field('Credential',credential),field('Browser Profile Id',profile)),hints,authNotice,h('div',{class:'toolbar'},setupActions)],[button('Review changes',async()=>{
   const next=clone(S.config),value=capture();
   if(!value.id||!value.provider_id||!value.quota_domain)throw new Error('Enter account ID, provider and quota domain.');
   if((next.accounts||[]).some(a=>a.id===value.id))throw new Error('This account ID already exists.');
   if(value.newProfile){next.browser_profiles=next.browser_profiles||[];next.browser_profiles.push(value.newProfile)}
   next.providers=next.providers||[];if(!next.providers.some(p=>p.id===value.provider_id))next.providers.push({id:value.provider_id,enabled:true,auto_approved:false,pool_strategy:'round-robin'});
-  next.accounts=next.accounts||[];next.accounts.push({id:value.id,provider_id:value.provider_id,display_name:value.display_name,quota_domain:value.quota_domain,credential_ref:value.credential_ref,browser_profile_id:value.browser_profile_id,enabled:false,auto_approved:false,max_inflight:1,weight:1,created_at:new Date().toISOString()});
+  next.accounts=next.accounts||[];next.accounts.push({id:value.id,provider_id:value.provider_id,display_name:value.display_name,base_url:value.base_url,organization:value.organization,project:value.project,quota_domain:value.quota_domain,credential_ref:value.credential_ref,browser_profile_id:value.browser_profile_id,enabled:false,auto_approved:false,max_inflight:1,weight:1,created_at:new Date().toISOString()});
   await preview(next,'Add account '+value.id,()=>accountWizard(value),clone(S.config),S.revision,value.authenticated?async()=>{await api('/admin/accounts/'+encodeURIComponent(value.id)+'/check-login',{method:'POST'});await refresh()}:undefined);
  },'primary')]);
 }
@@ -481,8 +486,8 @@ function accounts(){
   dialog('Account validation',[h('p',{class:'muted'},'One explicit check was performed using the first configured source/model, or browser authentication for a browser-only account. This does not approve Auto routing or prove every model capability.'),table(['Field','Value'],[['Account',a.display_name||a.id],['Status',status],['Source',result.source||'Browser profile'],['Model',result.model||'Not applicable'],['Protocol',result.protocol||'Not applicable'],['Output observed',result.output_observed===undefined?'Not reported':result.output_observed?'Yes':'No'],['History saved',result.history_recorded?'Yes':'No']])]);
   await refresh();
  };
- return [pageHead('Accounts','Account switches and capacity apply across their sources.',button('Discover candidates',discoverAccounts),button('Account pools',accountPools),button('Refresh capacity',refresh),button('Add account',()=>addAccount(),'primary')),table(['Account','Provider','Health','Auth status','Browser authentication','Credential','Credential state','Reviewed override','Quota / in flight','Auto','Actions'],(S.config.accounts||[]).map(a=>[
-  a.display_name||a.id,a.provider_id,badge(healthFor(a).health||'untested',healthFor(a).health==='healthy'?'good':healthFor(a).health==='disabled'?'':'warn'),healthFor(a).auth_status||'not_checked',accountAuth(a),a.credential_ref||'Not bound',(healthFor(a).credential_state||'not_configured')+(healthFor(a).credential_version?' · v'+healthFor(a).credential_version:''),a.credential_type_override?'Yes':'No',a.quota_domain+' · '+((S.status.accounts||[]).find(x=>x.id===a.id)?.active||0)+' / '+a.max_inflight,badge(a.auto_approved?'Approved':'Manual',a.auto_approved?'accent':''),
+ return [pageHead('Accounts','Account switches and capacity apply across their sources.',button('Discover candidates',discoverAccounts),button('Account pools',accountPools),button('Refresh capacity',refresh),button('Add account',()=>addAccount(),'primary')),table(['Account','Provider','Health','Auth status','Browser authentication','Credential','Credential state','Routing defaults','Reviewed override','Quota / in flight','Auto','Actions'],(S.config.accounts||[]).map(a=>[
+  a.display_name||a.id,a.provider_id,badge(healthFor(a).health||'untested',healthFor(a).health==='healthy'?'good':healthFor(a).health==='disabled'?'':'warn'),healthFor(a).auth_status||'not_checked',accountAuth(a),a.credential_ref||'Not bound',(healthFor(a).credential_state||'not_configured')+(healthFor(a).credential_version?' · v'+healthFor(a).credential_version:''),[a.base_url&&'Base URL: '+a.base_url,a.organization&&'Organization: '+a.organization,a.project&&'Project: '+a.project].filter(Boolean).join(' · ')||'Not set',a.credential_type_override?'Yes':'No',a.quota_domain+' · '+((S.status.accounts||[]).find(x=>x.id===a.id)?.active||0)+' / '+a.max_inflight,badge(a.auto_approved?'Approved':'Manual',a.auto_approved?'accent':''),
   [button(a.enabled?'Disable':'Enable',()=>toggle('accounts',a)),button(a.auto_approved?'Remove Auto':'Allow Auto',()=>toggleAuto('accounts',a)),button('Edit',()=>edit('accounts',a)),button('Validate account',()=>validateAccount(a)),a.browser_profile_id?button('Login',async()=>{const result=await api('/admin/accounts/'+encodeURIComponent(a.id)+'/login',{method:'POST'});loginEvidence(a,true,result.message)}):null,a.browser_profile_id?button('Check login',()=>loginEvidence(a)):null,button('Delete',()=>remove('accounts',a),'danger')]
  ]),'No accounts. Add an account and bind a credential before enabling its sources.')];
 }

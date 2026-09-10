@@ -124,6 +124,35 @@ func TestStreamingPassthroughAndSecrets(t *testing.T) {
 	}
 }
 
+func TestAccountRoutingMetadataIsUsedWhenSourceOmitsOverrides(t *testing.T) {
+	up := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("OpenAI-Organization") != "account-org" || r.Header.Get("OpenAI-Project") != "account-project" {
+			t.Errorf("account routing headers missing: organization=%q project=%q", r.Header.Get("OpenAI-Organization"), r.Header.Get("OpenAI-Project"))
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, `{"id":"ok","choices":[{"message":{"content":"OK"}}]}`)
+	}))
+	defer up.Close()
+	c := config.Default()
+	c.Providers = []config.Provider{{ID: "openai", Enabled: true}}
+	c.Accounts = []config.Account{{ID: "account", ProviderID: "openai", Enabled: true, BaseURL: up.URL, Organization: "account-org", Project: "account-project", QuotaDomain: "quota", MaxInflight: 1, Weight: 1}}
+	c.Sources = []config.Source{{ID: "source", Provider: "openai", Adapter: "openai", AccountID: "account", Local: true, Enabled: true, MaxInflight: 1, QuotaDomain: "quota", QuotaMaxInflight: 1, Models: []config.Model{{ID: "model", Upstream: "model", Protocols: []string{"chat"}, Tier: "unrated", Tools: "none", MaxInputBytes: 1024}}}}
+	s, err := NewWithKeys(c, testKey, adminKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	gateway := httptest.NewServer(s)
+	defer gateway.Close()
+	res := request(t, gateway.URL, "/v1/chat/completions", `{"model":"source/model","messages":[]}`, testKey)
+	if res.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(res.Body)
+		res.Body.Close()
+		t.Fatalf("request status=%d body=%s", res.StatusCode, body)
+	}
+	res.Body.Close()
+}
+
 func TestNonStreamingResponseRecordsExecutionHealth(t *testing.T) {
 	s, g := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

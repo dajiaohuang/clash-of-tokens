@@ -197,7 +197,8 @@ func (c Config) Validate() error {
 	geminiBrowserCount := 0
 	gigaChatBrowserCount := 0
 	buildBrowserCount := 0
-	for _, s := range c.Sources {
+	for _, configured := range c.Sources {
+		s := c.EffectiveSource(configured)
 		if s.Weight < 0 || s.Weight > 10000 {
 			return fmt.Errorf("source %s: invalid weight", s.ID)
 		}

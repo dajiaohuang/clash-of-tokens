@@ -2,6 +2,8 @@ package config
 
 import (
 	"fmt"
+	"net"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -23,6 +25,9 @@ type Account struct {
 	CredentialRef          string    `json:"credential_ref,omitempty"`
 	CredentialTypeOverride bool      `json:"credential_type_override,omitempty"`
 	BrowserProfileID       string    `json:"browser_profile_id,omitempty"`
+	BaseURL                string    `json:"base_url,omitempty"`
+	Organization           string    `json:"organization,omitempty"`
+	Project                string    `json:"project,omitempty"`
 	QuotaDomain            string    `json:"quota_domain"`
 	MaxInflight            int       `json:"max_inflight"`
 	Weight                 int       `json:"weight"`
@@ -43,6 +48,58 @@ func (c Config) SourceCredentialRef(s Source) string {
 		}
 	}
 	return ""
+}
+
+// EffectiveSource fills provider-specific routing metadata from the bound
+// account only when the source does not provide an explicit value. The
+// returned source is a copy; durable configuration retains the distinction
+// between account defaults and source overrides.
+func (c Config) EffectiveSource(s Source) Source {
+	if s.AccountID == "" {
+		return s
+	}
+	for _, account := range c.Accounts {
+		if account.ID != s.AccountID {
+			continue
+		}
+		if s.BaseURL == "" {
+			s.BaseURL = account.BaseURL
+		}
+		if s.Organization == "" {
+			s.Organization = account.Organization
+		}
+		if s.Project == "" {
+			s.Project = account.Project
+		}
+		return s
+	}
+	return s
+}
+
+func validateAccountMetadata(a Account) error {
+	for _, field := range []struct {
+		name, value string
+	}{
+		{"organization", a.Organization},
+		{"project", a.Project},
+	} {
+		if len(field.value) > 256 || strings.ContainsAny(field.value, "\r\n\x00") {
+			return fmt.Errorf("account %s: invalid %s", a.ID, field.name)
+		}
+	}
+	if a.BaseURL == "" {
+		return nil
+	}
+	u, err := url.Parse(a.BaseURL)
+	if err != nil || u.Host == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" {
+		return fmt.Errorf("account %s: invalid base_url", a.ID)
+	}
+	ip := net.ParseIP(u.Hostname())
+	loopback := u.Hostname() == "localhost" || (ip != nil && ip.IsLoopback())
+	if u.Scheme != "https" && !(u.Scheme == "http" && loopback) {
+		return fmt.Errorf("account %s: base_url must use HTTPS outside loopback", a.ID)
+	}
+	return nil
 }
 
 func (c Config) ValidateAccounts() error {
@@ -71,6 +128,9 @@ func (c Config) ValidateAccounts() error {
 		}
 		if !ValidCredentialRef(a.CredentialRef) {
 			return fmt.Errorf("account %s: invalid credential reference", a.ID)
+		}
+		if err := validateAccountMetadata(a); err != nil {
+			return err
 		}
 		if a.MaxInflight < 1 || a.MaxInflight > 10000 || a.Weight < 1 || a.Weight > 10000 || !identifier.MatchString(a.QuotaDomain) {
 			return fmt.Errorf("account %s: invalid capacity, weight or quota domain", a.ID)
