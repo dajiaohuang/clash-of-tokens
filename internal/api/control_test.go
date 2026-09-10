@@ -174,6 +174,8 @@ func TestConfigPreviewReportsRoutingImpact(t *testing.T) {
 	dir := t.TempDir()
 	vault, _ := credentials.Open(filepath.Join(dir, "vault"))
 	c := config.Default()
+	c.Providers = []config.Provider{{ID: "openai", Enabled: true, AutoApproved: true, PoolStrategy: "round-robin"}}
+	c.BrowserProfiles = []config.BrowserProfile{{ID: "profile", Enabled: true, Engine: "chrome", CDPURL: "http://127.0.0.1:9223"}}
 	c.Sources = []config.Source{{ID: "preview-source", Provider: "openai", Adapter: "openai", BaseURL: "http://127.0.0.1:1", Local: true, Enabled: true, AutoApproved: true, BillingMode: "free_allowance", MaxInflight: 1, QuotaDomain: "preview", QuotaMaxInflight: 1, Models: []config.Model{{ID: "model", Upstream: "model", Protocols: []string{"chat"}, Tier: "silver", RatingBasis: "fixture", Tools: "none", MaxInputBytes: 1024}}}}
 	c.Groups[0].Sources = []string{"preview-source"}
 	p, err := NewControlPlane(filepath.Join(dir, "config.json"), c, testKey, adminKey, vault)
@@ -194,10 +196,12 @@ func TestConfigPreviewReportsRoutingImpact(t *testing.T) {
 	}
 	var response struct {
 		Impact struct {
-			SourcesChanged  []string `json:"sources_changed"`
-			AccountsChanged []string `json:"accounts_changed"`
-			GroupsChanged   []string `json:"groups_changed"`
-			Groups          []struct {
+			SourcesChanged         []string `json:"sources_changed"`
+			AccountsChanged        []string `json:"accounts_changed"`
+			GroupsChanged          []string `json:"groups_changed"`
+			ProvidersChanged       []string `json:"providers_changed"`
+			BrowserProfilesChanged []string `json:"browser_profiles_changed"`
+			Groups                 []struct {
 				Group          string `json:"group"`
 				Protocol       string `json:"protocol"`
 				BeforeEligible int    `json:"before_eligible"`
@@ -213,5 +217,27 @@ func TestConfigPreviewReportsRoutingImpact(t *testing.T) {
 	}
 	if len(response.Impact.SourcesChanged) != 1 || response.Impact.SourcesChanged[0] != "preview-source" || len(response.Impact.AccountsChanged) != 0 || len(response.Impact.GroupsChanged) != 0 {
 		t.Fatalf("unexpected changed-resource impact: %+v", response.Impact)
+	}
+	desired.Providers[0].Enabled = false
+	desired.BrowserProfiles[0].Enabled = false
+	body, _ = json.Marshal(map[string]any{"revision": 1, "config": desired})
+	req = httptest.NewRequest("POST", "/admin/config/preview", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+adminKey)
+	w = httptest.NewRecorder()
+	p.ServeHTTP(w, req)
+	if w.Code != 200 {
+		t.Fatalf("provider/profile preview status=%d body=%s", w.Code, w.Body.String())
+	}
+	var resources = struct {
+		Impact struct {
+			ProvidersChanged       []string `json:"providers_changed"`
+			BrowserProfilesChanged []string `json:"browser_profiles_changed"`
+		} `json:"impact"`
+	}{}
+	if err := json.Unmarshal(w.Body.Bytes(), &resources); err != nil {
+		t.Fatal(err)
+	}
+	if len(resources.Impact.ProvidersChanged) != 1 || resources.Impact.ProvidersChanged[0] != "openai" || len(resources.Impact.BrowserProfilesChanged) != 1 || resources.Impact.BrowserProfilesChanged[0] != "profile" {
+		t.Fatalf("unexpected provider/profile impact: %+v", resources.Impact)
 	}
 }

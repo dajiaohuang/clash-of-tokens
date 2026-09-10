@@ -777,6 +777,12 @@ and an untouched catalog endpoint, preserving explicit source overrides;
 validation covers HTTPS or loopback endpoints and bounded metadata, and the
 runtime client uses the effective values when constructing requests.
 
+Batch 145 extends configuration preview impact to provider and browser-profile
+changes. The API now reports before/after counts and sorted changed IDs for
+these resources alongside sources, accounts and groups; the review dialog
+renders all five resource classes so same-count lifecycle and enable/disable
+edits remain explicit before apply.
+
 Batch 144 corrects catalog preset metadata for browser-authenticated products.
 Entries whose provider descriptor requires a browser or exposes a browser login
 check now use `source_kind: browser_reverse` and

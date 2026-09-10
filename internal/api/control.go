@@ -292,9 +292,13 @@ func previewImpact(before, after config.Config) map[string]any {
 		"groups":         rows,
 		"sources_before": len(before.Sources), "sources_after": len(after.Sources),
 		"accounts_before": len(before.Accounts), "accounts_after": len(after.Accounts),
-		"sources_changed":  changedResourceIDs(before.Sources, after.Sources, func(v config.Source) string { return v.ID }),
-		"accounts_changed": changedResourceIDs(before.Accounts, after.Accounts, func(v config.Account) string { return v.ID }),
-		"groups_changed":   changedResourceIDs(before.Groups, after.Groups, func(v config.Group) string { return v.ID }),
+		"providers_before": len(before.Providers), "providers_after": len(after.Providers),
+		"browser_profiles_before": len(before.BrowserProfiles), "browser_profiles_after": len(after.BrowserProfiles),
+		"sources_changed":          changedResourceIDs(before.Sources, after.Sources, func(v config.Source) string { return v.ID }),
+		"accounts_changed":         changedResourceIDs(before.Accounts, after.Accounts, func(v config.Account) string { return v.ID }),
+		"groups_changed":           changedResourceIDs(before.Groups, after.Groups, func(v config.Group) string { return v.ID }),
+		"providers_changed":        changedResourceIDs(before.Providers, after.Providers, func(v config.Provider) string { return v.ID }),
+		"browser_profiles_changed": changedResourceIDs(before.BrowserProfiles, after.BrowserProfiles, func(v config.BrowserProfile) string { return v.ID }),
 	}
 }
 
