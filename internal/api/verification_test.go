@@ -161,6 +161,8 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 		} `json:"account_health"`
 		Verification []struct {
 			Source            string `json:"source"`
+			CredentialRef     string `json:"credential_ref"`
+			CredentialBinding string `json:"credential_binding"`
 			CredentialState   string `json:"credential_state"`
 			CredentialVersion uint64 `json:"credential_version"`
 			Models            []struct {
@@ -180,7 +182,7 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 	if len(out.Sources) != 1 || out.Sources[0].ID != "s" || out.Sources[0].LastValidated == nil || !out.Sources[0].LastValidated.Equal(checked) || out.Sources[0].LastValidationState != "verified" {
 		t.Fatalf("source validation state missing: %+v", out.Sources)
 	}
-	if len(out.Verification) != 1 || out.Verification[0].CredentialState != "protected_reference" || out.Verification[0].CredentialVersion != 1 || len(out.Verification[0].Models) != 1 || out.Verification[0].Models[0].Status != "verified" {
+	if len(out.Verification) != 1 || out.Verification[0].CredentialRef != "cred://account-key" || out.Verification[0].CredentialBinding != "account" || out.Verification[0].CredentialState != "protected_reference" || out.Verification[0].CredentialVersion != 1 || len(out.Verification[0].Models) != 1 || out.Verification[0].Models[0].Status != "verified" {
 		t.Fatalf("inherited credential provenance missing: %+v binding=%s entries=%+v", out.Verification, binding, p.evidence.List())
 	}
 	if out.Providers[0].ID != "p" || out.Providers[0].Health != "auth_required" || out.Providers[0].AuthStatus != "auth_required" || len(out.Providers[0].Accounts) != 2 || len(out.Providers[0].Sources) != 1 {

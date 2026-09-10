@@ -27,6 +27,8 @@ type sourceVerification struct {
 	Source              string              `json:"source"`
 	Provider            string              `json:"provider"`
 	Account             string              `json:"account,omitempty"`
+	CredentialRef       string              `json:"credential_ref,omitempty"`
+	CredentialBinding   string              `json:"credential_binding"`
 	CatalogImplemented  bool                `json:"catalog_implemented"`
 	CatalogLiveVerified bool                `json:"catalog_live_verified"`
 	CredentialState     string              `json:"credential_state"`
@@ -138,6 +140,10 @@ func (s *Server) runtimeStatus() map[string]any {
 
 func (p *ControlPlane) controlStatus(s *Server) map[string]any {
 	out := s.runtimeStatus()
+	// The running server expands account credentials into source copies. Keep
+	// the durable source alongside it so the UI can distinguish an explicit
+	// source binding from an inherited account binding.
+	durable := p.service.Current().Config
 	entries := p.evidence.List()
 	type checkKey struct{ source, model, protocol string }
 	latest := map[checkKey]audit.Entry{}
@@ -164,6 +170,13 @@ func (p *ControlPlane) controlStatus(s *Server) map[string]any {
 	verification := make([]sourceVerification, 0, len(s.cfg.Sources))
 	verifiedSources := 0
 	for _, source := range s.cfg.Sources {
+		configured := source
+		for _, candidate := range durable.Sources {
+			if candidate.ID == source.ID {
+				configured = candidate
+				break
+			}
+		}
 		credentialRef := s.cfg.SourceCredentialRef(source)
 		meta := metadata[credentialRef]
 		descriptor, _ := providerdef.Lookup(source.Adapter)
@@ -183,6 +196,21 @@ func (p *ControlPlane) controlStatus(s *Server) map[string]any {
 			v.CredentialState = "anonymous"
 		}
 		binding := p.bindingWithMetadata(s.cfg, source, meta)
+		credentialBinding := "none"
+		switch {
+		case configured.CredentialRef != "":
+			credentialBinding = "source"
+		case credentialRef != "":
+			credentialBinding = "account"
+		case source.KeyEnv != "":
+			credentialBinding = "environment"
+		case descriptor.BrowserRequired && s.cfg.SourceBrowser(source).Enabled:
+			credentialBinding = "browser"
+		case source.Anonymous:
+			credentialBinding = "anonymous"
+		}
+		v.CredentialRef = credentialRef
+		v.CredentialBinding = credentialBinding
 		verified := false
 		for _, model := range source.Models {
 			for _, proto := range model.Protocols {
