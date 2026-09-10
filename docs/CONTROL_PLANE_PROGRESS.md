@@ -679,3 +679,9 @@ profile.
 Batch 125 adds the same connection-capacity assertions to the isolated browser
 regression, including the configured profile's bound-count and session-limit
 columns before the login wizard starts.
+
+Batch 126 makes manual credential setup descriptor-aware at field level. The
+dialog hides Username for API-key credentials, labels the protected value as
+Password for username/password login material, and suppresses a manual secret
+field when a descriptor declares no credential fields. The UI regression covers
+OpenAI API-key and Claude username/password forms without saving test secrets.

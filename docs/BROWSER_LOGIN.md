@@ -58,6 +58,11 @@ imported credential is selected automatically; multiple results require a
 selection. Provider-specific supplementary fields still use their existing
 configuration controls.
 
+The manual credential dialog follows the selected descriptor and credential
+kind. API-key providers show an API key field; username/password login material
+shows separate Username and Password fields; a device-session descriptor with
+no declared secret fields does not offer a misleading manual secret form.
+
 The setup toolbar follows the selected provider descriptor. Manual credential
 types and token imports are offered only when their resulting modes are
 declared; browser-cookie import, isolated-profile creation and login checking

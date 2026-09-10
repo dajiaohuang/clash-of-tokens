@@ -295,7 +295,7 @@ function accountWizard(draft={}){
   try{await api('/admin/browser_profiles/setup-login',{method:'POST',body:JSON.stringify(payload)});check()}catch(e){if(!e.message.includes('port is already in use'))throw e;dialog('Browser port occupied',h('p',{},'Confirm that the selected connection belongs to the intended browser profile before checking login.'),[button('Back',()=>accountWizard(next)),button('Use running browser',check)])}
  });
  const setupActions=[newCredentialAction,passwordImportAction,tokenImportAction,browserCookieAction,newProfileAction,loginAction];
- const updateSetupActions=()=>{const d=providerDescriptor(),browser=!!(d?.browser_required||d?.browser_auth_check||allowedModes()?.includes('browser_profile'));passwordImportAction.hidden=!supports('username_password');tokenImportAction.hidden=!supports('api_key','oauth');browserCookieAction.hidden=!(browser&&supports('cookie'));newProfileAction.hidden=!browser;loginAction.hidden=!browser;newCredentialAction.hidden=!!allowedModes()&&!allowedModes().length};
+ const updateSetupActions=()=>{const d=providerDescriptor(),browser=!!(d?.browser_required||d?.browser_auth_check||allowedModes()?.includes('browser_profile'));passwordImportAction.hidden=!supports('username_password');tokenImportAction.hidden=!supports('api_key','oauth');browserCookieAction.hidden=!(browser&&supports('cookie'));newProfileAction.hidden=!browser;loginAction.hidden=!browser;newCredentialAction.hidden=!!allowedModes()&&(!allowedModes().length||!d?.credential_fields?.length)};
  provider.onchange=()=>{draft.authenticated=false;updateCredentialOptions();authNotice.textContent='Selection changed. Check login again for this selection.';hint();updateSetupActions()};profile.onchange=()=>{draft.authenticated=false;authNotice.textContent='Selection changed. Check login again for this selection.'};hint();updateSetupActions();
  const imported=saved=>{const next=capture(),items=Array.isArray(saved)?saved:[saved];if(items.length===1)next.credential_ref=items[0].id;accountWizard(next)};
  dialog('Set up account',[h('div',{class:'form-grid'},field('Provider',provider),field('ID',id),field('Display Name',name),field('Quota domain',quota),field('Credential',credential),field('Browser Profile Id',profile)),hints,authNotice,h('div',{class:'toolbar'},setupActions)],[button('Review changes',async()=>{
@@ -332,8 +332,16 @@ function credentialForm(existing,onSaved,allowedModes,descriptor){
  const kind=select(kinds,existing?.kind||kinds[0]||'api_key');
  const value=h('input',{type:'password',autocomplete:'new-password',placeholder:'New secret value'});
  const username=h('input',{autocomplete:'off',placeholder:'Username (username/password only)'});
- const fields=descriptor?.()?.credential_fields||[],secretField=fields.find(f=>f.secret)||fields.find(f=>f.name==='value'),secretLabel=secretField?.label||'Secret value';
- const formBody=[h('div',{class:'form-grid'},field('Credential ID',id),field('Type',kind),field('Username',username),field(secretLabel,value)),h('p',{class:'muted'},'The existing secret is never sent to this page. Saving replaces the protected value.')];
+ const fields=descriptor?.()?.credential_fields||[],secretField=fields.find(f=>f.secret)||fields.find(f=>f.name==='value'),valueLabel=secretField?.label||'Secret value';
+ const usernameField=field('Username',username),valueField=field('Credential value',value);
+ const updateCredentialFields=()=>{
+  usernameField.hidden=kind.value!=='username_password';
+  valueField.querySelector('label').textContent=kind.value==='username_password'?'Password':valueLabel;
+  valueField.hidden=kind.value==='device_session';
+ };
+ kind.addEventListener('change',updateCredentialFields);
+ updateCredentialFields();
+ const formBody=[h('div',{class:'form-grid'},field('Credential ID',id),field('Type',kind),usernameField,valueField),h('p',{class:'muted'},'The existing secret is never sent to this page. Saving replaces the protected value.')];
  let confirmed=false;
  const save=async()=>{
    if(!existing&&S.credentials.some(c=>c.id==='cred://'+id.value))throw new Error('This credential ID exists. Use Replace from Credentials to change it.');
