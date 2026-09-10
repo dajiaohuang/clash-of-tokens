@@ -157,6 +157,10 @@ CLI format references: [Codex auth fixture](https://github.com/openai/codex/blob
     with explicit cloud classification, protected API-key support, disabled
     defaults, current migration/region notes and synthetic path/auth tests.
     See [China cloud APIs](providers/china-cloud-apis.md).
+35. Models supports source/text filters, explicit multi-selection and one
+    previewed transaction for enable, Auto, rating and capability changes.
+    Browser regression covers two-model editing, required rating evidence and
+    preservation of an unselected model. See [model bulk edits](MODEL_BULK_EDIT.md).
 
 Discovery protocol references: [Anthropic models](https://platform.claude.com/docs/en/api/models/list),
 [Gemini models](https://ai.google.dev/api/models),

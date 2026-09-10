@@ -514,9 +514,35 @@ function validateSource(source){
  },'primary')]);
 }
 function models(){
- return [pageHead('Models','Model names, capabilities and Auto approval remain explicit.'),table(['Model','Source','Upstream','Tier','Tools / vision','State',''],S.config.sources.flatMap(s=>s.models.map(m=>[
-  m.id,s.id,m.upstream,badge(m.tier),m.tools+' / '+(m.vision?'yes':'no'),badge(m.enabled===false?'Disabled':'Enabled',m.enabled===false?'':'good'),button('Edit source models',()=>edit('sources',s))
- ])))];
+ const entries=S.config.sources.flatMap(s=>s.models.map(m=>({source:s,model:m,key:JSON.stringify([s.id,m.id])}))),selected=new Set(),query=h('input',{type:'search'}),source=select(['all',...S.config.sources.map(s=>s.id)],'all'),output=h('div',{}),count=h('p',{role:'status'});
+ const filtered=()=>entries.filter(x=>(source.value==='all'||x.source.id===source.value)&&(x.model.id+' '+x.model.upstream+' '+x.source.provider).toLowerCase().includes(query.value.toLowerCase()));
+ const editSelected=button('Edit selected models',()=>bulkModels(entries.filter(x=>selected.has(x.key))),'primary');
+ const draw=()=>{
+  count.textContent=selected.size+' models selected, including selections outside the current filter.';editSelected.disabled=!selected.size;
+  output.replaceChildren(table(['Select','Model','Source','Upstream','Tier','Tools / vision','Enabled','Auto approval',''],filtered().map(x=>[
+   h('input',{type:'checkbox','aria-label':'Select model '+x.source.id+'/'+x.model.id,checked:selected.has(x.key),onchange:e=>{if(e.target.checked)selected.add(x.key);else selected.delete(x.key);draw()}}),x.model.id,x.source.id,x.model.upstream,badge(x.model.tier),x.model.tools+' / '+(x.model.vision?'yes':'no'),x.model.enabled===false?'Disabled':x.model.enabled===true?'Enabled':'Inherit',x.model.auto_approved===false?'Not approved':x.model.auto_approved===true?'Approved':'Inherit',button('Edit source models',()=>edit('sources',x.source))
+  ]),'No matching configured models.'));
+ };query.oninput=draw;source.onchange=draw;draw();
+ return [pageHead('Models','Model names, capabilities and Auto approval remain explicit.',editSelected),field('Filter models',query),field('Model source',source),h('div',{class:'toolbar'},button('Select filtered models',()=>{for(const x of filtered())selected.add(x.key);draw()}),button('Clear model selection',()=>{selected.clear();draw()})),count,output];
+}
+function bulkModels(entries){
+ if(!entries.length)throw Error('Select at least one model.');
+ const base=clone(S.config),revision=S.revision;
+ const switchOptions=[{value:'keep',label:'Leave unchanged'},{value:'true',label:'Yes'},{value:'false',label:'No'},{value:'inherit',label:'Inherit'}];
+ const enabled=select(switchOptions,'keep'),approved=select(switchOptions,'keep'),tier=select(['keep','unrated','bronze','silver','gold','platinum','diamond'],'keep'),basis=h('input',{disabled:true}),tools=select(['keep','unknown','none','native'],'keep'),vision=select(switchOptions.filter(x=>x.value!=='inherit'),'keep');
+ tier.onchange=()=>{basis.disabled=['keep','unrated'].includes(tier.value)};
+ const show=()=>dialog('Edit selected models',[
+  h('p',{class:'muted'},'Changes apply to all listed models in one configuration transaction. Approval is a routing permission, not verification. Provider, account, source and group restrictions still apply; metered sources may incur charges once routed.'),
+  table(['Source','Model'],entries.map(x=>[x.source.id,x.model.id])),field('Models enabled',enabled),field('Models Auto approval',approved),field('Models tier',tier),field('Models rating basis',basis),field('Models tools',tools),field('Models vision',vision)
+ ],[button('Review model changes',async()=>{
+  const next=clone(base),changes={};
+  for(const [key,input] of [['enabled',enabled],['auto_approved',approved],['vision',vision]])if(input.value!=='keep')changes[key]=input.value==='inherit'?null:input.value==='true';
+  if(tier.value!=='keep'){if(tier.value!=='unrated'&&!basis.value.trim())throw Error('A rated tier requires a rating basis.');changes.tier=tier.value;changes.rating_basis=tier.value==='unrated'?'':basis.value.trim()}
+  if(tools.value!=='keep')changes.tools=tools.value;
+  if(!Object.keys(changes).length)throw Error('Choose at least one change.');
+  for(const entry of entries){const model=next.sources.find(s=>s.id===entry.source.id)?.models.find(m=>m.id===entry.model.id);if(!model)throw Error('A selected model no longer exists. Refresh and select again.');Object.assign(model,changes)}
+  await preview(next,'Update '+entries.length+' selected models',show,base,revision);
+ },'primary')]);show();
 }
 function groups(){
  return [pageHead('Groups','A source can belong to several groups. Fallback order is editable.',button('Add group',()=>edit('groups',{id:'',type:'auto',sources:[],min_tier:'silver',allow_unrated:false,allow_paid:false,local_only:false,require_tools:false},true),'primary')),table(['Group','Strategy','Minimum tier','Sources in order','Actions'],S.config.groups.map(g=>[
