@@ -293,6 +293,10 @@ reports the safe credential reference and binding owner (`source`, `account`,
 `environment`, `browser`, `anonymous` or `none`) so runtime status cannot imply
 current validity after an account-default change.
 
+Batch 133 adds an API-to-router regression for the four independent control
+switches. Provider, account, source, and model enable/Auto changes each produce
+their own simulator exclusion reason and never alter the other switches.
+
 Batch 52 adds a direct **Use in account** action for stored credentials and
 configured browser profiles discovered by the Accounts page. It pre-fills the
 existing transactional account wizard without enabling the account or source.

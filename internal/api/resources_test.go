@@ -123,6 +123,75 @@ func TestRoutingSimulationDetailReportsSelection(t *testing.T) {
 	}
 }
 
+func TestIndependentSwitchesReachRoutingSimulator(t *testing.T) {
+	dir := t.TempDir()
+	vault, _ := credentials.Open(filepath.Join(dir, "vault"))
+	c := config.Default()
+	c.Providers = []config.Provider{{ID: "p", Enabled: true, AutoApproved: true}}
+	c.Accounts = []config.Account{{ID: "a", ProviderID: "p", Enabled: true, AutoApproved: true, QuotaDomain: "q", MaxInflight: 1, Weight: 1}}
+	c.Sources = []config.Source{{ID: "s", Provider: "p", Adapter: "openai", BaseURL: "http://127.0.0.1:1", Local: true, SourceKind: "vendor_api", InferenceLocation: "remote", BillingMode: "free_allowance", AccountID: "a", Enabled: true, AutoApproved: true, MaxInflight: 1, QuotaDomain: "q", QuotaMaxInflight: 1, Models: []config.Model{{ID: "m", Upstream: "m", Protocols: []string{"chat"}, Tier: "silver", RatingBasis: "fixture", Tools: "none", MaxInputBytes: 4096}}}}
+	c.Groups[0].Sources = []string{"s"}
+	p, err := NewControlPlane(filepath.Join(dir, "config.json"), c, testKey, adminKey, vault)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer p.Close()
+	reason := func() string {
+		r := httptest.NewRequest("POST", "/admin/routing/simulate", strings.NewReader(`{"model":"auto","protocol":"chat","detail":true}`))
+		r.Header.Set("Authorization", "Bearer "+adminKey)
+		w := httptest.NewRecorder()
+		p.ServeHTTP(w, r)
+		if w.Code != 200 {
+			t.Fatalf("simulation status=%d body=%s", w.Code, w.Body.String())
+		}
+		var out struct {
+			Candidates []struct {
+				Reason string `json:"reason"`
+			} `json:"candidates"`
+		}
+		if err := json.Unmarshal(w.Body.Bytes(), &out); err != nil || len(out.Candidates) != 1 {
+			t.Fatalf("simulation candidates=%s", w.Body.String())
+		}
+		return out.Candidates[0].Reason
+	}
+	if got := reason(); got != "eligible" {
+		t.Fatalf("initial switch state=%q", got)
+	}
+	patch := func(path, body string, revision uint64) {
+		r := httptest.NewRequest("PATCH", path, strings.NewReader(body))
+		r.Header.Set("Authorization", "Bearer "+adminKey)
+		r.Header.Set("If-Match", fmt.Sprint(revision))
+		w := httptest.NewRecorder()
+		p.ServeHTTP(w, r)
+		if w.Code != 200 {
+			t.Fatalf("patch %s status=%d body=%s", path, w.Code, w.Body.String())
+		}
+	}
+	patch("/admin/providers/p", `{"enabled":false}`, 1)
+	if got := reason(); got != "provider_or_account_disabled" {
+		t.Fatalf("provider switch reason=%q", got)
+	}
+	patch("/admin/providers/p", `{"enabled":true}`, 2)
+	patch("/admin/accounts/a", `{"enabled":false}`, 3)
+	if got := reason(); got != "provider_or_account_disabled" {
+		t.Fatalf("account switch reason=%q", got)
+	}
+	patch("/admin/accounts/a", `{"enabled":true}`, 4)
+	patch("/admin/sources/s", `{"enabled":false}`, 5)
+	if got := reason(); got != "disabled" {
+		t.Fatalf("source switch reason=%q", got)
+	}
+	patch("/admin/sources/s", `{"enabled":true}`, 6)
+	patch("/admin/sources/s", `{"auto_approved":false}`, 7)
+	if got := reason(); got != "not_approved" {
+		t.Fatalf("source Auto switch reason=%q", got)
+	}
+	patch("/admin/sources/s", `{"auto_approved":true,"models":[{"id":"m","upstream":"m","protocols":["chat"],"tier":"silver","rating_basis":"fixture","tools":"none","max_input_bytes":4096,"enabled":false}]}`, 8)
+	if got := reason(); got != "model_disabled" {
+		t.Fatalf("model switch reason=%q", got)
+	}
+}
+
 func TestAccountQuotaMoveCascadesToMemberSources(t *testing.T) {
 	dir := t.TempDir()
 	vault, _ := credentials.Open(filepath.Join(dir, "vault"))
