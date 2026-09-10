@@ -18,7 +18,7 @@ Acceptance scope: [complete synthesis](CONTROL_PLANE_REQUIREMENTS.md).
    and resolver values are not serialized (69a9933).
 5. Windows DPAPI credential vault, atomic persistence, redacted listing,
    authenticated PUT/DELETE endpoints and bound-credential deletion protection
-   (8a2ccac). Non-Windows platform keychains remain outstanding and fail closed.
+   (8a2ccac). Native Linux/macOS keychain integration is described in batch 23.
 
 6. Atomic configuration journal, optimistic revision checks, preview and
    rollback (895308f). The sibling `.state` file becomes authoritative after
@@ -91,12 +91,18 @@ CLI format references: [Codex auth fixture](https://github.com/openai/codex/blob
     declaring Cookie support are selectable. Authentication remains unchecked.
     Isolated browser regression uses synthetic selected and unrelated-domain
     cookies and verifies only the selected domain contributes to the preview.
+23. AES-GCM vault envelopes with per-vault random OS-keychain keys on Linux
+    and macOS, restricted to Secret Service / native Keychain with no plaintext
+    fallback. Linux native create/reopen/update and unavailable-service checks
+    passed in an isolated Ubuntu 24.04 WSL keyring session. macOS cgo/native
+    execution remains unverified. See [storage and verification](CREDENTIAL_STORAGE.md).
 
 Discovery protocol references: [Anthropic models](https://platform.claude.com/docs/en/api/models/list),
 [Gemini models](https://ai.google.dev/api/models),
 [OpenAI models](https://platform.openai.com/docs/api-reference/models).
 
-Validation: `go test ./...` passed, 533 tests in 37 packages on Windows.
+Validation: `go test ./...` passed, 535 tests in 37 packages on Windows.
+Windows and Linux-target `govulncheck` reported no vulnerabilities.
 Browser regression: credential creation/redaction, account binding, source
 creation, group membership, preview/apply, every navigation destination and
 390px viewport passed via `scripts/ui_fixture.py --test` after building

@@ -33,7 +33,8 @@ type Store struct {
 }
 
 func Open(path string) (*Store, error) {
-	return open(path, protect, unprotect)
+	seal, unseal := platformProtection()
+	return open(path, seal, unseal)
 }
 func open(path string, seal, unseal func([]byte) ([]byte, error)) (*Store, error) {
 	s := &Store{path: path, records: map[string]record{}, protect: seal, unprotect: unseal}

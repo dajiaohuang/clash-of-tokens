@@ -1,8 +1,12 @@
-//go:build !windows
+//go:build !windows && !linux && !darwin
 
 package credentials
 
 import "errors"
+
+func platformProtection() (func([]byte) ([]byte, error), func([]byte) ([]byte, error)) {
+	return protect, unprotect
+}
 
 // Fail closed until a platform keychain is connected; never write plaintext.
 func protect([]byte) ([]byte, error) {
