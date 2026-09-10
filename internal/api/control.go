@@ -13,6 +13,7 @@ import (
 	"clash-of-tokens/internal/config"
 	"clash-of-tokens/internal/credentials"
 	"clash-of-tokens/internal/evidence"
+	"clash-of-tokens/internal/routing"
 )
 
 type generation struct {
@@ -227,6 +228,68 @@ func restartFields(active, desired config.Config) []string {
 	}
 	return fields
 }
+
+type previewGroupImpact struct {
+	Group          string `json:"group"`
+	Protocol       string `json:"protocol"`
+	BeforeEligible int    `json:"before_eligible"`
+	AfterEligible  int    `json:"after_eligible"`
+}
+
+// previewImpact is a bounded, read-only comparison of routing candidates. It
+// reports eligibility counts only; it never contacts a provider or predicts
+// which candidate a future request will select.
+func previewImpact(before, after config.Config) map[string]any {
+	oldRouter, newRouter := routing.New(before), routing.New(after)
+	groups := map[string]bool{}
+	for _, group := range before.Groups {
+		groups[group.ID] = true
+	}
+	for _, group := range after.Groups {
+		groups[group.ID] = true
+	}
+	protocols := map[string]bool{}
+	for _, source := range before.Sources {
+		for _, model := range source.Models {
+			for _, protocol := range model.Protocols {
+				protocols[protocol] = true
+			}
+		}
+	}
+	for _, source := range after.Sources {
+		for _, model := range source.Models {
+			for _, protocol := range model.Protocols {
+				protocols[protocol] = true
+			}
+		}
+	}
+	rows := []previewGroupImpact{}
+	for group := range groups {
+		for protocol := range protocols {
+			beforeReasons := oldRouter.Explain(routing.Query{Model: group, Protocol: protocol, Bytes: 0})
+			afterReasons := newRouter.Explain(routing.Query{Model: group, Protocol: protocol, Bytes: 0})
+			beforeEligible, afterEligible := 0, 0
+			for _, reason := range beforeReasons {
+				if reason == "eligible" {
+					beforeEligible++
+				}
+			}
+			for _, reason := range afterReasons {
+				if reason == "eligible" {
+					afterEligible++
+				}
+			}
+			if beforeEligible != afterEligible {
+				rows = append(rows, previewGroupImpact{Group: group, Protocol: protocol, BeforeEligible: beforeEligible, AfterEligible: afterEligible})
+			}
+		}
+	}
+	return map[string]any{
+		"groups":         rows,
+		"sources_before": len(before.Sources), "sources_after": len(after.Sources),
+		"accounts_before": len(before.Accounts), "accounts_after": len(after.Accounts),
+	}
+}
 func (p *ControlPlane) configAdmin(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		switch r.URL.Path {
@@ -260,9 +323,13 @@ func (p *ControlPlane) configAdmin(w http.ResponseWriter, r *http.Request) {
 	}
 	var v config.Version
 	var err error
+	var impact map[string]any
 	switch r.URL.Path {
 	case "/admin/config/preview":
 		v, err = p.service.Preview(input.Revision, input.Config)
+		if err == nil {
+			impact = previewImpact(p.service.Current().Config, v.Config)
+		}
 		if err == nil {
 			_, discard, compileErr := p.prepare(v.Config)
 			if compileErr != nil {
@@ -287,5 +354,9 @@ func (p *ControlPlane) configAdmin(w http.ResponseWriter, r *http.Request) {
 		fail(w, status, err.Error())
 		return
 	}
-	reply(w, map[string]any{"revision": v.Revision, "config": v.Config, "restart_required": restartFields(p.startup, v.Config), "preview": r.URL.Path == "/admin/config/preview"})
+	result := map[string]any{"revision": v.Revision, "config": v.Config, "restart_required": restartFields(p.startup, v.Config), "preview": r.URL.Path == "/admin/config/preview"}
+	if impact != nil {
+		result["impact"] = impact
+	}
+	reply(w, result)
 }

@@ -112,3 +112,43 @@ func TestControlPlaneReportsPendingRestartAndRejectsStaleApply(t *testing.T) {
 		t.Fatal(w.Code)
 	}
 }
+
+func TestConfigPreviewReportsRoutingImpact(t *testing.T) {
+	dir := t.TempDir()
+	vault, _ := credentials.Open(filepath.Join(dir, "vault"))
+	c := config.Default()
+	c.Sources = []config.Source{{ID: "preview-source", Provider: "openai", Adapter: "openai", BaseURL: "http://127.0.0.1:1", Local: true, Enabled: true, AutoApproved: true, BillingMode: "free_allowance", MaxInflight: 1, QuotaDomain: "preview", QuotaMaxInflight: 1, Models: []config.Model{{ID: "model", Upstream: "model", Protocols: []string{"chat"}, Tier: "silver", RatingBasis: "fixture", Tools: "none", MaxInputBytes: 1024}}}}
+	c.Groups[0].Sources = []string{"preview-source"}
+	p, err := NewControlPlane(filepath.Join(dir, "config.json"), c, testKey, adminKey, vault)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer p.Close()
+	desired := c
+	desired.Sources = append([]config.Source(nil), c.Sources...)
+	desired.Sources[0].Enabled = false
+	body, _ := json.Marshal(map[string]any{"revision": 1, "config": desired})
+	req := httptest.NewRequest("POST", "/admin/config/preview", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+adminKey)
+	w := httptest.NewRecorder()
+	p.ServeHTTP(w, req)
+	if w.Code != 200 {
+		t.Fatalf("preview status=%d body=%s", w.Code, w.Body.String())
+	}
+	var response struct {
+		Impact struct {
+			Groups []struct {
+				Group          string `json:"group"`
+				Protocol       string `json:"protocol"`
+				BeforeEligible int    `json:"before_eligible"`
+				AfterEligible  int    `json:"after_eligible"`
+			} `json:"groups"`
+		} `json:"impact"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+		t.Fatal(err)
+	}
+	if len(response.Impact.Groups) != 1 || response.Impact.Groups[0].Group != "auto" || response.Impact.Groups[0].Protocol != "chat" || response.Impact.Groups[0].BeforeEligible != 1 || response.Impact.Groups[0].AfterEligible != 0 {
+		t.Fatalf("unexpected preview impact: %+v", response.Impact.Groups)
+	}
+}

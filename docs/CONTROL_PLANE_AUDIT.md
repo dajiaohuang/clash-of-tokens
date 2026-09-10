@@ -53,7 +53,7 @@ must be checked again before final acceptance.
 | 42. Embedded frontend | Go-embedded static HTML/CSS/JS, no Node runtime | Packaging/build verification |
 | 43. Navigation | All named destinations; batch 32 adds bounded runtime execution events and source/outcome filters in Activity; Batch 54 includes declared usage in status/events | Complete content on every destination and broader event coverage |
 | 44. Search | Batch 36 adds explicit model/browser/device matches and tests all eight entity navigation paths | Broader naming/localization and large-catalog usability acceptance |
-| 45. Preview | Config diff and optimistic revision preview | Eligibility/account impact before apply; credential replacement preview |
+| 45. Preview | Config diff, optimistic revision preview, and bounded read-only group eligibility/account/source impact counts before apply | Credential replacement preview and complete impact coverage for every sensitive action |
 | 46. Central validation | Schema validation plus runtime prepare before apply | All special actions must retain the same invariants |
 | 47. Hot reload | Generation pinning and restart-required fields | Full browser confirmation of live vs pending runtime settings |
 | 48. Sensitive confirmation | Config preview, credential-delete confirmation, billing notices | All specified sensitive actions and cost warnings acceptance test |

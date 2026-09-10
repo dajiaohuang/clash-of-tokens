@@ -209,7 +209,7 @@ Discovery protocol references: [Anthropic models](https://platform.claude.com/do
 [Gemini models](https://ai.google.dev/api/models),
 [OpenAI models](https://platform.openai.com/docs/api-reference/models).
 
-Validation: `go test ./...` passed, 582 tests in 38 packages on Windows.
+Validation: `go test ./...` passed, 585 tests in 38 packages on Windows.
 Windows and Linux-target `govulncheck` reported no vulnerabilities.
 Browser regression: credential creation/redaction, account binding, source
 creation, group membership, preview/apply, every navigation destination and
@@ -301,3 +301,12 @@ every recorded source attempt has usage and both operator-supplied rates.
 Protocol, routing, API and non-stream regression tests cover accumulation,
 explicit zero usage, cost math, duplicate recording and bounded forwarding.
 See [token accounting](TOKEN_ACCOUNTING.md).
+
+Batch 55 extends configuration preview with a bounded routing-impact report.
+Before applying a valid revision, the admin API compares old and proposed
+group eligibility counts for configured protocols and reports source/account
+count deltas. The report uses a zero-byte read-only simulation, never contacts
+an upstream, and is labeled as impact rather than final candidate selection.
+API coverage verifies disabling the only Auto source changes the preview from
+one eligible candidate to zero; the browser flow continues to exercise the
+transactional diff and apply path.

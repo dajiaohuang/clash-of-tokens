@@ -103,6 +103,10 @@ async function preview(next,summary,back,base=clone(S.config),revision=S.revisio
  const result=await api('/admin/config/preview',{method:'POST',body:JSON.stringify({revision,config:next})});
  const body=[h('p',{},summary),diffTable(changes)];
  if(result.restart_required.length)body.unshift(h('div',{class:'warning'},'Restart required for: '+result.restart_required.join(', ')+'. Other valid source and routing changes apply immediately.'));
+ if(result.impact){
+  const rows=(result.impact.groups||[]).map(row=>[row.group,row.protocol,row.before_eligible,row.after_eligible]);
+  body.push(h('h3',{},'Routing impact (read-only)'),table(['Group','Protocol','Eligible before','Eligible after'],rows,'No group eligibility counts changed.'),h('p',{class:'muted'},'Counts use a zero-byte text request and never contact an upstream. They show configuration impact, not final candidate selection or provider availability. Configured sources: '+result.impact.sources_before+' → '+result.impact.sources_after+' · accounts: '+result.impact.accounts_before+' → '+result.impact.accounts_after+'.'));
+ }
  body.push(h('p',{class:'muted'},'Provider, account and source switches affect new requests. Active requests can finish.'));
  dialog('Review changes',body,[button('Back',back||(()=> $('dialog').close())),button('Apply changes',async()=>{
   await api('/admin/config',{method:'PATCH',body:JSON.stringify({revision,config:next,summary})});
