@@ -893,3 +893,7 @@ Batch 163 applies the same quota impact review to Account and Source editor
 changes. A quota-domain mutation now lists the affected account/source members
 and new domain before entering the shared configuration preview, while Back
 leaves the edit form unchanged.
+
+Batch 164 resets the quota confirmation state whenever an Account or Source
+editor is reopened, including after Back or a stale-revision response, so a
+later quota mutation cannot reuse an earlier approval.

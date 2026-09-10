@@ -215,9 +215,10 @@ function edit(kind,item,create=false){
    const input=h('input',{type:'checkbox',checked:g.sources.includes(item.id),'data-group':g.id});
    membership.append(h('label',{class:'boolean'},input,g.id));
   }
- }
- function show(){
-  dialog((create?'Add ':'Edit ')+title(kind).replace(/s$/,'')+(create?'':' / '+item.id),[form.element,(kind==='accounts'||kind==='sources')&&h('p',{class:'warning'},'A credential type override bypasses provider compatibility checks. Use it only after reviewing the credential format and adapter contract; the credential value is never shown here.'),membership],[
+  }
+  function show(){
+   quotaConfirmed=false;
+   dialog((create?'Add ':'Edit ')+title(kind).replace(/s$/,'')+(create?'':' / '+item.id),[form.element,(kind==='accounts'||kind==='sources')&&h('p',{class:'warning'},'A credential type override bypasses provider compatibility checks. Use it only after reviewing the credential format and adapter contract; the credential value is never shown here.'),membership],[
    button('Cancel',()=> $('dialog').close()),
    button('Review changes',async()=>{
     const next=clone(base),value=form.read();
