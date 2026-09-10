@@ -21,6 +21,9 @@ func TestAccountDiscoveryIsMetadataOnlyAndExplicit(t *testing.T) {
 	if err = vault.Put("cred://openai", "api_key", "manual", "super-secret"); err != nil {
 		t.Fatal(err)
 	}
+	if _, err = vault.ImportSelected([]credentials.ImportEntry{{URL: "https://chat.openai.com/login", Username: "user", Password: "private-password"}}, []int{0}); err != nil {
+		t.Fatal(err)
+	}
 	c := config.Default()
 	c.Providers = []config.Provider{{ID: "openai", Enabled: true, AutoApproved: true}}
 	c.Sources = []config.Source{{ID: "openai-source", Provider: "openai", Adapter: "openai", BaseURL: "https://api.openai.com/v1", KeyEnv: "COT_TEST_DISCOVERY_KEY", Enabled: true, AutoApproved: true, Local: false, Paid: true, MaxInflight: 1, QuotaDomain: "openai", QuotaMaxInflight: 1, Models: []config.Model{{ID: "gpt", Upstream: "gpt", Protocols: []string{"chat"}, Tier: "silver", RatingBasis: "test", Tools: "native", MaxInputBytes: 1024}}}}
@@ -61,7 +64,7 @@ func TestAccountDiscoveryIsMetadataOnlyAndExplicit(t *testing.T) {
 	if strings.Contains(text, "super-secret") || strings.Contains(text, "secret-env") {
 		t.Fatal("discovery leaked a secret")
 	}
-	if !strings.Contains(text, "cred://openai") || !strings.Contains(text, "openai-source") {
+	if !strings.Contains(text, "cred://openai") || !strings.Contains(text, "openai-source") || !strings.Contains(text, "chat.openai.com") || !strings.Contains(text, "bind_credential") {
 		t.Fatalf("expected stored and environment candidates: %s", text)
 	}
 }
