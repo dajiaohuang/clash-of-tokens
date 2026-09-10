@@ -442,6 +442,10 @@ func (r *Router) removeWaiter(target *waiter) {
 		previous = w
 	}
 }
+
+// ReleaseAdministrative returns capacity without recording a generation result.
+func (l *Lease) ReleaseAdministrative() { l.Release(-1, 0) }
+
 func (l *Lease) Release(status int, retryAfter time.Duration) {
 	l.once.Do(func() {
 		r := l.router
@@ -452,6 +456,10 @@ func (l *Lease) Release(status int, retryAfter time.Duration) {
 		l.quota.active--
 		if a := l.account; a != nil {
 			a.active--
+		}
+		if status == -1 {
+			r.current.signal()
+			return
 		}
 		st := l.state
 		st.lastHTTPStatus = status

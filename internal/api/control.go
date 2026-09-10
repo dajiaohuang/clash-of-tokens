@@ -146,6 +146,9 @@ func (p *ControlPlane) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if managedResource(r.URL.Path) {
+			if p.sessionAdmin(w, r, g.server) {
+				return
+			}
 			if r.URL.Path == "/admin/evidence" {
 				if r.Method != "GET" {
 					fail(w, 405, "method not allowed")

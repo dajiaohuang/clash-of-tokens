@@ -58,6 +58,11 @@ func (p *ControlPlane) sourceCheckAdmin(w http.ResponseWriter, r *http.Request, 
 	}
 	defer s.buffered.Add(-budget)
 	if parts[1] == "discover" {
+		adapter := s.cfg.Sources[index].Adapter
+		if adapter != "openai" && adapter != "anthropic" && adapter != "gemini" {
+			fail(w, 400, "model discovery is not implemented for this adapter")
+			return true
+		}
 		result, err := s.client(index).Discover(ctx)
 		status := "partial"
 		if result.Complete {

@@ -394,6 +394,19 @@ function browsers(){
   p.id,p.engine,p.cdp_url,(S.config.accounts||[]).filter(a=>a.browser_profile_id===p.id).map(a=>a.display_name||a.id).join(', ')||'Unbound',[button(p.enabled?'Disable':'Enable',()=>toggle('browser_profiles',p)),button('Edit',()=>edit('browser_profiles',p)),button('Delete',()=>remove('browser_profiles',p),'danger')]
  ]),'No profiles. Add a profile, bind it from Accounts, then use Login.'),...environment('browsers').slice(1)];
 }
+function sessions(){
+ const target=h('div',{},h('p',{},'Loading session metadata…'));
+ async function load(){
+  const result=await api('/admin/sessions');if(!target.isConnected)return;
+  target.replaceChildren(h('p',{class:'muted'},'Metadata only. '+(result.truncated?'The list reached its 1,000-session limit. ':'')+'Sources without session management: '+(result.unsupported_sources.join(', ')||'None')+'. Failed reads: '+(result.failed_sources.join(', ')||'None')+'.'),table(['Session','Provider / account','Upstream conversation','Created','Last activity','State','Actions'],result.items.map(item=>[
+   item.id,item.provider+' / '+(item.account||'Legacy account'),item.conversation||'Not established',item.created.startsWith('0001-')?'Unknown':new Date(item.created).toLocaleString(),new Date(item.updated).toLocaleString(),item.expired?'Expired':item.dirty?'Incomplete turn':'Active',['expire','clear'].map(action=>button(title(action),()=>{
+    dialog(title(action)+' local session',h('p',{},action==='clear'?'Remove this local session reference? The upstream conversation stays on the provider.':'Expire this local session reference? Its next request starts a new conversation.'),[button('Cancel',()=> $('dialog').close()),button(title(action)+' session',async()=>{await api('/admin/sessions/'+encodeURIComponent(item.source)+'/'+encodeURIComponent(item.id)+'/'+action,{method:'POST'});$('dialog').close();await load()},'danger')]);
+   }))
+  ]),'No stored sessions.'));
+ }
+ setTimeout(()=>load().catch(e=>message(e.message,true)),0);
+ return [pageHead('Sessions','Inspect and manage local conversation references.',button('Refresh sessions',load)),target];
+}
 function activity(){
  return [pageHead('Activity','Configuration history and the latest 1,000 persisted check results.',button('Refresh history',refresh)),h('h2',{},'Checks'),table(['Time','Kind','Source / model','Configuration revision','Status','Method'],[...(S.evidence||[])].reverse().map(v=>[new Date(v.checked_at).toLocaleString(),v.kind,v.resource+(v.model?' / '+v.model:''),v.revision+(v.revision===S.revision?' (current)':' (historical)'),v.status,v.method]),'No recorded checks.'),h('h2',{},'Configuration changes'),table(['Revision','Time','Change'],[...S.history].reverse().map(v=>[v.revision,new Date(v.created_at).toLocaleString(),v.summary]))];
 }
@@ -412,7 +425,7 @@ function render(){
  for(const a of $('navigation').querySelectorAll('a'))a.setAttribute('aria-current',a.hash==='#'+route?'page':'false');
  if(!S.config){$('view').replaceChildren(connectView());return}
  if($('search').value){$('view').replaceChildren(...searchResults($('search').value));return}
- const renderers={overview,providers,accounts,credentials,sources,models,groups,routing,health,metrics,config:configuration,logs:activity,about,browsers,devices:()=>environment('devices'),sessions:()=>[pageHead('Sessions','Browser session configuration.'),...environment('browsers').slice(1)]};
+ const renderers={overview,providers,accounts,credentials,sources,models,groups,routing,health,metrics,config:configuration,logs:activity,about,browsers,devices:()=>environment('devices'),sessions};
  $('view').replaceChildren(...(renderers[route]||overview)().filter(x=>x!=null));
 }
 for(const [group,items] of pages){$('navigation').append(h('div',{class:'nav-group'},group),...items.map(id=>h('a',{href:'#'+id},labels[id])))}

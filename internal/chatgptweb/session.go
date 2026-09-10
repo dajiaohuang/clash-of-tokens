@@ -8,6 +8,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"sort"
 	"sync"
 	"time"
 
@@ -15,6 +16,8 @@ import (
 )
 
 type Session struct {
+	Expires      time.Time `json:"expires_at,omitempty"`
+	Created      time.Time `json:"created,omitempty"`
 	ID           string    `json:"id"`
 	Source       string    `json:"source"`
 	Account      string    `json:"account"`
@@ -49,7 +52,7 @@ func newStore(c config.Browser) *sessionStore {
 		s.loadErr = errors.New("browser session state too large")
 		return s
 	}
-	if e = json.Unmarshal(b, &s.items); e != nil {
+	if e = json.Unmarshal(b, &s.items); e != nil || s.items == nil {
 		s.loadErr = errors.New("invalid browser session state")
 	}
 	return s
@@ -73,7 +76,7 @@ func (s *sessionStore) get(key, previous string) (Session, bool, error) {
 		return Session{}, false, s.loadErr
 	}
 	for k, v := range s.items {
-		if time.Since(v.Updated) > time.Duration(s.cfg.SessionTTLSeconds)*time.Second {
+		if sessionExpired(v, s.cfg.SessionTTLSeconds) {
 			delete(s.items, k)
 		}
 	}
@@ -102,6 +105,11 @@ func (s *sessionStore) put(v Session) error {
 	}
 	v.Updated = time.Now()
 	previous, existed := s.items[v.ID]
+	if existed {
+		v.Created = previous.Created
+	} else if v.Created.IsZero() {
+		v.Created = v.Updated
+	}
 	s.items[v.ID] = v
 	if e := s.save(); e != nil {
 		if existed {
@@ -112,6 +120,75 @@ func (s *sessionStore) put(v Session) error {
 		return e
 	}
 	return nil
+}
+
+type SessionMetadata struct {
+	ID           string    `json:"id"`
+	Source       string    `json:"source"`
+	Conversation string    `json:"conversation"`
+	Model        string    `json:"model"`
+	Protocol     string    `json:"protocol"`
+	Created      time.Time `json:"created"`
+	Updated      time.Time `json:"updated"`
+	Expired      bool      `json:"expired"`
+	Dirty        bool      `json:"dirty"`
+}
+
+// ReadSessions reads an atomic disk snapshot without constructing a cached
+// driver that could outlive a concurrently completing runtime generation.
+func ReadSessions(c config.Browser, source string) ([]SessionMetadata, error) {
+	return (&Driver{cfg: c, source: source, store: newStore(c)}).Sessions()
+}
+
+func (d *Driver) Sessions() ([]SessionMetadata, error) {
+	s := d.store
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.loadErr != nil {
+		return nil, s.loadErr
+	}
+	out := []SessionMetadata{}
+	for _, v := range s.items {
+		if v.Source == d.source {
+			out = append(out, SessionMetadata{ID: v.ID, Source: v.Source, Conversation: v.Conversation, Model: v.Model, Protocol: v.Protocol, Created: v.Created, Updated: v.Updated, Expired: sessionExpired(v, s.cfg.SessionTTLSeconds), Dirty: v.Dirty})
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Updated.After(out[j].Updated) })
+	return out, nil
+}
+
+// ChangeSession must run while the caller holds the source's execution lease,
+// so a finishing generation cannot restore a cleared/expired reference.
+func (d *Driver) ChangeSession(key, action string) error {
+	s := d.store
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.loadErr != nil {
+		return s.loadErr
+	}
+	v, ok := s.items[key]
+	if !ok || v.Source != d.source {
+		return errors.New("unknown source session")
+	}
+	previous := v
+	switch action {
+	case "clear":
+		delete(s.items, key)
+	case "expire":
+		v.Expires = time.Now()
+		s.items[key] = v
+	default:
+		return errors.New("unsupported session action")
+	}
+	if err := s.save(); err != nil {
+		s.items[key] = previous
+		return errors.New("cannot persist session action")
+	}
+	return nil
+}
+
+func sessionExpired(v Session, ttl int) bool {
+	return (!v.Expires.IsZero() && !time.Now().Before(v.Expires)) || time.Since(v.Updated) > time.Duration(ttl)*time.Second
 }
 func (s *sessionStore) save() error {
 	dir := filepath.Dir(s.cfg.StateFile)
