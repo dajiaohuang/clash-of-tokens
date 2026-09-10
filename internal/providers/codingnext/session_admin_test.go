@@ -21,6 +21,7 @@ func TestSessionMetadataLifecycleForZed(t *testing.T) {
 	if items[0].ID == "private-session-key" || !strings.HasPrefix(items[0].ID, "session-") || items[0].Conversation != s.threadID {
 		t.Fatalf("metadata=%+v", items[0])
 	}
+	oldThread := items[0].Conversation
 	if err := c.ChangeSession(items[0].ID, "expire"); err != nil {
 		t.Fatal(err)
 	}
@@ -32,7 +33,7 @@ func TestSessionMetadataLifecycleForZed(t *testing.T) {
 		t.Fatal(err)
 	}
 	items, _ = c.Sessions()
-	if len(items) != 1 || items[0].Expired {
+	if len(items) != 1 || items[0].Expired || items[0].Conversation == oldThread {
 		t.Fatalf("expired session was not reset: %+v", items)
 	}
 	if err := c.ChangeSession(items[0].ID, "clear"); err != nil {

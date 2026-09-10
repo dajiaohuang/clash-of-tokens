@@ -593,3 +593,7 @@ normalized and messages containing API-key, access-token, refresh-token,
 password, Cookie, Authorization, or Bearer-shaped values are replaced with a
 stable `request failed` category before JSON encoding; a focused regression
 covers each sensitive shape.
+
+Batch 111 closes the Zed Hosted expiry path: expiring a retained session now
+rotates its provider thread ID before the next request, so the control action
+cannot accidentally continue the previous conversation.

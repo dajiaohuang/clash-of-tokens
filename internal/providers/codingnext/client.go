@@ -273,6 +273,7 @@ func (c *Client) session(key string) (*session, error) {
 		if s.expired {
 			s.expired = false
 			s.created = time.Now().UTC()
+			s.threadID = uuid()
 		}
 		s.mu.Unlock()
 		return s, nil
