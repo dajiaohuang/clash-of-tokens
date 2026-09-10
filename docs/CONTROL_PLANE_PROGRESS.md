@@ -401,3 +401,8 @@ results and disablement.
 Batch 71 propagates the Provider enabled gate into account health aggregation.
 An enabled account whose parent Provider is disabled now reports `disabled`,
 alongside the existing account switch and authentication classifications.
+
+Batch 72 hardens account-discovery provider suggestions to use normalized,
+host-exact catalog aliases. URL paths, trailing dots and case normalize safely;
+lookalike suffixes, subdomains and malformed origins no longer inherit a
+provider match.

@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 
@@ -32,7 +33,7 @@ type discoveryChannel struct {
 }
 
 func candidateProviders(origin string, kind string, entries []catalog.Entry) []string {
-	needle := strings.ToLower(origin)
+	needle := candidateHost(origin)
 	out := []string{}
 	for _, p := range entries {
 		accepted := false
@@ -45,13 +46,28 @@ func candidateProviders(origin string, kind string, entries []catalog.Entry) []s
 			continue
 		}
 		for _, domain := range p.Credentials.Domains {
-			if needle != "" && strings.Contains(needle, strings.ToLower(domain)) {
+			if needle != "" && needle == strings.TrimSuffix(strings.ToLower(domain), ".") {
 				out = append(out, p.ID)
 				break
 			}
 		}
 	}
 	return out
+}
+
+func candidateHost(origin string) string {
+	value := strings.TrimSpace(strings.ToLower(origin))
+	if strings.Contains(value, "://") {
+		u, err := url.Parse(value)
+		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Hostname() == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" {
+			return ""
+		}
+		value = u.Hostname()
+	}
+	if strings.ContainsAny(value, "/?#\r\n\x00") {
+		return ""
+	}
+	return strings.TrimSuffix(value, ".")
 }
 
 func (p *ControlPlane) accountDiscoveryAdmin(w http.ResponseWriter, r *http.Request, s *Server) bool {

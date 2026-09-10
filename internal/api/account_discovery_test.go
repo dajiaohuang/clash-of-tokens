@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"clash-of-tokens/catalog"
 	"clash-of-tokens/internal/config"
 	"clash-of-tokens/internal/credentials"
 )
@@ -66,5 +67,17 @@ func TestAccountDiscoveryIsMetadataOnlyAndExplicit(t *testing.T) {
 	}
 	if !strings.Contains(text, "cred://openai") || !strings.Contains(text, "openai-source") || !strings.Contains(text, "chat.openai.com") || !strings.Contains(text, "bind_credential") {
 		t.Fatalf("expected stored and environment candidates: %s", text)
+	}
+}
+
+func TestAccountDiscoveryProviderMatchingIsHostExact(t *testing.T) {
+	entries := catalog.All()
+	if got := candidateProviders("https://chat.openai.com/login", "api_key", entries); !containsString(got, "openai") {
+		t.Fatalf("official OpenAI host was not matched: %v", got)
+	}
+	for _, origin := range []string{"chat.openai.com.evil.test", "sub.chat.openai.com", "https://chat.openai.com.evil.test/login"} {
+		if got := candidateProviders(origin, "api_key", entries); len(got) != 0 {
+			t.Fatalf("lookalike host %q matched providers: %v", origin, got)
+		}
 	}
 }
