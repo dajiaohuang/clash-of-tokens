@@ -502,3 +502,8 @@ Batch 91 makes newest-evidence selection deterministic when timestamps tie.
 Across model, source, account and provider projections, the persisted evidence
 sequence now breaks equal-time ties; a focused regression covers both ordering
 directions.
+
+Batch 92 tightens source metadata validation: `local_model` now requires both
+`inference_location: local` and loopback transport. Remote or ambiguous sources
+cannot satisfy a `local_only` group by label alone; configuration regressions
+cover remote, non-loopback and valid local declarations.

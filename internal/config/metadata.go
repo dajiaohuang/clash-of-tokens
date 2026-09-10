@@ -50,6 +50,9 @@ func (s Source) ValidateMetadata() error {
 	if s.InferenceLocation == "local" && (s.SourceKind != "local_model" || !s.Local) {
 		return fmt.Errorf("local inference requires an explicit local_model and loopback transport")
 	}
+	if s.SourceKind == "local_model" && (s.InferenceLocation != "local" || !s.Local) {
+		return fmt.Errorf("local_model requires local inference and loopback transport")
+	}
 	if s.SourceKind == "local_model" && (s.Adapter != "openai" && s.Adapter != "anthropic" && s.Adapter != "gemini") {
 		return fmt.Errorf("local_model requires a generic local inference API")
 	}
