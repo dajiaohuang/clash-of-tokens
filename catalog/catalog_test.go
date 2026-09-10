@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"clash-of-tokens/internal/config"
+	"clash-of-tokens/internal/providerdef"
 	"testing"
 )
 
@@ -56,5 +57,32 @@ func TestCredentialMatchingUsesExactOfficialAliases(t *testing.T) {
 	}
 	if got := MatchCredentials("chat.openai.com.evil.test", "api_key"); len(got) != 0 {
 		t.Fatalf("lookalike domain matched: %#v", got)
+	}
+}
+
+func TestBrowserPresetsExposeBrowserReverseMetadata(t *testing.T) {
+	for _, entry := range All() {
+		d, ok := providerdef.Lookup(entry.Adapter)
+		if !ok || entry.Kind != "web" || (!d.BrowserRequired && !d.BrowserAuthCheck) {
+			continue
+		}
+		override := []string(nil)
+		if entry.ID == "aistudio-build" {
+			override = []string{"https://ai.studio/apps/operator-owned-app"}
+		}
+		source, err := Preset(entry.ID, "test-model", override...)
+		if err != nil {
+			t.Fatalf("%s: %v", entry.ID, err)
+		}
+		if source.SourceKind != "browser_reverse" {
+			t.Errorf("%s: source kind = %q, want browser_reverse", entry.ID, source.SourceKind)
+		}
+		wantCredentialMode := "browser_session"
+		if entry.Anonymous {
+			wantCredentialMode = "anonymous"
+		}
+		if source.CredentialMode != wantCredentialMode {
+			t.Errorf("%s: credential mode = %q, want %s", entry.ID, source.CredentialMode, wantCredentialMode)
+		}
 	}
 }

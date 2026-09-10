@@ -92,6 +92,7 @@ func Preset(id, model string, baseOverride ...string) (config.Source, error) {
 			return config.Source{}, fmt.Errorf("AI Studio Build requires -base-url set to your own https://ai.studio/apps/<app-id>")
 		}
 		s := config.Source{ID: id, Provider: id, Adapter: p.Adapter, BaseURL: p.BaseURL, KeyEnv: "COT_" + strings.ToUpper(strings.ReplaceAll(id, "-", "_")) + "_KEY", Local: p.Kind == "local", Paid: p.Kind != "local", MaxInflight: 1, QuotaDomain: id + "-account", QuotaMaxInflight: 1, Models: []config.Model{{ID: model, Upstream: model, Protocols: p.Protocols, Tier: "unrated", Tools: "unknown", MaxInputBytes: 1 << 20}}}
+		descriptor, _ := providerdef.Lookup(p.Adapter)
 		s.Anonymous = p.Anonymous
 		s.SourceKind = "product_reverse"
 		s.ExecutionLocation = "local"
@@ -116,6 +117,14 @@ func Preset(id, model string, baseOverride ...string) (config.Source, error) {
 		case "device":
 			s.SourceKind = "app_reverse"
 			s.CredentialMode = "device_session"
+		}
+		// A browser-authenticated product is operationally distinct from a
+		// generic product HTTP reverse adapter. Keep that distinction in the
+		// source metadata so routing preferences, health views and credential
+		// binding all describe the actual transport boundary.
+		if p.Kind == "web" && (descriptor.BrowserRequired || descriptor.BrowserAuthCheck) {
+			s.SourceKind = "browser_reverse"
+			s.CredentialMode = "browser_session"
 		}
 		if p.Kind == "local" && (p.Adapter == "openai" || p.Adapter == "anthropic" || p.Adapter == "gemini") {
 			s.SourceKind = "local_model"

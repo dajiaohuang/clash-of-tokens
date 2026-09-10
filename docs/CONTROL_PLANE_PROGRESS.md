@@ -776,3 +776,11 @@ the setup wizard and schema-driven editor. Bound sources inherit omitted fields
 and an untouched catalog endpoint, preserving explicit source overrides;
 validation covers HTTPS or loopback endpoints and bounded metadata, and the
 runtime client uses the effective values when constructing requests.
+
+Batch 144 corrects catalog preset metadata for browser-authenticated products.
+Entries whose provider descriptor requires a browser or exposes a browser login
+check now use `source_kind: browser_reverse` and
+`credential_mode: browser_session`; anonymous browser products retain their
+`anonymous` credential mode. The catalog test covers every descriptor-backed
+browser entry so routing and credential views cannot classify it as a generic
+product reverse adapter.
