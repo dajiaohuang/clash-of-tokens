@@ -12,7 +12,7 @@ import sys
 
 
 ROOT = Path(__file__).resolve().parents[1]
-IMPORT = re.compile(r'^\s*"(?:log|log/slog|go\.uber\.org/zap|github\.com/rs/zerolog)"\s*$', re.MULTILINE)
+IMPORT = re.compile(r'^\s*(?:[A-Za-z_][A-Za-z0-9_]*\s+)?"(?:log|log/slog|go\.uber\.org/zap|github\.com/rs/zerolog)"\s*$', re.MULTILINE)
 CALL = re.compile(r"\b(?:log|slog|zap|zerolog)\.(?:Print|Printf|Println|Info|Infof|Warn|Warnf|Error|Errorf|Debug|Debugf|Fatal|Fatalf|Panic|Panicf)\s*\(")
 
 
