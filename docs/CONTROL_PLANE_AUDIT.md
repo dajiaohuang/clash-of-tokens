@@ -39,7 +39,7 @@ must be checked again before final acceptance.
 | 28. Test Provider | Explicit one-request stream validation now records separate connection/auth/request/stream/completion stages and duration | Provider-specific phase detail and live compatibility still require operator checks |
 | 29. Live verification | Batch 25 derives status/counts from model/protocol evidence and source/credential-version bindings; rotation invalidation tested | Real configured-provider checks and complete account/capability evidence still require verification |
 | 30. Discovery hub | Batch 27 returns import results to account setup with single-result binding; batch 43 adds bounded metadata-only account candidates from vault, configured environments and optional standard-browser profile scan; stored candidates can prefill the account wizard | End-to-end candidate binding and broader provider matching |
-| 31. Shared credential | Account reference shared by multiple sources and quota domain | End-to-end reference reuse/capacity display |
+| 31. Shared credential | Account reference shared by multiple sources and quota domain; API integration test binds one protected reference to an account, two sources and an Auto request | End-to-end UI evidence and live-provider reuse still require operator verification |
 | 32. Manual binding override | Descriptor matching rejects incompatible kinds by default; account/source `credential_type_override` is persisted, warned in the editor, and covered by binding tests | Provider-specific contract review and end-to-end UI acceptance for every credential kind |
 | 33. Quota domain view | Batch 26 adds domain members/shared counters, retiring leases and atomic all-member limit editing | Account/domain moves and rename behavior still need complete UX/runtime audit |
 | 34. Account pools | Four router strategies; batch 26 adds pool editor, account switches/capacity/weights and UI persistence tests | Broader end-to-end dispatch/strategy acceptance |
@@ -59,7 +59,7 @@ must be checked again before final acceptance.
 | 48. Sensitive confirmation | Config preview, credential-delete confirmation, billing notices | All specified sensitive actions and cost warnings acceptance test |
 | 49. Secret-safe logs | Redacted vault/import/session/evidence responses; fixed execution categories; batch 32 stores bounded structured events without raw error/body/credential fields; generation and model-discovery HTTP errors use stable public categories | Global Secret representation and all adapter/error/log paths audit; pre-acquisition rejections not logged |
 | 50. Five epics | Work split into committed batches | A–E remain incomplete until their component rows are accepted |
-| 51. End-to-end workflow | Most core pieces exist separately | Install → discover → import/login → accounts → sources → Auto/groups → successful local API call without hand-editing JSON |
+| 51. End-to-end workflow | API integration test covers protected credential → account → two inherited sources → Auto group → successful synthetic local API call without editing JSON | Browser-driven full install/import/login journey and live-provider call remain external-environment checks |
 
 Next implementation priorities from this pass: truthful live-verification
 status and binding provenance, quota/account pool visibility, the unified

@@ -275,6 +275,12 @@ Batch 52 adds a direct **Use in account** action for stored credentials and
 configured browser profiles discovered by the Accounts page. It pre-fills the
 existing transactional account wizard without enabling the account or source.
 
+Batch 53 adds an end-to-end API regression covering one protected credential
+reference shared by two account sources, ordered Auto membership, and a
+successful synthetic local generation. The fixture asserts the upstream sees
+the resolved secret only in the Authorization header and never in control-plane
+metadata; no real provider is contacted.
+
 Batch 49 makes execution accounting mode-independent: non-streaming responses
 now record transport completion, upstream status, rejection, or cancellation
 through the same redacted lease-health path used by streaming responses. See
