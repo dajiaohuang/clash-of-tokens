@@ -871,3 +871,9 @@ keeps the provider configuration intact on Cancel; Review deletion submits the
 optimistic revision through the shared preview when no references are bound;
 bound references are rejected before preview with an actionable migration
 message, matching the service deletion conflict.
+
+Batch 160 adds the remaining browser-account credential controls. Provider
+Detail now offers `Refresh session` beside `Login`, and Credentials offers
+`Re-login` when a protected reference is bound to a browser-profile account;
+the latter presents the eligible accounts before launching the same isolated
+profile flow, without exposing the protected value.

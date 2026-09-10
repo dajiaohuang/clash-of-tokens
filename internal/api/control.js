@@ -421,7 +421,7 @@ async function providerDetail(provider){
    const capacity=(S.status.accounts||[]).find(c=>c.id===a.id);
    const credentialState=capacity?.credential_state||'not_configured';
    const credentialVersion=capacity?.credential_version?(' · v'+capacity.credential_version):'';
-   return [a.display_name||a.id,(a.enabled?'Yes':'No')+' / '+(a.auto_approved?'Yes':'No'),a.credential_ref||'Not bound',credentialState+credentialVersion,a.credential_type_override?'Yes':'No',accountAuth(a),(capacity?.active||0)+' / '+a.max_inflight,[button('Edit account',()=>edit('accounts',a)),a.browser_profile_id?button('Login',()=>launchAccountLogin(a)):null,a.browser_profile_id?button('Check login',()=>loginEvidence(a)):null]];
+   return [a.display_name||a.id,(a.enabled?'Yes':'No')+' / '+(a.auto_approved?'Yes':'No'),a.credential_ref||'Not bound',credentialState+credentialVersion,a.credential_type_override?'Yes':'No',accountAuth(a),(capacity?.active||0)+' / '+a.max_inflight,[button('Edit account',()=>edit('accounts',a)),a.browser_profile_id?button('Login',()=>launchAccountLogin(a)):null,a.browser_profile_id?button('Refresh session',()=>loginEvidence(a)):null]];
   }),'No accounts. Add an account to keep credentials and routing policy together.'),
   h('h3',{},'Sources'),table(['Source','Account','Routing state','Models','Matching generation evidence','Actions'],sources.map(s=>[s.id,s.account_id||'No account',state(s),s.models.length,verified.has(s.id)?'At least one model/protocol':'Not established',[button('Source details',()=>sourceDetail(s)),button('Validate source',()=>validateSource(s)),button('Discover models',()=>discoverModels(s))]]),'No sources configured.'),
   h('h3',{},'Provider routing eligibility'),h('p',{class:'muted'},'Read-only simulation for a 100-byte text request. Results explain eligibility, not final candidate selection.'),field('Provider group',group),field('Provider protocol',protocol),explain,explanations
@@ -597,9 +597,14 @@ function unbindCredential(credential){
  for(const source of next.sources||[])if(source.credential_ref===credential.id)source.credential_ref='';
  dialog('Unbind credential',[h('p',{class:'warning'},'Remove '+credential.id+' from all accounts and sources? The protected value remains in the vault until you delete it.'),table(['Affected configuration','Entries'],[['Accounts',accounts.map(a=>a.display_name||a.id).join(', ')||'None'],['Sources',sources.map(s=>s.id).join(', ')||'None']])],[button('Cancel',()=>$('dialog').close()),button('Review unbind',()=>preview(next,'Unbind credential '+credential.id,()=>unbindCredential(credential),base,revision),'primary')]);
 }
+function reloginCredential(credential){
+ const accounts=(S.config.accounts||[]).filter(a=>a.credential_ref===credential.id&&a.browser_profile_id);
+ if(!accounts.length)throw Error('No browser-bound account uses '+credential.id+'.');
+ dialog('Re-login account',h('p',{class:'muted'},'Choose a browser-bound account. The login browser is isolated to its configured profile; this does not reveal or export the credential value.'),accounts.map(a=>button(a.display_name||a.id,async()=>{await launchAccountLogin(a)})));
+}
 function credentials(){
  return [pageHead('Credentials','Protected values are stored separately from configuration.',h('div',{},button('Import export',importCredentials),button('Import token',importToken),button('Import browser cookies',importBrowserCookies),button('Add credential',()=>credentialForm(),'primary'))),table(['Credential','Type','Used by','Imported from','Updated','Last used','Actions'],S.credentials.map(c=>[
- c.id,badge(c.kind),(()=>{const accounts=(S.config.accounts||[]).filter(a=>a.credential_ref===c.id),ids=accounts.map(a=>a.id);return [...ids,...S.config.sources.filter(s=>s.credential_ref===c.id||(!s.credential_ref&&accounts.some(a=>a.id===s.account_id))).map(s=>s.id)].join(', ')||'Unbound'})(),c.source,new Date(c.updated_at).toLocaleString(),c.last_used_at?new Date(c.last_used_at).toLocaleString():'Not used', [button('Replace',()=>credentialForm(c)),button('Unbind',()=>unbindCredential(c)),button('Delete',()=>deleteCredential(c),'danger')]
+  c.id,badge(c.kind),(()=>{const accounts=(S.config.accounts||[]).filter(a=>a.credential_ref===c.id),ids=accounts.map(a=>a.id);return [...ids,...S.config.sources.filter(s=>s.credential_ref===c.id||(!s.credential_ref&&accounts.some(a=>a.id===s.account_id))).map(s=>s.id)].join(', ')||'Unbound'})(),c.source,new Date(c.updated_at).toLocaleString(),c.last_used_at?new Date(c.last_used_at).toLocaleString():'Not used', [button('Replace',()=>credentialForm(c)),(S.config.accounts||[]).some(a=>a.credential_ref===c.id&&a.browser_profile_id)?button('Re-login',()=>reloginCredential(c)):null,button('Unbind',()=>unbindCredential(c)),button('Delete',()=>deleteCredential(c),'danger')]
  ]),'No credentials. Add a key or session, then bind its reference to an account.')];
 }
 function importCredentials(onSaved){
