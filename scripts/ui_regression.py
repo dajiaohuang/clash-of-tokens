@@ -134,8 +134,14 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
             "status": "authenticated", "profile": "ui-profile", "checked_at": "2026-01-01T00:00:00Z",
             "revision": 1, "method": "synthetic-browser-check", "history_recorded": True,
         }))
+    def synthetic_account_login(route):
+        route.fulfill(status=200, content_type="application/json", body=json.dumps({
+            "status": "login_required", "profile_id": "ui-profile", "pid": 1234,
+            "launch_id": "synthetic-launch", "message": "Synthetic re-authentication launch.",
+        }))
     page.route("**/admin/browser_profiles/setup-login", synthetic_setup_login)
     page.route("**/admin/accounts/claude-account/check-login", synthetic_account_check)
+    page.route("**/admin/accounts/claude-account/login", synthetic_account_login)
     page.get_by_role("link", name="Accounts", exact=True).click()
     page.get_by_role("button", name="Add account", exact=True).click()
     page.get_by_label("Provider", exact=True).select_option("claude-web")
@@ -148,11 +154,17 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     page.get_by_role("button", name="Review changes", exact=True).click()
     page.get_by_role("button", name="Apply changes", exact=True).click()
     expect(page.get_by_role("dialog")).not_to_be_visible()
-    expect(page.get_by_role("row").filter(has=page.get_by_text("claude-account", exact=True))).to_contain_text("Not checked")
+    claude_account_row = page.get_by_role("row").filter(has=page.get_by_text("claude-account", exact=True))
+    expect(claude_account_row).to_contain_text("Not checked")
+    claude_account_row.get_by_role("button", name="Re-authenticate", exact=True).click()
+    expect(page.get_by_role("heading", name="Login evidence", exact=True)).to_be_visible()
+    expect(page.get_by_role("dialog")).to_contain_text("Synthetic re-authentication launch.")
+    page.get_by_role("button", name="Close", exact=True).click()
     assert any(item.get("action") == "launch" for item in setup_login_requests)
     assert any(item.get("action") == "check" for item in setup_login_requests)
     page.unroute("**/admin/browser_profiles/setup-login", synthetic_setup_login)
     page.unroute("**/admin/accounts/claude-account/check-login", synthetic_account_check)
+    page.unroute("**/admin/accounts/claude-account/login", synthetic_account_login)
     # Password-manager import launched from the account wizard returns one
     # protected reference to the same draft, allowing an end-to-end bind.
     page.get_by_role("link", name="Accounts", exact=True).click()

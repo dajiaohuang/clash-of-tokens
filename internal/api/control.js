@@ -413,7 +413,7 @@ async function providerDetail(provider){
    const capacity=(S.status.accounts||[]).find(c=>c.id===a.id);
    const credentialState=capacity?.credential_state||'not_configured';
    const credentialVersion=capacity?.credential_version?(' · v'+capacity.credential_version):'';
-   return [a.display_name||a.id,(a.enabled?'Yes':'No')+' / '+(a.auto_approved?'Yes':'No'),a.credential_ref||'Not bound',credentialState+credentialVersion,a.credential_type_override?'Yes':'No',accountAuth(a),(capacity?.active||0)+' / '+a.max_inflight,[button('Edit account',()=>edit('accounts',a)),a.browser_profile_id?button('Check login',()=>loginEvidence(a)):null]];
+   return [a.display_name||a.id,(a.enabled?'Yes':'No')+' / '+(a.auto_approved?'Yes':'No'),a.credential_ref||'Not bound',credentialState+credentialVersion,a.credential_type_override?'Yes':'No',accountAuth(a),(capacity?.active||0)+' / '+a.max_inflight,[button('Edit account',()=>edit('accounts',a)),a.browser_profile_id?button('Login',()=>launchAccountLogin(a)):null,a.browser_profile_id?button('Check login',()=>loginEvidence(a)):null]];
   }),'No accounts. Add an account to keep credentials and routing policy together.'),
   h('h3',{},'Sources'),table(['Source','Account','Routing state','Models','Matching generation evidence','Actions'],sources.map(s=>[s.id,s.account_id||'No account',state(s),s.models.length,verified.has(s.id)?'At least one model/protocol':'Not established',[button('Source details',()=>sourceDetail(s)),button('Validate source',()=>validateSource(s)),button('Discover models',()=>discoverModels(s))]]),'No sources configured.'),
   h('h3',{},'Provider routing eligibility'),h('p',{class:'muted'},'Read-only simulation for a 100-byte text request. Results explain eligibility, not final candidate selection.'),field('Provider group',group),field('Provider protocol',protocol),explain,explanations
@@ -484,6 +484,10 @@ function accountAuth(a){
  if(!last)return 'Not checked';
  return last.status+' · '+new Date(last.checked_at).toLocaleString()+(last.revision===S.revision?'':' · historical configuration');
 }
+async function launchAccountLogin(a){
+ const result=await api('/admin/accounts/'+encodeURIComponent(a.id)+'/login',{method:'POST'});
+ loginEvidence(a,true,result.message);
+}
 function loginEvidence(a,watch=false,launchMessage='',setup){
  let live=true,busy=false,timer,deadline,controller;
  const progress=h('p',{role:'status'},watch?'Checking every 5 seconds after each result, for up to 5 minutes.':'Checking browser session…');
@@ -517,7 +521,7 @@ function accounts(){
  };
  return [pageHead('Accounts','Account switches and capacity apply across their sources.',button('Discover candidates',discoverAccounts),button('Account pools',accountPools),button('Refresh capacity',refresh),button('Add account',()=>addAccount(),'primary')),table(['Account','Provider','Health','Auth status','Browser authentication','Credential','Credential state','Routing defaults','Reviewed override','Quota / in flight','Auto','Actions'],(S.config.accounts||[]).map(a=>[
   a.display_name||a.id,a.provider_id,badge(healthFor(a).health||'untested',healthFor(a).health==='healthy'?'good':healthFor(a).health==='disabled'?'':'warn'),healthFor(a).auth_status||'not_checked',accountAuth(a),a.credential_ref||'Not bound',(healthFor(a).credential_state||'not_configured')+(healthFor(a).credential_version?' · v'+healthFor(a).credential_version:''),[a.base_url&&'Base URL: '+a.base_url,a.organization&&'Organization: '+a.organization,a.project&&'Project: '+a.project].filter(Boolean).join(' · ')||'Not set',a.credential_type_override?'Yes':'No',a.quota_domain+' · '+((S.status.accounts||[]).find(x=>x.id===a.id)?.active||0)+' / '+a.max_inflight,badge(a.auto_approved?'Approved':'Manual',a.auto_approved?'accent':''),
-  [button(a.enabled?'Disable':'Enable',()=>toggle('accounts',a)),button(a.auto_approved?'Remove Auto':'Allow Auto',()=>toggleAuto('accounts',a)),button('Edit',()=>edit('accounts',a)),button('Validate account',()=>validateAccount(a)),a.browser_profile_id?button('Login',async()=>{const result=await api('/admin/accounts/'+encodeURIComponent(a.id)+'/login',{method:'POST'});loginEvidence(a,true,result.message)}):null,a.browser_profile_id?button('Check login',()=>loginEvidence(a)):null,button('Delete',()=>remove('accounts',a),'danger')]
+   [button(a.enabled?'Disable':'Enable',()=>toggle('accounts',a)),button(a.auto_approved?'Remove Auto':'Allow Auto',()=>toggleAuto('accounts',a)),button('Edit',()=>edit('accounts',a)),button('Validate account',()=>validateAccount(a)),a.browser_profile_id?button('Re-authenticate',()=>launchAccountLogin(a)):null,a.browser_profile_id?button('Check login',()=>loginEvidence(a)):null,button('Delete',()=>remove('accounts',a),'danger')]
  ]),'No accounts. Add an account and bind a credential before enabling its sources.')];
 }
 async function discoverAccounts(){

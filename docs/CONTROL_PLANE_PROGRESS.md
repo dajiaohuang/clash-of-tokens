@@ -857,3 +857,10 @@ Review disable enters the existing revision-aware preview/apply transaction.
 The browser regression covers cancellation, review/apply, re-enable, the
 affected-account rendering, and the disabled account-health projection with a
 rebuilt isolated gateway binary.
+
+Batch 158 exposes the existing bound-profile login flow as explicit `Login`
+actions in Provider Detail and `Re-authenticate` actions in Accounts. The
+shared launch helper opens the existing `/admin/accounts/{id}/login` endpoint
+and continues into the metadata-only login evidence watcher; the browser
+regression covers the synthetic launch and check without opening a real
+provider browser.
