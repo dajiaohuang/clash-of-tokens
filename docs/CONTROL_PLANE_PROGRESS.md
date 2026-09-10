@@ -713,7 +713,7 @@ routing headers and Cloud Code Assist project metadata cannot inject a header
 or oversized configuration value.
 
 Batch 131 adds account-level Base URL, Organization, and Project defaults to
-the setup wizard and schema-driven editor. Bound sources inherit only omitted
-fields, preserving explicit source overrides; validation covers HTTPS or
-loopback endpoints and bounded metadata, and the runtime client uses the
-effective values when constructing requests.
+the setup wizard and schema-driven editor. Bound sources inherit omitted fields
+and an untouched catalog endpoint, preserving explicit source overrides;
+validation covers HTTPS or loopback endpoints and bounded metadata, and the
+runtime client uses the effective values when constructing requests.

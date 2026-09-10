@@ -227,7 +227,11 @@ function edit(kind,item,create=false){
     if(kind==='sources'&&value.account_id){
      const account=(next.accounts||[]).find(a=>a.id===value.account_id),moved=value.account_id!==item.account_id;
      if(account){
-      if(!value.base_url)value.base_url=account.base_url||'';
+      // A newly-created preset starts with the catalog endpoint. Treat that
+      // untouched preset value like an omitted field so an account's custom
+      // endpoint can become the source default; edits to an existing source
+      // remain explicit overrides.
+      if(account.base_url&&(!value.base_url||(create&&value.base_url===item.base_url)))value.base_url=account.base_url;
       if(!value.organization)value.organization=account.organization||'';
       if(!value.project)value.project=account.project||'';
      }
