@@ -14,14 +14,22 @@ func validateCredentialBindings(c config.Config, metadata []credentials.Metadata
 	for _, m := range metadata {
 		kinds[m.ID] = m.Kind
 	}
-	accounts := map[string]string{}
+	accounts := map[string]struct {
+		ref      string
+		override bool
+	}{}
 	for _, a := range c.Accounts {
-		accounts[a.ID] = a.CredentialRef
+		accounts[a.ID] = struct {
+			ref      string
+			override bool
+		}{a.CredentialRef, a.CredentialTypeOverride}
 	}
 	for _, source := range c.Sources {
 		ref := source.CredentialRef
+		override := source.CredentialTypeOverride
 		if ref == "" {
-			ref = accounts[source.AccountID]
+			account := accounts[source.AccountID]
+			ref, override = account.ref, account.override
 		}
 		if ref == "" {
 			continue
@@ -31,7 +39,7 @@ func validateCredentialBindings(c config.Config, metadata []credentials.Metadata
 			return fmt.Errorf("source %s: credential reference does not exist", source.ID)
 		}
 		d, ok := providerdef.Lookup(source.Adapter)
-		if !ok || !slices.Contains(d.CredentialModes, kind) {
+		if !ok || (!override && !slices.Contains(d.CredentialModes, kind)) {
 			return fmt.Errorf("source %s: %s credential is incompatible with adapter %s", source.ID, kind, source.Adapter)
 		}
 	}

@@ -191,6 +191,11 @@ CLI format references: [Codex auth fixture](https://github.com/openai/codex/blob
     non-generating authentication check. The action is redacted, evidence
     preserving, does not enable or Auto-approve a source, and is covered by a
     synthetic disabled-source API test. See [account validation](ACCOUNT_VALIDATION.md).
+41. Credential binding remains fail-closed by default, while accounts and
+    sources can opt into an explicit `credential_type_override`. The protected
+    vault still requires an existing reference and never returns the secret;
+    the UI shows a risk warning and descriptor validation tests cover both the
+    rejected default and reviewed account/source overrides. See [credential binding](CREDENTIAL_BINDING.md).
 
 Discovery protocol references: [Anthropic models](https://platform.claude.com/docs/en/api/models/list),
 [Gemini models](https://ai.google.dev/api/models),
@@ -208,8 +213,8 @@ Race detection is outstanding: the current Go environment has cgo disabled.
 
 The [51-section ledger](CONTROL_PLANE_AUDIT.md) now replaces the previous generic
 A–E checklist. The main gaps include unified account discovery/onboarding,
-complete provider-specific setup and checks, account validation actions,
-quota/account pool views, richer model management, broader session management, runtime log redaction, remaining
+complete provider-specific setup and checks, quota/account pool views, richer
+model management, broader session management, runtime log redaction, remaining
 routing policies and native macOS verification.
 All explicit subrequirements and the end-to-end install-to-routing workflow must
 be verified before completion.

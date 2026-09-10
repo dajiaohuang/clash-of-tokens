@@ -15,17 +15,18 @@ type Provider struct {
 
 // Account contains references and operational policy, never credential values.
 type Account struct {
-	ID               string    `json:"id"`
-	ProviderID       string    `json:"provider_id"`
-	DisplayName      string    `json:"display_name"`
-	Enabled          bool      `json:"enabled"`
-	AutoApproved     bool      `json:"auto_approved"`
-	CredentialRef    string    `json:"credential_ref,omitempty"`
-	BrowserProfileID string    `json:"browser_profile_id,omitempty"`
-	QuotaDomain      string    `json:"quota_domain"`
-	MaxInflight      int       `json:"max_inflight"`
-	Weight           int       `json:"weight"`
-	CreatedAt        time.Time `json:"created_at"`
+	ID                     string    `json:"id"`
+	ProviderID             string    `json:"provider_id"`
+	DisplayName            string    `json:"display_name"`
+	Enabled                bool      `json:"enabled"`
+	AutoApproved           bool      `json:"auto_approved"`
+	CredentialRef          string    `json:"credential_ref,omitempty"`
+	CredentialTypeOverride bool      `json:"credential_type_override,omitempty"`
+	BrowserProfileID       string    `json:"browser_profile_id,omitempty"`
+	QuotaDomain            string    `json:"quota_domain"`
+	MaxInflight            int       `json:"max_inflight"`
+	Weight                 int       `json:"weight"`
+	CreatedAt              time.Time `json:"created_at"`
 }
 
 func ValidCredentialRef(ref string) bool {

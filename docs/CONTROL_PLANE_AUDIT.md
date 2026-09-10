@@ -40,7 +40,7 @@ must be checked again before final acceptance.
 | 29. Live verification | Batch 25 derives status/counts from model/protocol evidence and source/credential-version bindings; rotation invalidation tested | Real configured-provider checks and complete account/capability evidence still require verification |
 | 30. Discovery hub | Batch 27 returns import results to account setup with single-result binding | Unified automatic Discover Accounts candidates and broader matching |
 | 31. Shared credential | Account reference shared by multiple sources and quota domain | End-to-end reference reuse/capacity display |
-| 32. Manual binding override | Matching and incompatible-type rejection | Explicit reviewed type-override requested by the synthesis is absent |
+| 32. Manual binding override | Descriptor matching rejects incompatible kinds by default; account/source `credential_type_override` is persisted, warned in the editor, and covered by binding tests | Provider-specific contract review and end-to-end UI acceptance for every credential kind |
 | 33. Quota domain view | Batch 26 adds domain members/shared counters, retiring leases and atomic all-member limit editing | Account/domain moves and rename behavior still need complete UX/runtime audit |
 | 34. Account pools | Four router strategies; batch 26 adds pool editor, account switches/capacity/weights and UI persistence tests | Broader end-to-end dispatch/strategy acceptance |
 | 35. Sessions | ChatGPT metadata and expire/clear | Other stateful adapter inventories and controls |

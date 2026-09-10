@@ -8,7 +8,7 @@ const pages = [
  ['System',['config','logs','about']]
 ];
 const labels = {overview:'Overview',providers:'Providers',accounts:'Accounts',credentials:'Credentials',sources:'Sources',models:'Models',groups:'Groups',routing:'Routing',health:'Health',metrics:'Metrics',browsers:'Browsers',devices:'Devices',sessions:'Sessions',config:'Configuration',logs:'Activity',about:'About'};
-const names = {id:'ID',provider_id:'Provider',account_id:'Account',credential_ref:'Credential',base_url:'Base URL',key_env:'Legacy credential environment variable',account_id_env:'Legacy account ID environment variable',auto_approved:'Allow Auto routing',allow_paid:'Legacy paid-source policy',allow_unknown_cost:'Allow unknown costs',max_inflight:'Concurrent requests',quota_max_inflight:'Shared quota concurrency',quota_domain:'Quota domain',max_input_bytes:'Maximum input bytes',cdp_url:'Browser connection URL',source_kind:'Source type',tools:'Tool capability',local:'Loopback / local transport',paid:'Legacy paid flag'};
+const names = {id:'ID',provider_id:'Provider',account_id:'Account',credential_ref:'Credential',credential_type_override:'Reviewed credential type override',base_url:'Base URL',key_env:'Legacy credential environment variable',account_id_env:'Legacy account ID environment variable',auto_approved:'Allow Auto routing',allow_paid:'Legacy paid-source policy',allow_unknown_cost:'Allow unknown costs',max_inflight:'Concurrent requests',quota_max_inflight:'Shared quota concurrency',quota_domain:'Quota domain',max_input_bytes:'Maximum input bytes',cdp_url:'Browser connection URL',source_kind:'Source type',tools:'Tool capability',local:'Loopback / local transport',paid:'Legacy paid flag'};
 const title = text => names[text] || text.replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase());
 const clone = value => JSON.parse(JSON.stringify(value));
 function h(tag,attrs,...children) {
@@ -201,7 +201,7 @@ function edit(kind,item,create=false){
   }
  }
  function show(){
-  dialog((create?'Add ':'Edit ')+title(kind).replace(/s$/,'')+(create?'':' / '+item.id),[form.element,membership],[
+  dialog((create?'Add ':'Edit ')+title(kind).replace(/s$/,'')+(create?'':' / '+item.id),[form.element,(kind==='accounts'||kind==='sources')&&h('p',{class:'warning'},'A credential type override bypasses provider compatibility checks. Use it only after reviewing the credential format and adapter contract; the credential value is never shown here.'),membership],[
    button('Cancel',()=> $('dialog').close()),
    button('Review changes',async()=>{
     const next=clone(base),value=form.read();
