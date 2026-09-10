@@ -575,3 +575,7 @@ Batch 107 adds a metadata-only action for discovered browser candidates. The
 operator can configure a profile ID, engine, and loopback CDP endpoint and
 continue into the transactional account wizard; discovery still reads no
 cookies, launches no browser, and does not claim authentication.
+
+Batch 108 surfaces the account `credential_type_override` posture as a
+redacted reviewed flag in Accounts, Health, and Provider Detail, making
+fail-open binding exceptions visible without exposing credential values.

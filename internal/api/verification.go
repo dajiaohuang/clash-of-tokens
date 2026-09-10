@@ -35,26 +35,27 @@ type sourceVerification struct {
 }
 
 type accountHealth struct {
-	ID                  string     `json:"id"`
-	Provider            string     `json:"provider"`
-	CredentialState     string     `json:"credential_state"`
-	CredentialVersion   uint64     `json:"credential_version,omitempty"`
-	Enabled             bool       `json:"enabled"`
-	AutoApproved        bool       `json:"auto_approved"`
-	PoolStrategy        string     `json:"pool_strategy"`
-	Weight              int        `json:"weight"`
-	Health              string     `json:"health"`
-	AuthStatus          string     `json:"auth_status"`
-	Active              int        `json:"active"`
-	Limit               int        `json:"limit"`
-	Sources             []string   `json:"sources"`
-	Completed           uint64     `json:"completed"`
-	Failures            uint64     `json:"failures"`
-	LastSuccess         *time.Time `json:"last_success,omitempty"`
-	LastFailure         *time.Time `json:"last_failure,omitempty"`
-	LastValidatedAt     *time.Time `json:"last_validated_at,omitempty"`
-	LastValidationState string     `json:"last_validation_state"`
-	LastAuthCheckedAt   *time.Time `json:"last_auth_checked_at,omitempty"`
+	ID                     string     `json:"id"`
+	Provider               string     `json:"provider"`
+	CredentialState        string     `json:"credential_state"`
+	CredentialVersion      uint64     `json:"credential_version,omitempty"`
+	CredentialTypeOverride bool       `json:"credential_type_override"`
+	Enabled                bool       `json:"enabled"`
+	AutoApproved           bool       `json:"auto_approved"`
+	PoolStrategy           string     `json:"pool_strategy"`
+	Weight                 int        `json:"weight"`
+	Health                 string     `json:"health"`
+	AuthStatus             string     `json:"auth_status"`
+	Active                 int        `json:"active"`
+	Limit                  int        `json:"limit"`
+	Sources                []string   `json:"sources"`
+	Completed              uint64     `json:"completed"`
+	Failures               uint64     `json:"failures"`
+	LastSuccess            *time.Time `json:"last_success,omitempty"`
+	LastFailure            *time.Time `json:"last_failure,omitempty"`
+	LastValidatedAt        *time.Time `json:"last_validated_at,omitempty"`
+	LastValidationState    string     `json:"last_validation_state"`
+	LastAuthCheckedAt      *time.Time `json:"last_auth_checked_at,omitempty"`
 }
 
 type providerHealth struct {
@@ -469,7 +470,7 @@ func (p *ControlPlane) accountHealth(s *Server, entries []audit.Entry) []account
 	out := make([]accountHealth, 0, len(s.cfg.Accounts))
 	for _, account := range s.cfg.Accounts {
 		credentialState, credentialVersion := p.accountCredentialState(s.cfg, account)
-		health := accountHealth{ID: account.ID, Provider: account.ProviderID, CredentialState: credentialState, CredentialVersion: credentialVersion, Enabled: account.Enabled, AutoApproved: account.AutoApproved, Health: "untested", AuthStatus: "not_checked", Limit: account.MaxInflight, Weight: account.Weight, LastValidationState: "not_checked", Sources: []string{}}
+		health := accountHealth{ID: account.ID, Provider: account.ProviderID, CredentialState: credentialState, CredentialVersion: credentialVersion, CredentialTypeOverride: account.CredentialTypeOverride, Enabled: account.Enabled, AutoApproved: account.AutoApproved, Health: "untested", AuthStatus: "not_checked", Limit: account.MaxInflight, Weight: account.Weight, LastValidationState: "not_checked", Sources: []string{}}
 		var lastValidation audit.Entry
 		hasValidation := false
 		for _, provider := range s.cfg.Providers {
