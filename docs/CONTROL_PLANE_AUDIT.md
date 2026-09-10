@@ -25,7 +25,7 @@ must be checked again before final acceptance.
 | 14. Source Detail | Batch 29 consolidates configuration/models/capacity/runtime/TTFT/evidence and edit/check actions; explicit three-sample benchmark with cancellation tests | Full live-adapter acceptance and aggregate benchmark persistence remain unverified |
 | 15. Routing editor | Batch 28 adds five ordered preferences with explicit rate/latency semantics and dispatch tests; Batch 54 exposes bounded runtime token/cost accounting | Complete cross-strategy acceptance and any hard per-request budget controls |
 | 16. Drag order | Ordered group source widget | Browser drag/drop and actual fallback order test |
-| 17. Independent switches | Provider/account/source/model enable/Auto gates | Full UI-to-runtime four-level acceptance test |
+| 17. Independent switches | Provider/account/source/model enable/Auto gates; Batch 67 adds direct Provider, Account and Source Auto actions with central preview/apply and billing notice | Full UI-to-runtime four-level acceptance test |
 | 18. All frontend configuration | Schema-driven forms and config transactions | Missing requested settings must first exist in schema/runtime |
 | 19. Configuration service | Journal, compile/prepare, atomic runtime publication tests | Fault and rollback lifecycle audit across all managed resources |
 | 20. Versions/rollback | Version history and Compare/restore; Batch 64 adds browser editing, history review and restore coverage | Browser rollback/conflict acceptance test |
@@ -56,7 +56,7 @@ must be checked again before final acceptance.
 | 45. Preview | Config diff, optimistic revision preview, bounded read-only group eligibility/account/source impact counts before apply, and credential replacement impact review | Complete impact coverage for every sensitive action |
 | 46. Central validation | Schema validation plus runtime prepare before apply | All special actions must retain the same invariants |
 | 47. Hot reload | Generation pinning and restart-required fields | Full browser confirmation of live vs pending runtime settings |
-| 48. Sensitive confirmation | Config preview, credential-delete confirmation, credential replacement impact review, billing notices | All specified sensitive actions and cost warnings acceptance test |
+| 48. Sensitive confirmation | Config preview, credential-delete confirmation, credential replacement impact review, Batch 67 Auto billing notice for metered provider/account/source | All specified sensitive actions and cost warnings acceptance test |
 | 49. Secret-safe logs | Redacted vault/import/session/evidence responses; fixed execution categories; batch 32 stores bounded structured events without raw error/body/credential fields; Batch 54 stores only numeric declared usage/cost fields; generation and model-discovery HTTP errors use stable public categories | Global Secret representation and all adapter/error/log paths audit; pre-acquisition rejections not logged |
 | 50. Five epics | Work split into committed batches | A–E remain incomplete until their component rows are accepted |
 | 51. End-to-end workflow | API integration test covers protected credential → account → two inherited sources → Auto group → successful synthetic local API call without editing JSON | Browser-driven full install/import/login journey and live-provider call remain external-environment checks |

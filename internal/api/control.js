@@ -242,6 +242,16 @@ async function toggle(kind,item,key='enabled'){
  const next=clone(S.config),entry=next[kind].find(x=>x.id===item.id);
  entry[key]=!entry[key];await preview(next,(entry[key]?'Enable ':'Disable ')+kind+'/'+item.id+(key==='auto_approved'?' for Auto':'')); 
 }
+async function toggleAuto(kind,item){
+ const next=clone(S.config),entry=next[kind].find(x=>x.id===item.id);
+ if(!entry)throw Error('Resource is no longer configured. Refresh and try again.');
+ const enabling=!entry.auto_approved;entry.auto_approved=enabling;
+ const paid=kind==='sources'&&entry.billing_mode==='metered' ||
+   kind==='providers'&&S.config.sources.some(s=>s.provider===entry.id&&s.billing_mode==='metered') ||
+   kind==='accounts'&&S.config.sources.some(s=>s.account_id===entry.id&&s.billing_mode==='metered');
+ const notice=paid&&enabling?' This may incur additional charges because a metered source can become eligible for Auto routing.':'';
+ await preview(next,(enabling?'Allow ':'Remove ')+kind+'/'+item.id+' for Auto.'+notice);
+}
 async function remove(kind,item){
  const next=clone(S.config);next[kind]=next[kind].filter(x=>x.id!==item.id);
  await preview(next,'Delete '+kind+'/'+item.id);
@@ -383,7 +393,7 @@ function providers(){
   const entries=S.catalog.filter(p=>(type.value==='all'||p.kind===type.value)&&p.id.toLowerCase().includes(query.value.toLowerCase()));
   target.replaceChildren(table(['Provider','Type','Protocols','Accounts','Implementation','State / actions'],entries.map(p=>{
    const configured=(S.config.providers||[]).find(x=>x.id===p.id);
-   return [button(p.id,()=>providerDetail(p)),badge(p.kind),(p.protocols||[]).join(', '),(S.config.accounts||[]).filter(a=>a.provider_id===p.id).length,p.implementation,[configured?button(configured.enabled?'Disable':'Enable',()=>toggle('providers',configured)):badge('Not configured'),button('Open',()=>providerDetail(p))]];
+  return [button(p.id,()=>providerDetail(p)),badge(p.kind),(p.protocols||[]).join(', '),(S.config.accounts||[]).filter(a=>a.provider_id===p.id).length,p.implementation,[configured?button(configured.enabled?'Disable':'Enable',()=>toggle('providers',configured)):badge('Not configured'),configured?button(configured.auto_approved?'Remove Auto':'Allow Auto',()=>toggleAuto('providers',configured)):null,button('Open',()=>providerDetail(p))]];
   })));
  }
  query.oninput=draw;type.onchange=draw;draw();
@@ -427,7 +437,7 @@ function accounts(){
  };
  return [pageHead('Accounts','Account switches and capacity apply across their sources.',button('Discover candidates',discoverAccounts),button('Account pools',accountPools),button('Refresh capacity',refresh),button('Add account',()=>addAccount(),'primary')),table(['Account','Provider','Health','Auth status','Browser authentication','Credential','Quota / in flight','Auto','Actions'],(S.config.accounts||[]).map(a=>[
   a.display_name||a.id,a.provider_id,badge(healthFor(a).health||'untested',healthFor(a).health==='healthy'?'good':healthFor(a).health==='disabled'?'':'warn'),healthFor(a).auth_status||'not_checked',accountAuth(a),a.credential_ref||'Not bound',a.quota_domain+' · '+((S.status.accounts||[]).find(x=>x.id===a.id)?.active||0)+' / '+a.max_inflight,badge(a.auto_approved?'Approved':'Manual',a.auto_approved?'accent':''),
-  [button(a.enabled?'Disable':'Enable',()=>toggle('accounts',a)),button('Edit',()=>edit('accounts',a)),button('Validate account',()=>validateAccount(a)),a.browser_profile_id?button('Login',async()=>{const result=await api('/admin/accounts/'+encodeURIComponent(a.id)+'/login',{method:'POST'});loginEvidence(a,true,result.message)}):null,a.browser_profile_id?button('Check login',()=>loginEvidence(a)):null,button('Delete',()=>remove('accounts',a),'danger')]
+  [button(a.enabled?'Disable':'Enable',()=>toggle('accounts',a)),button(a.auto_approved?'Remove Auto':'Allow Auto',()=>toggleAuto('accounts',a)),button('Edit',()=>edit('accounts',a)),button('Validate account',()=>validateAccount(a)),a.browser_profile_id?button('Login',async()=>{const result=await api('/admin/accounts/'+encodeURIComponent(a.id)+'/login',{method:'POST'});loginEvidence(a,true,result.message)}):null,a.browser_profile_id?button('Check login',()=>loginEvidence(a)):null,button('Delete',()=>remove('accounts',a),'danger')]
  ]),'No accounts. Add an account and bind a credential before enabling its sources.')];
 }
 async function discoverAccounts(){
@@ -497,7 +507,7 @@ function importCredentials(onSaved){
 }
 function sources(){
  return [pageHead('Sources','A source binds an account to one or more model targets.',button('Add source',()=>addSource(),'primary')),table(['Source','Provider / account','Type','State','Models','Groups','Actions'],S.config.sources.map(s=>[
-  button(s.id,()=>sourceDetail(s)),s.provider+(s.account_id?' / '+s.account_id:''),badge(s.source_kind||'Unspecified'),state(s),s.models.length,S.config.groups.filter(g=>g.sources.includes(s.id)).map(g=>g.id).join(', '),[button(s.enabled?'Disable':'Enable',()=>toggle('sources',s)),button('Edit',()=>edit('sources',s)),button('Discover models',()=>discoverModels(s)),button('Validate',()=>validateSource(s)),button('Verification',()=>sourceVerification(s)),button('Delete',()=>remove('sources',s),'danger')]
+  button(s.id,()=>sourceDetail(s)),s.provider+(s.account_id?' / '+s.account_id:''),badge(s.source_kind||'Unspecified'),state(s),s.models.length,S.config.groups.filter(g=>g.sources.includes(s.id)).map(g=>g.id).join(', '),[button(s.enabled?'Disable':'Enable',()=>toggle('sources',s)),button(s.auto_approved?'Remove Auto':'Allow Auto',()=>toggleAuto('sources',s)),button('Edit',()=>edit('sources',s)),button('Discover models',()=>discoverModels(s)),button('Validate',()=>validateSource(s)),button('Verification',()=>sourceVerification(s)),button('Delete',()=>remove('sources',s),'danger')]
  ]),'No sources. Add a provider preset and enter the model available to your account.')];
 }
 async function sourceDetail(source){

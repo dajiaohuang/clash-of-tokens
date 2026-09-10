@@ -372,3 +372,9 @@ quota now renames the domain and changes its limit together, updating all
 matching accounts and sources in one reviewed configuration transaction. The
 browser regression renames the fixture domain and confirms the new shared row;
 existing-domain collisions remain subject to normal configuration validation.
+
+Batch 67 exposes independent Auto approval actions beside the Provider,
+Account and Source enabled switches. Each action still uses the central
+preview/apply transaction, and enabling Auto for a metered provider, account
+or source displays the possible billing impact. The browser regression toggles
+all three levels and confirms their state without changing enabled state.
