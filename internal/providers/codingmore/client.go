@@ -20,12 +20,14 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 	"sync"
 	"time"
 
 	"clash-of-tokens/internal/config"
 	"clash-of-tokens/internal/providerutil"
+	sessionmeta "clash-of-tokens/internal/session"
 )
 
 const (
@@ -87,6 +89,13 @@ type Client struct {
 
 type session struct {
 	gate         providerutil.Gate
+	mu           sync.Mutex
+	id           string
+	created      time.Time
+	updated      time.Time
+	expired      bool
+	model        string
+	protocol     string
 	conversation string
 }
 
@@ -233,6 +242,7 @@ func (c *Client) Do(ctx context.Context, protocol, model string, stream bool, bo
 	if err != nil {
 		return nil, err
 	}
+	s.touch(model, protocol)
 	if err := s.gate.Lock(ctx); err != nil {
 		return nil, err
 	}
@@ -343,14 +353,96 @@ func (c *Client) session(key string) (*session, error) {
 		return nil, ErrClosed
 	}
 	if existing := c.sessions[key]; existing != nil {
+		existing.mu.Lock()
+		if existing.expired {
+			existing.expired = false
+			existing.created = time.Now().UTC()
+			existing.conversation = randomUUID()
+		}
+		existing.mu.Unlock()
 		return existing, nil
 	}
 	if len(c.sessions) >= maxSessions {
 		return nil, errors.New("coding more adapter: session capacity exceeded")
 	}
-	s := &session{conversation: randomUUID()}
+	now := time.Now().UTC()
+	s := &session{id: sessionID(key), created: now, updated: now, conversation: randomUUID()}
 	c.sessions[key] = s
 	return s, nil
+}
+
+func sessionID(key string) string {
+	sum := sha256.Sum256([]byte(key))
+	return "session-" + fmt.Sprintf("%x", sum[:8])
+}
+
+func (s *session) touch(model, protocol string) {
+	if s.id == "" {
+		return
+	}
+	s.mu.Lock()
+	s.model, s.protocol, s.updated = model, protocol, time.Now().UTC()
+	s.mu.Unlock()
+}
+
+func (s *session) metadata(source string) sessionmeta.Metadata {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return sessionmeta.Metadata{ID: s.id, Source: source, Conversation: s.conversation, Model: s.model, Protocol: s.protocol, Created: s.created, Updated: s.updated, Expired: s.expired}
+}
+
+// Sessions returns metadata for explicit sessions retained by Amazon Q or
+// Augment. Devin CLI intentionally remains stateless at this boundary.
+func (c *Client) Sessions() ([]sessionmeta.Metadata, error) {
+	if c.source.Adapter == AdapterDevinCLI {
+		return nil, errors.New("session management is not implemented for this adapter")
+	}
+	c.mu.Lock()
+	items := make([]*session, 0, len(c.sessions))
+	for _, v := range c.sessions {
+		items = append(items, v)
+	}
+	c.mu.Unlock()
+	out := make([]sessionmeta.Metadata, 0, len(items))
+	for _, v := range items {
+		out = append(out, v.metadata(c.source.ID))
+	}
+	slices.SortFunc(out, func(a, b sessionmeta.Metadata) int {
+		if a.Updated.After(b.Updated) {
+			return -1
+		}
+		if a.Updated.Before(b.Updated) {
+			return 1
+		}
+		return strings.Compare(a.ID, b.ID)
+	})
+	return out, nil
+}
+
+func (c *Client) ChangeSession(id, action string) error {
+	if c.source.Adapter == AdapterDevinCLI {
+		return errors.New("session management is not implemented for this adapter")
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	for key, s := range c.sessions {
+		if s.id != id {
+			continue
+		}
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		switch action {
+		case "clear":
+			delete(c.sessions, key)
+		case "expire":
+			s.expired = true
+			s.updated = time.Now().UTC()
+		default:
+			return errors.New("unsupported session action")
+		}
+		return nil
+	}
+	return errors.New("unknown source session")
 }
 
 func deterministicConversationID(value string) string {

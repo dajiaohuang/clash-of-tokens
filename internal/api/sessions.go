@@ -9,6 +9,7 @@ import (
 	"clash-of-tokens/internal/chatgptweb"
 	"clash-of-tokens/internal/evidence"
 	"clash-of-tokens/internal/routing"
+	"clash-of-tokens/internal/session"
 )
 
 func (p *ControlPlane) sessionAdmin(w http.ResponseWriter, r *http.Request, s *Server) bool {
@@ -17,7 +18,7 @@ func (p *ControlPlane) sessionAdmin(w http.ResponseWriter, r *http.Request, s *S
 	}
 	if r.URL.Path == "/admin/sessions" && r.Method == "GET" {
 		type row struct {
-			chatgptweb.SessionMetadata
+			session.Metadata
 			Provider string `json:"provider"`
 			Account  string `json:"account"`
 		}
@@ -32,21 +33,26 @@ func (p *ControlPlane) sessionAdmin(w http.ResponseWriter, r *http.Request, s *S
 		}
 		capabilities := []capability{}
 		truncated := false
-		for _, source := range s.cfg.Sources {
-			cap := capability{Source: source.ID, Adapter: source.Adapter, Supported: source.Adapter == "chatgpt-web", Reason: "stateful session inventory is adapter-specific"}
-			if cap.Supported {
-				cap.Reason = "local conversation metadata"
-			}
+		for i, source := range s.cfg.Sources {
+			cap := capability{Source: source.ID, Adapter: source.Adapter, Reason: "stateful session inventory is adapter-specific"}
 			capabilities = append(capabilities, cap)
-			if source.Adapter != "chatgpt-web" {
-				unsupported = append(unsupported, source.ID)
-				continue
+			var items []session.Metadata
+			var err error
+			if source.Adapter == "chatgpt-web" {
+				items, err = chatgptweb.ReadSessions(s.cfg.SourceBrowser(source), source.ID)
+			} else {
+				items, err = s.client(i).Sessions()
 			}
-			items, err := chatgptweb.ReadSessions(s.cfg.SourceBrowser(source), source.ID)
 			if err != nil {
-				failures = append(failures, source.ID)
+				if strings.Contains(err.Error(), "not implemented") {
+					unsupported = append(unsupported, source.ID)
+				} else {
+					failures = append(failures, source.ID)
+				}
 				continue
 			}
+			capabilities[len(capabilities)-1].Supported = true
+			capabilities[len(capabilities)-1].Reason = "local conversation metadata"
 			for _, item := range items {
 				if len(out) >= 1000 {
 					truncated = true

@@ -18,12 +18,14 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 	"sync"
 	"time"
 
 	"clash-of-tokens/internal/config"
 	"clash-of-tokens/internal/providerutil"
+	sessionmeta "clash-of-tokens/internal/session"
 )
 
 const (
@@ -86,6 +88,13 @@ type Client struct {
 
 type session struct {
 	requestMu providerutil.Gate
+	mu        sync.Mutex
+	id        string
+	created   time.Time
+	updated   time.Time
+	expired   bool
+	model     string
+	protocol  string
 	threadID  string
 }
 
@@ -181,6 +190,7 @@ func (c *Client) Do(ctx context.Context, proto, model string, stream bool, body 
 	if err != nil {
 		return nil, err
 	}
+	state.touch(model, proto)
 	if err := state.requestMu.Lock(ctx); err != nil {
 		return nil, err
 	}
@@ -259,14 +269,95 @@ func (c *Client) session(key string) (*session, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if s := c.sessions[key]; s != nil {
+		s.mu.Lock()
+		if s.expired {
+			s.expired = false
+			s.created = time.Now().UTC()
+		}
+		s.mu.Unlock()
 		return s, nil
 	}
 	if len(c.sessions) >= maxSessions {
 		return nil, ErrSessionLimit
 	}
-	s := &session{threadID: uuid()}
+	now := time.Now().UTC()
+	s := &session{id: sessionID(key), created: now, updated: now, threadID: uuid()}
 	c.sessions[key] = s
 	return s, nil
+}
+
+func sessionID(key string) string {
+	sum := sha256.Sum256([]byte(key))
+	return "session-" + fmt.Sprintf("%x", sum[:8])
+}
+
+func (s *session) touch(model, protocol string) {
+	if s.id == "" {
+		return
+	}
+	s.mu.Lock()
+	s.model, s.protocol, s.updated = model, protocol, time.Now().UTC()
+	s.mu.Unlock()
+}
+
+func (s *session) metadata(source string) sessionmeta.Metadata {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return sessionmeta.Metadata{ID: s.id, Source: source, Conversation: s.threadID, Model: s.model, Protocol: s.protocol, Created: s.created, Updated: s.updated, Expired: s.expired}
+}
+
+// Sessions returns metadata for explicit X-COT-Session references. Only Zed
+// retains a provider thread; the other coding-next adapters are stateless.
+func (c *Client) Sessions() ([]sessionmeta.Metadata, error) {
+	if c.source.Adapter != AdapterZedHosted {
+		return nil, errors.New("session management is not implemented for this adapter")
+	}
+	c.mu.Lock()
+	items := make([]*session, 0, len(c.sessions))
+	for _, v := range c.sessions {
+		items = append(items, v)
+	}
+	c.mu.Unlock()
+	out := make([]sessionmeta.Metadata, 0, len(items))
+	for _, v := range items {
+		out = append(out, v.metadata(c.source.ID))
+	}
+	slices.SortFunc(out, func(a, b sessionmeta.Metadata) int {
+		if a.Updated.After(b.Updated) {
+			return -1
+		}
+		if a.Updated.Before(b.Updated) {
+			return 1
+		}
+		return strings.Compare(a.ID, b.ID)
+	})
+	return out, nil
+}
+
+func (c *Client) ChangeSession(id, action string) error {
+	if c.source.Adapter != AdapterZedHosted {
+		return errors.New("session management is not implemented for this adapter")
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	for key, s := range c.sessions {
+		if s.id != id {
+			continue
+		}
+		switch action {
+		case "clear":
+			delete(c.sessions, key)
+		case "expire":
+			s.mu.Lock()
+			s.expired = true
+			s.updated = time.Now().UTC()
+			s.mu.Unlock()
+		default:
+			return errors.New("unsupported session action")
+		}
+		return nil
+	}
+	return errors.New("unknown source session")
 }
 
 func uuid() string {

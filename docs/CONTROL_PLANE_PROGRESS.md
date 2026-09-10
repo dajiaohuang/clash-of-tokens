@@ -579,3 +579,11 @@ cookies, launches no browser, and does not claim authentication.
 Batch 108 surfaces the account `credential_type_override` posture as a
 redacted reviewed flag in Accounts, Health, and Provider Detail, making
 fail-open binding exceptions visible without exposing credential values.
+
+Batch 109 unifies metadata-only session inventory and expire/clear controls
+across ChatGPT Web, China Web, China Next, Zed Hosted, Amazon Q, and Augment
+adapters. Explicit
+`X-COT-Session` keys are represented by stable hashes in the control plane;
+provider conversation identifiers remain metadata and no credential is
+returned. Adapters that do not retain gateway session state continue to report
+an explicit unsupported capability.

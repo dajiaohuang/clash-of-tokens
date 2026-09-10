@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"clash-of-tokens/internal/config"
+	"clash-of-tokens/internal/session"
 )
 
 type Session struct {
@@ -122,17 +123,9 @@ func (s *sessionStore) put(v Session) error {
 	return nil
 }
 
-type SessionMetadata struct {
-	ID           string    `json:"id"`
-	Source       string    `json:"source"`
-	Conversation string    `json:"conversation"`
-	Model        string    `json:"model"`
-	Protocol     string    `json:"protocol"`
-	Created      time.Time `json:"created"`
-	Updated      time.Time `json:"updated"`
-	Expired      bool      `json:"expired"`
-	Dirty        bool      `json:"dirty"`
-}
+// SessionMetadata remains an alias for callers of the ChatGPT Web package;
+// the control plane uses the same redacted shape for every stateful adapter.
+type SessionMetadata = session.Metadata
 
 // ReadSessions reads an atomic disk snapshot without constructing a cached
 // driver that could outlive a concurrently completing runtime generation.
