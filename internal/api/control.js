@@ -295,9 +295,25 @@ function accounts(){
  ]),'No accounts. Add an account and bind a credential before enabling its sources.')];
 }
 function credentials(){
- return [pageHead('Credentials','Protected values are stored separately from configuration.',button('Add credential',()=>credentialForm(),'primary')),table(['Credential','Type','Used by','Imported from','Updated','Actions'],S.credentials.map(c=>[
+ return [pageHead('Credentials','Protected values are stored separately from configuration.',h('div',{},button('Import export',importCredentials),button('Add credential',()=>credentialForm(),'primary'))),table(['Credential','Type','Used by','Imported from','Updated','Actions'],S.credentials.map(c=>[
   c.id,badge(c.kind),[...(S.config.accounts||[]).filter(a=>a.credential_ref===c.id).map(a=>a.id),...S.config.sources.filter(s=>s.credential_ref===c.id).map(s=>s.id)].join(', ')||'Unbound',c.source,new Date(c.updated_at).toLocaleString(),[button('Replace',()=>credentialForm(c)),button('Delete',()=>deleteCredential(c),'danger')]
  ]),'No credentials. Add a key or session, then bind its reference to an account.')];
+}
+function importCredentials(){
+ const file=h('input',{type:'file',accept:'.csv,.json'});
+ dialog('Import selected export',[field('CSV or JSON file',file),h('p',{class:'muted'},'CSV columns: name (optional), url, username, password. JSON: an array with these same fields. Up to 4 MiB and 1,000 entries. Login details are stored as username/password credentials; they are not API tokens.')],[button('Preview entries',async()=>{
+  const chosen=file.files[0];if(!chosen)throw new Error('Choose an export file.');
+  if(chosen.size>4*1024*1024)throw new Error('Export exceeds 4 MiB.');
+  const format=chosen.name.toLowerCase().endsWith('.json')?'json':'csv';
+  let data=await chosen.text();
+  const rows=await api('/admin/credentials/import',{method:'POST',body:JSON.stringify({format,data})});
+  const selected=new Set();
+  dialog('Select credentials to import',[h('p',{class:'muted'},'Only checked entries will be saved. Existing credentials will not be replaced. Bind the new references from Accounts after importing.'),table(['Select','Name','Domain','Type'],rows.map(row=>[h('input',{type:'checkbox','aria-label':'Import entry '+(row.index+1),onchange:e=>{if(e.target.checked)selected.add(row.index);else selected.delete(row.index)}}),row.name,row.domain,row.kind]))],[button('Cancel',()=>{data='';$('dialog').close()}),button('Import selected',async()=>{
+   if(!selected.size)throw new Error('Select at least one entry.');
+   const saved=await api('/admin/credentials/import',{method:'POST',body:JSON.stringify({format,data,selected:[...selected],apply:true})});
+   data='';$('dialog').close();await refresh();message('Imported '+saved.length+' credentials. Bind their references from Accounts.');
+  },'primary')]);
+ },'primary')]);
 }
 function sources(){
  return [pageHead('Sources','A source binds an account to one or more model targets.',button('Add source',()=>addSource(),'primary')),table(['Source','Provider / account','Type','State','Models','Groups','Actions'],S.config.sources.map(s=>[

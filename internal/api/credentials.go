@@ -23,6 +23,36 @@ func (s *Server) credentialAdmin(w http.ResponseWriter, r *http.Request) {
 		fail(w, 503, "credential vault not configured")
 		return
 	}
+	if r.URL.Path == "/admin/credentials/import" && r.Method == "POST" {
+		var p struct {
+			Format   string `json:"format"`
+			Data     string `json:"data"`
+			Selected []int  `json:"selected"`
+			Apply    bool   `json:"apply"`
+		}
+		d := json.NewDecoder(http.MaxBytesReader(w, r.Body, 8<<20))
+		d.DisallowUnknownFields()
+		if d.Decode(&p) != nil || d.Decode(new(any)) != io.EOF {
+			fail(w, 400, "invalid import request")
+			return
+		}
+		entries, err := credentials.ParseImport(p.Format, []byte(p.Data))
+		if err != nil {
+			fail(w, 400, err.Error())
+			return
+		}
+		if !p.Apply {
+			reply(w, credentials.PreviewImport(entries))
+			return
+		}
+		items, err := s.vault.ImportSelected(entries, p.Selected)
+		if err != nil {
+			fail(w, 400, err.Error())
+			return
+		}
+		reply(w, items)
+		return
+	}
 	if r.URL.Path == "/admin/credentials" && r.Method == "GET" {
 		reply(w, s.vault.List())
 		return
