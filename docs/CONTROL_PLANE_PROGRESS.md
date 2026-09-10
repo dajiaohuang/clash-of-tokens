@@ -79,11 +79,19 @@ Acceptance scope: [complete synthesis](CONTROL_PLANE_REQUIREMENTS.md).
 CLI format references: [Codex auth fixture](https://github.com/openai/codex/blob/main/codex-rs/model-provider/src/auth.rs),
 [Gemini OAuth implementation](https://github.com/google-gemini/gemini-cli/blob/main/packages/core/src/code_assist/oauth2.ts).
 
+20. All named password managers have selected CSV login export support, plus
+    Bitwarden JSON. See [import formats and limits](CREDENTIAL_IMPORTS.md).
+21. Browser metadata discovery from standard Chrome/Edge/Brave/Chromium/
+    Vivaldi/Opera/Firefox/Arc locations where available, plus configured CDP
+    status with four workers and a ten-second deadline. Metadata discovery
+    does not inspect cookies or establish authentication. Existing browser
+    session import is still outstanding. Registry limit: 64 profiles.
+
 Discovery protocol references: [Anthropic models](https://platform.claude.com/docs/en/api/models/list),
 [Gemini models](https://ai.google.dev/api/models),
 [OpenAI models](https://platform.openai.com/docs/api-reference/models).
 
-Validation: `go test ./...` passed, 528 tests in 36 packages on Windows.
+Validation: `go test ./...` passed, 531 tests in 37 packages on Windows.
 Browser regression: credential creation/redaction, account binding, source
 creation, group membership, preview/apply, every navigation destination and
 390px viewport passed via `scripts/ui_fixture.py --test` after building
