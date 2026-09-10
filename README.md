@@ -6,7 +6,7 @@ Clash of Tokens 是原生 Go 实现的本地优先 AI 协议网关，将来源�
 
 当前版本：**0.1.0-dev，实验阶段**。原有 93 项参考来源均已注册可执行适配路径，另新增腾讯 ima、微信读书 AI 两项。已有 **2 项完成过真实上游验证**；其余主要依据源码审查和本地契约测试。注册数量不代表全部账号可用或全部 API 语义兼容。最新中国 App 候选的全量接入尚未完成，见 [候选实施状态](docs/CHINA_APP_CANDIDATES.md)。
 
-[来源状态](docs/SOURCE_STATUS.md) · [多账号并发](docs/MULTI_ACCOUNT_CONCURRENCY.md) · [性能记录](docs/PERFORMANCE.md) · [真实验证](docs/LIVE_VALIDATION.md) · [产品方案](docs/PRODUCT_SPEC.md)
+[来源状态](docs/SOURCE_STATUS.md) · [多账号并发](docs/MULTI_ACCOUNT_CONCURRENCY.md) · [控制面审计](docs/CONTROL_PLANE_AUDIT.md) · [账号发现](docs/ACCOUNT_DISCOVERY.md) · [性能记录](docs/PERFORMANCE.md) · [真实验证](docs/LIVE_VALIDATION.md) · [产品方案](docs/PRODUCT_SPEC.md)
 
 FreeCoding 的美团小团、王者灵宝和小火人已移植为项目内的 **Go 设备驱动**，包含共用 ADB/剪贴板/OCR 机制和离线验收，不依赖 FreeCoding 服务。三项尚未真机验证，默认禁用且只允许手动使用当前 App 会话。见 [设备配置](docs/providers/app-device.md) 与 [适配器工作台](docs/ADAPTER_WORKBENCH.md)。
 
@@ -18,6 +18,7 @@ FreeCoding 的美团小团、王者灵宝和小火人已移植为项目内的 **
 - **异常隔离**：429 额度域冷却、401/403 来源阻断；不静默重复发送不确定的请求。
 - **低开销转发**：连接复用、按需创建客户端、流缓冲池、JSON 定点改写和队列定向唤醒。
 - **本地界面**：管理页 `/`、对话页 `/chat`；调用密钥与管理密钥分离。
+- **控制面管理**：账号发现、受保护凭据、配置版本/回滚、模型发现、路由模拟、设备只读诊断、浏览器进程确认停止和运行时事件审计。
 
 同协议请求尽量保留原始内容。跨协议及网页适配只支持已经实现的语义，不支持的字段、工具、图片或历史明确拒绝。部分适配器缓冲完整回答后输出 SSE，并标记 buffered，不代表上游逐 token 流式。
 
@@ -143,7 +144,7 @@ go run ./cmd/cot-bench -concurrency 100 -requests 30000 -delay 1ms
 
 ## 配置与目录
 
-本机 `config.json`、`*.local.json`、`.env*`、`.clash-tokens/` 和构建产物均不提交。可公开的起点是 `config.example.json`。自动网关密钥在 Windows 使用 DPAPI，Unix 文件权限为 0600。不要分享 `keys` 输出、浏览器 profile、会话文件或 HAR。
+本机 `config.json`、`*.local.json`、`.env*`、`.clash-tokens/` 和构建产物均不提交。可公开的起点是 `config.example.json`。自动网关密钥在 Windows 使用 DPAPI；Linux/macOS 凭据库使用原生 Secret Service/Keychain，无法连接原生保护时拒绝读写。不要分享 `keys` 输出、浏览器 profile、会话文件或 HAR。
 
 ```text
 cmd/                 网关、模拟压测与浏览器诊断
@@ -160,6 +161,6 @@ docs/                来源约束、参考出处和验证记录
 
 ## English overview
 
-Clash of Tokens is a local-first Go gateway for multiple AI providers and accounts. It offers OpenAI, Anthropic and Gemini request endpoints, bounded queues, account/shared-quota concurrency limits, routing policies and a local dashboard.
+Clash of Tokens is a local-first Go gateway for multiple AI providers and accounts. It offers OpenAI, Anthropic and Gemini request endpoints, bounded queues, account/shared-quota concurrency limits, routing policies, protected credential references, configuration history and a local control dashboard.
 
-This is an experimental `0.1.0-dev` project. The original 93-source scope has registered adapter paths; Tencent ima and book-scoped WeRead AI are additional implementations. Only two providers have recorded real upstream validation; neither new adapter has account verification. The remaining Chinese app candidates are tracked with concrete blockers in the linked candidate report. Protocol capabilities vary by adapter. HTTP accounts can be configured as separate sources; a general isolated browser account pool is not implemented. See the provider documentation and performance reports for exact scope and reproducible evidence.
+This is an experimental `0.1.0-dev` project. The original 93-source scope has registered adapter paths; Tencent ima and book-scoped WeRead AI are additional implementations. Catalog implementation, account authentication, and live upstream verification are separate states; the control-plane audit records the evidence boundary and remaining provider-specific checks. Protocol capabilities vary by adapter. HTTP accounts can be configured as separate sources; browser profile launches are owned and explicitly stoppable, while provider-specific session inventories remain adapter-dependent. See the provider documentation and performance reports for exact scope and reproducible evidence.
