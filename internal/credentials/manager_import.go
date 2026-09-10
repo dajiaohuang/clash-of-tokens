@@ -70,7 +70,7 @@ func ParseExport(format string, data []byte) ([]ImportEntry, int, error) {
 				}
 			}
 		}
-	case "bitwarden-csv", "1password-csv", "keepassxc-csv":
+	case "bitwarden-csv", "1password-csv", "keepassxc-csv", "protonpass-csv", "dashlane-csv", "nordpass-csv", "apple-passwords-csv", "google-passwords-csv":
 		r := csv.NewReader(bytes.NewReader(data))
 		header, err := r.Read()
 		if err != nil {
@@ -104,13 +104,31 @@ func ParseExport(format string, data []byte) ([]ImportEntry, int, error) {
 			if err != nil || rows >= 10000 {
 				return nil, skipped, errors.New("invalid or oversized manager CSV")
 			}
-			if i, ok := cols["type"]; format == "bitwarden-csv" && ok && row[i] != "login" {
+			if i, ok := cols["type"]; (format == "bitwarden-csv" || format == "protonpass-csv" || format == "dashlane-csv") && ok && !strings.EqualFold(row[i], "login") {
 				skipped++
 				continue
 			}
 			e := ImportEntry{URL: row[cols["url"]], Username: row[cols["username"]], Password: row[cols["password"]]}
 			if i, ok := cols["name"]; ok {
 				e.Name = row[i]
+			}
+			if format == "protonpass-csv" {
+				if i, ok := cols["email"]; ok {
+					e.Email = row[i]
+					if e.Username == "" {
+						e.Username = e.Email
+					}
+				}
+				// The provider's plain url column contains only default-match
+				// URLs; do not turn Never-match entries into binding suggestions.
+				for _, candidate := range strings.Split(e.URL, ", ") {
+					item := e
+					item.URL = candidate
+					if err := add(item); err != nil {
+						return nil, skipped, err
+					}
+				}
+				continue
 			}
 			if err := add(e); err != nil {
 				return nil, skipped, err

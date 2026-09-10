@@ -14,6 +14,7 @@ import (
 )
 
 type ImportEntry struct {
+	Email    string `json:"email,omitempty"`
 	Name     string `json:"name"`
 	URL      string `json:"url"`
 	Username string `json:"username"`
@@ -79,7 +80,7 @@ func ParseImport(format string, data []byte) ([]ImportEntry, error) {
 	}
 	for _, e := range entries {
 		u, err := url.Parse(e.URL)
-		if err != nil || u.Hostname() == "" || (u.Scheme != "https" && u.Scheme != "http") || u.User != nil || len(e.URL) > 2048 || len(e.Name) > 256 || len(e.Username) > 1024 || e.Password == "" || len(e.Password) > 64<<10 {
+		if err != nil || u.Hostname() == "" || (u.Scheme != "https" && u.Scheme != "http") || u.User != nil || len(e.URL) > 2048 || len(e.Name) > 256 || len(e.Username) > 1024 || len(e.Email) > 1024 || e.Password == "" || len(e.Password) > 64<<10 {
 			return nil, errors.New("invalid import entry URL, password or field size")
 		}
 	}
@@ -126,9 +127,10 @@ func (s *Store) ImportSelected(entries []ImportEntry, selected []int) ([]Metadat
 		id := "cred://import-" + hex.EncodeToString(random[:])
 		e := entries[i]
 		value, _ := json.Marshal(struct {
+			Email    string `json:"email,omitempty"`
 			Username string `json:"username"`
 			Password string `json:"password"`
-		}{e.Username, e.Password})
+		}{e.Email, e.Username, e.Password})
 		m := Metadata{ID: id, Kind: "username_password", Source: "selected-export", CreatedAt: now, UpdatedAt: now}
 		next[id] = record{Metadata: m, Value: string(value)}
 		clear(value)

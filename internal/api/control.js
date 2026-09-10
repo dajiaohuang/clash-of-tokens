@@ -302,7 +302,7 @@ function credentials(){
 }
 function importCredentials(){
  const file=h('input',{type:'file',accept:'.csv,.json'});
- const formatChoice=select(['auto','bitwarden-json','bitwarden-csv','1password-csv','keepassxc-csv'],'auto');
+ const formatChoice=select(['auto','bitwarden-json','bitwarden-csv','1password-csv','keepassxc-csv','protonpass-csv','dashlane-csv','nordpass-csv','apple-passwords-csv','google-passwords-csv'],'auto');
  dialog('Import selected export',[field('Export format',formatChoice),field('CSV or JSON file',file),h('p',{class:'muted'},'Auto accepts CSV columns name (optional), url, username, password, or a JSON array with those fields. Choose the matching manager format for its native export. Up to 4 MiB and 1,000 login candidates. Notes, TOTP, cards and password history are not imported.')],[button('Preview entries',async()=>{
   const chosen=file.files[0];if(!chosen)throw new Error('Choose an export file.');
   if(chosen.size>4*1024*1024)throw new Error('Export exceeds 4 MiB.');
