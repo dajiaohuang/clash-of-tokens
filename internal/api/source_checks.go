@@ -17,6 +17,7 @@ import (
 
 type ValidationEvidence struct {
 	Binding         string                   `json:"binding"`
+	Account         string                   `json:"account,omitempty"`
 	HistoryRecorded bool                     `json:"history_recorded"`
 	Source          string                   `json:"source"`
 	Model           string                   `json:"model"`
@@ -122,7 +123,7 @@ func (p *ControlPlane) sourceCheckAdmin(w http.ResponseWriter, r *http.Request, 
 	}
 	status := 502
 	defer func() { lease.Release(status, 0) }()
-	evidence := ValidationEvidence{Binding: p.sourceBinding(s.cfg, source), Source: source.ID, Model: model.ID, Protocol: input.Protocol, CheckedAt: time.Now().UTC(), Method: "explicit_stream_generation"}
+	evidence := ValidationEvidence{Binding: p.sourceBinding(s.cfg, source), Account: source.AccountID, Source: source.ID, Model: model.ID, Protocol: input.Protocol, CheckedAt: time.Now().UTC(), Method: "explicit_stream_generation"}
 	resp, err := s.client(index).Do(ctx, input.Protocol, model.Upstream, true, body, nil)
 	if err != nil {
 		evidence.Result.UpstreamError = "transport_or_adapter_error"

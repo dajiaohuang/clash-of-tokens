@@ -11,7 +11,7 @@ must be checked again before final acceptance.
 | --- | --- | --- |
 | 1. Runtime correctness | `config/metadata.go`, router metadata/attempt/stream tests | End-to-end cross-adapter replay/completion audit; metadata preset accuracy |
 | 2. Account/credential separation | `config/accounts.go`, `credential.go`, injected adapter resolution | Finish provider-specific credential setup and migration UX |
-| 3. Account model | Account configuration plus `/admin/status` account health aggregation: health/auth state, capacity, sources, counters, last success/failure and last validation | Account validate action and provider-specific health evidence |
+| 3. Account model | Account configuration plus `/admin/status` account health aggregation: health/auth state, capacity, sources, counters, last success/failure and last validation; explicit account validation entry point | Provider-specific health evidence and broader account lifecycle |
 | 4. Protected store | DPAPI; Linux native Secret Service integration tests; AES-GCM envelope tests | Native macOS cgo build/runtime verification |
 | 5. Add any account | Batch 27 account wizard combines credential/import selection and profile login | Complete provider-specific forms, organization/project setup and broader login checks |
 | 6. Browser import | Standard profile metadata and selected CDP Cookie import | Selected existing-profile account candidates and all named browser import paths |
@@ -49,7 +49,7 @@ must be checked again before final acceptance.
 | 38. Devices | `POST /admin/device/check` read-only doctor reports ADB/OCR paths, connection, resolution, foreground package, app installation, and evidence-backed login/last-test rows; Devices page and synthetic API/UI tests | Physical-device login and live test evidence still require explicit operator action; no emulator operations |
 | 39. Implementation status | Catalog implementation field | Reference/factory/runtime/verified/broken/research view |
 | 40. Descriptor registry | Shared validation/factory/schema contract | More provider-specific credential/discovery/auth capabilities; eliminate residual setup switches |
-| 41. Administration API | Persistent CRUD, config, simulator, source checks, browser process controls and device doctor | Account validate and broader browser/device lifecycle operations |
+| 41. Administration API | Persistent CRUD, config, simulator, source checks, account validation, browser process controls and device doctor | Broader browser/device lifecycle operations |
 | 42. Embedded frontend | Go-embedded static HTML/CSS/JS, no Node runtime | Packaging/build verification |
 | 43. Navigation | All named destinations; batch 32 adds bounded runtime execution events and source/outcome filters in Activity | Complete content on every destination and broader event coverage |
 | 44. Search | Batch 36 adds explicit model/browser/device matches and tests all eight entity navigation paths | Broader naming/localization and large-catalog usability acceptance |

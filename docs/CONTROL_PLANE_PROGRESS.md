@@ -185,12 +185,18 @@ CLI format references: [Codex auth fixture](https://github.com/openai/codex/blob
     `auth_required`, `exhausted`, `blocked`, `cooldown`, `healthy`,
     `degraded` or `untested`). Accounts displays these fields without exposing
     credential values, and a status test covers evidence and capacity joins.
+40. Accounts now expose `POST /admin/accounts/{id}/validate`. Source-backed
+    accounts use the existing explicit stream validation for their first
+    configured source/model/protocol; browser-only accounts use the existing
+    non-generating authentication check. The action is redacted, evidence
+    preserving, does not enable or Auto-approve a source, and is covered by a
+    synthetic disabled-source API test. See [account validation](ACCOUNT_VALIDATION.md).
 
 Discovery protocol references: [Anthropic models](https://platform.claude.com/docs/en/api/models/list),
 [Gemini models](https://ai.google.dev/api/models),
 [OpenAI models](https://platform.openai.com/docs/api-reference/models).
 
-Validation: `go test ./...` passed, 567 tests in 38 packages on Windows.
+Validation: `go test ./...` passed, 568 tests in 38 packages on Windows.
 Windows and Linux-target `govulncheck` reported no vulnerabilities.
 Browser regression: credential creation/redaction, account binding, source
 creation, group membership, preview/apply, every navigation destination and

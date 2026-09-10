@@ -66,3 +66,36 @@ func TestExplicitValidationOfDisabledSource(t *testing.T) {
 		})
 	}
 }
+
+func TestAccountValidateUsesConfiguredSourceAndRecordsAccount(t *testing.T) {
+	calls := 0
+	up := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		w.Header().Set("Content-Type", "text/event-stream")
+		fmt.Fprint(w, "data: {\"choices\":[{\"delta\":{\"content\":\"OK\"}}]}\n\n")
+		fmt.Fprint(w, "data: [DONE]\n\n")
+	}))
+	defer up.Close()
+	c := config.Default()
+	c.Providers = []config.Provider{{ID: "provider"}}
+	c.Accounts = []config.Account{{ID: "account", ProviderID: "provider", Enabled: true, MaxInflight: 1, Weight: 1, QuotaDomain: "account-quota"}}
+	c.Sources = []config.Source{{ID: "source", Provider: "provider", Adapter: "openai", BaseURL: up.URL, Local: true, Enabled: false, MaxInflight: 1, AccountID: "account", QuotaDomain: "account-quota", QuotaMaxInflight: 1, Models: []config.Model{{ID: "model", Upstream: "upstream-model", Protocols: []string{"chat"}, Tier: "unrated", Tools: "none", MaxInputBytes: 1024}}}}
+	dir := t.TempDir()
+	vault, _ := credentials.Open(filepath.Join(dir, "vault"))
+	p, err := NewControlPlane(filepath.Join(dir, "config.json"), c, testKey, adminKey, vault)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer p.Close()
+	r := httptest.NewRequest("POST", "/admin/accounts/account/validate", strings.NewReader("{}"))
+	r.Header.Set("Authorization", "Bearer "+adminKey)
+	w := httptest.NewRecorder()
+	p.ServeHTTP(w, r)
+	var result ValidationEvidence
+	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &result) != nil || !result.Verified || result.Account != "account" || result.Source != "source" || result.Model != "model" || result.Protocol != "chat" || !result.HistoryRecorded || calls != 1 {
+		t.Fatalf("status=%d calls=%d body=%s result=%+v", w.Code, calls, w.Body.String(), result)
+	}
+	if p.current.server.Router.Status()[0].Enabled {
+		t.Fatal("account validation enabled the disabled source")
+	}
+}
