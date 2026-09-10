@@ -121,6 +121,8 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 		} `json:"provider_health"`
 		Accounts []struct {
 			ID                  string     `json:"id"`
+			CredentialState     string     `json:"credential_state"`
+			CredentialVersion   uint64     `json:"credential_version"`
 			Enabled             bool       `json:"enabled"`
 			AutoApproved        bool       `json:"auto_approved"`
 			PoolStrategy        string     `json:"pool_strategy"`
@@ -180,7 +182,7 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 		t.Fatalf("disabled provider was not classified: %+v", out.Providers[1])
 	}
 	a := out.Accounts[0]
-	if a.ID != "a" || a.Health != "untested" || a.AuthStatus != "authenticated" || a.Active != 0 || a.Limit != 1 || len(a.Sources) != 1 || a.Sources[0] != "s" || a.LastValidated == nil {
+	if a.ID != "a" || a.CredentialState != "protected_reference" || a.CredentialVersion != 1 || a.Health != "untested" || a.AuthStatus != "authenticated" || a.Active != 0 || a.Limit != 1 || len(a.Sources) != 1 || a.Sources[0] != "s" || a.LastValidated == nil {
 		t.Fatalf("unexpected account health: %+v", a)
 	}
 	if !a.Enabled || a.AutoApproved {
@@ -196,7 +198,7 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 		t.Fatalf("account pool metadata missing: %+v", a)
 	}
 	b := out.Accounts[1]
-	if b.ID != "b" || b.Health != "auth_required" || b.AuthStatus != "login_required" || b.Limit != 1 || len(b.Sources) != 0 {
+	if b.ID != "b" || b.CredentialState != "not_configured" || b.CredentialVersion != 0 || b.Health != "auth_required" || b.AuthStatus != "login_required" || b.Limit != 1 || len(b.Sources) != 0 {
 		t.Fatalf("login-required account was not classified: %+v", b)
 	}
 	cHealth := out.Accounts[2]

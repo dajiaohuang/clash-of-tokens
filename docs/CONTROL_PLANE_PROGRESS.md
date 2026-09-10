@@ -523,3 +523,9 @@ entry now controls the exposed timestamp and state deterministically.
 Batch 96 keeps credential `last_used_at` on the protected record whenever a
 credential is resolved. A later encrypted vault write now preserves that
 metadata across reopen, covered by the credential store regression.
+
+Batch 97 carries redacted credential state and vault version onto account
+health rows. Accounts and Health can now distinguish an unconfigured account,
+a missing protected reference, a protected reference with its current version,
+and a browser-profile account without exposing secret values. Provider Detail
+shows the same account-level state beside its credential binding.

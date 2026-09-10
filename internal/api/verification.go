@@ -37,6 +37,8 @@ type sourceVerification struct {
 type accountHealth struct {
 	ID                  string     `json:"id"`
 	Provider            string     `json:"provider"`
+	CredentialState     string     `json:"credential_state"`
+	CredentialVersion   uint64     `json:"credential_version,omitempty"`
 	Enabled             bool       `json:"enabled"`
 	AutoApproved        bool       `json:"auto_approved"`
 	PoolStrategy        string     `json:"pool_strategy"`
@@ -466,7 +468,18 @@ func (p *ControlPlane) accountHealth(s *Server, entries []audit.Entry) []account
 	}
 	out := make([]accountHealth, 0, len(s.cfg.Accounts))
 	for _, account := range s.cfg.Accounts {
-		health := accountHealth{ID: account.ID, Provider: account.ProviderID, Enabled: account.Enabled, AutoApproved: account.AutoApproved, Health: "untested", AuthStatus: "not_checked", Limit: account.MaxInflight, Weight: account.Weight, LastValidationState: "not_checked", Sources: []string{}}
+		credentialState := "not_configured"
+		credentialVersion := uint64(0)
+		if account.CredentialRef != "" {
+			credentialState = "missing_reference"
+			if meta := p.credentialMetadata(account.CredentialRef); meta.ID != "" {
+				credentialState = "protected_reference"
+				credentialVersion = meta.Version
+			}
+		} else if account.BrowserProfileID != "" {
+			credentialState = "browser_configured"
+		}
+		health := accountHealth{ID: account.ID, Provider: account.ProviderID, CredentialState: credentialState, CredentialVersion: credentialVersion, Enabled: account.Enabled, AutoApproved: account.AutoApproved, Health: "untested", AuthStatus: "not_checked", Limit: account.MaxInflight, Weight: account.Weight, LastValidationState: "not_checked", Sources: []string{}}
 		var lastValidation audit.Entry
 		hasValidation := false
 		for _, provider := range s.cfg.Providers {
