@@ -78,6 +78,13 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 		t.Fatal(w.Code, w.Body.String())
 	}
 	var out struct {
+		Providers []struct {
+			ID         string   `json:"id"`
+			Health     string   `json:"health"`
+			AuthStatus string   `json:"auth_status"`
+			Accounts   []string `json:"accounts"`
+			Sources    []string `json:"sources"`
+		} `json:"provider_health"`
 		Accounts []struct {
 			ID            string     `json:"id"`
 			Health        string     `json:"health"`
@@ -93,6 +100,15 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 	}
 	if len(out.Accounts) != 3 {
 		t.Fatalf("account health rows = %+v", out.Accounts)
+	}
+	if len(out.Providers) != 2 {
+		t.Fatalf("provider health rows = %+v", out.Providers)
+	}
+	if out.Providers[0].ID != "p" || out.Providers[0].Health != "auth_required" || out.Providers[0].AuthStatus != "auth_required" || len(out.Providers[0].Accounts) != 2 || len(out.Providers[0].Sources) != 1 {
+		t.Fatalf("unexpected provider health: %+v", out.Providers[0])
+	}
+	if out.Providers[1].ID != "disabled-provider" || out.Providers[1].Health != "disabled" {
+		t.Fatalf("disabled provider was not classified: %+v", out.Providers[1])
 	}
 	a := out.Accounts[0]
 	if a.ID != "a" || a.Health != "untested" || a.AuthStatus != "authenticated" || a.Active != 0 || a.Limit != 1 || len(a.Sources) != 1 || a.Sources[0] != "s" || a.LastValidated == nil {

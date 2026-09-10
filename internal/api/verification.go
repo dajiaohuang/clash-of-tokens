@@ -48,6 +48,21 @@ type accountHealth struct {
 	LastValidatedAt *time.Time `json:"last_validated_at,omitempty"`
 }
 
+type providerHealth struct {
+	ID          string     `json:"id"`
+	Enabled     bool       `json:"enabled"`
+	Health      string     `json:"health"`
+	AuthStatus  string     `json:"auth_status"`
+	Active      int        `json:"active"`
+	Limit       int        `json:"limit"`
+	Accounts    []string   `json:"accounts"`
+	Sources     []string   `json:"sources"`
+	Completed   uint64     `json:"completed"`
+	Failures    uint64     `json:"failures"`
+	LastSuccess *time.Time `json:"last_success,omitempty"`
+	LastFailure *time.Time `json:"last_failure,omitempty"`
+}
+
 func (p *ControlPlane) credentialMetadata(ref string) credentials.Metadata {
 	for _, m := range p.vault.List() {
 		if m.ID == ref {
@@ -164,8 +179,149 @@ func (p *ControlPlane) controlStatus(s *Server) map[string]any {
 	}
 	out["verification"] = verification
 	out["live_verified_sources"] = verifiedSources
-	out["account_health"] = p.accountHealth(s, entries)
+	accounts := p.accountHealth(s, entries)
+	out["account_health"] = accounts
+	out["provider_health"] = p.providerHealth(s, accounts)
 	out["revision"] = p.service.Current().Revision
+	return out
+}
+
+func (p *ControlPlane) providerHealth(s *Server, accounts []accountHealth) []providerHealth {
+	type aggregate struct {
+		providerHealth
+		hasHealthy, hasDegraded, hasBlocked, hasCooldown, hasExhausted, hasBroken, hasDisabled bool
+		authenticated, authRequired, authChecked                                               bool
+	}
+	type runtimeAggregate struct {
+		health                   string
+		active                   int
+		completed, failures      uint64
+		lastSuccess, lastFailure time.Time
+	}
+	byID := map[string]*aggregate{}
+	ordered := []string{}
+	ensure := func(id string) *aggregate {
+		if current := byID[id]; current != nil {
+			return current
+		}
+		current := &aggregate{providerHealth: providerHealth{ID: id, Enabled: true, Health: "untested", AuthStatus: "not_checked", Accounts: []string{}, Sources: []string{}}}
+		byID[id] = current
+		ordered = append(ordered, id)
+		return current
+	}
+	for _, provider := range s.cfg.Providers {
+		row := ensure(provider.ID)
+		row.Enabled = provider.Enabled
+	}
+	for _, account := range accounts {
+		row := ensure(account.Provider)
+		row.Accounts = append(row.Accounts, account.ID)
+		row.Active += account.Active
+		row.Limit += account.Limit
+		row.Completed += account.Completed
+		row.Failures += account.Failures
+		if account.LastSuccess != nil && account.LastSuccess.After(valueTime(row.LastSuccess)) {
+			value := *account.LastSuccess
+			row.LastSuccess = &value
+		}
+		if account.LastFailure != nil && account.LastFailure.After(valueTime(row.LastFailure)) {
+			value := *account.LastFailure
+			row.LastFailure = &value
+		}
+		switch account.AuthStatus {
+		case "authenticated":
+			row.authenticated, row.authChecked = true, true
+		case "not_checked", "":
+		default:
+			row.authChecked = true
+			if authRequiresLogin(account.AuthStatus) {
+				row.authRequired = true
+			}
+		}
+	}
+	runtimeByID := map[string]runtimeAggregate{}
+	for _, status := range s.Router.Status() {
+		runtimeByID[status.ID] = runtimeAggregate{health: status.Health, active: status.Active, completed: status.Completed, failures: status.Failures, lastSuccess: status.LastSuccess, lastFailure: status.LastFailure}
+	}
+	for _, source := range s.cfg.Sources {
+		row := ensure(source.Provider)
+		row.Sources = append(row.Sources, source.ID)
+		status, ok := runtimeByID[source.ID]
+		if !ok {
+			continue
+		}
+		// Account-bound source capacity and counters are already represented by
+		// the account row; unbound sources contribute their own boundaries here.
+		if source.AccountID == "" {
+			row.Active += status.active
+			row.Limit += source.MaxInflight
+			row.Completed += status.completed
+			row.Failures += status.failures
+			if status.lastSuccess.After(valueTime(row.LastSuccess)) {
+				value := status.lastSuccess
+				row.LastSuccess = &value
+			}
+			if status.lastFailure.After(valueTime(row.LastFailure)) {
+				value := status.lastFailure
+				row.LastFailure = &value
+			}
+		}
+		switch status.health {
+		case "healthy":
+			row.hasHealthy = true
+		case "degraded":
+			row.hasDegraded = true
+		case "blocked":
+			row.hasBlocked = true
+		case "cooldown":
+			row.hasCooldown = true
+		case "exhausted":
+			row.hasExhausted = true
+		case "broken":
+			row.hasBroken = true
+		case "disabled":
+			row.hasDisabled = true
+		}
+	}
+	out := make([]providerHealth, 0, len(ordered))
+	for _, id := range ordered {
+		row := byID[id]
+		switch {
+		case !row.Enabled:
+			row.Health = "disabled"
+		case row.authRequired && row.Completed == 0 && row.Failures == 0 && !row.hasHealthy:
+			row.Health = "auth_required"
+		case row.hasHealthy && (row.hasDegraded || row.hasBlocked || row.hasCooldown || row.hasExhausted || row.hasBroken):
+			row.Health = "degraded"
+		case row.hasHealthy:
+			row.Health = "healthy"
+		case row.hasBlocked:
+			row.Health = "blocked"
+		case row.hasCooldown:
+			row.Health = "cooldown"
+		case row.hasExhausted:
+			row.Health = "exhausted"
+		case row.hasBroken:
+			row.Health = "broken"
+		case row.hasDisabled && len(row.Sources) > 0:
+			row.Health = "disabled"
+		case row.Completed > 0 && row.Failures > 0:
+			row.Health = "degraded"
+		case row.Completed > 0:
+			row.Health = "healthy"
+		case row.Failures > 0:
+			row.Health = "broken"
+		}
+		switch {
+		case row.authRequired:
+			row.AuthStatus = "auth_required"
+		case row.authenticated:
+			row.AuthStatus = "authenticated"
+		case row.authChecked:
+			row.AuthStatus = "checked"
+		}
+		out = append(out, row.providerHealth)
+	}
 	return out
 }
 

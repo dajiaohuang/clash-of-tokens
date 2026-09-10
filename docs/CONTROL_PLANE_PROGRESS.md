@@ -416,3 +416,8 @@ Batch 74 makes the routing simulator show the router's ordered candidates and
 selected target without acquiring a lease or contacting an upstream. The
 existing reason-map response remains available to older callers; detailed
 simulation is opt in and covered by fallback-order, API and browser tests.
+
+Batch 75 adds provider-level health aggregation to the control-plane status and
+Health page. Provider rows now expose enabled state, bounded health and auth
+status, account/source membership, capacity and runtime counters without
+duplicating account-bound capacity.
