@@ -1,6 +1,7 @@
 package api
 
 import (
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"io"
@@ -22,6 +23,7 @@ type generation struct {
 
 // ControlPlane owns durable configuration and request-pinned runtime snapshots.
 type ControlPlane struct {
+	runtimeID  string
 	evidence   *evidence.Store
 	mu         sync.Mutex
 	changes    sync.Mutex
@@ -34,7 +36,7 @@ type ControlPlane struct {
 }
 
 func NewControlPlane(path string, c config.Config, key, admin string, vault *credentials.Store) (*ControlPlane, error) {
-	p := &ControlPlane{startup: c, key: key, admin: admin, vault: vault}
+	p := &ControlPlane{runtimeID: rand.Text(), startup: c, key: key, admin: admin, vault: vault}
 	history, historyErr := evidence.Open(path + ".evidence")
 	if historyErr != nil {
 		return nil, historyErr
@@ -124,7 +126,7 @@ func (p *ControlPlane) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Serialize administrative mutations with snapshot publication, including
 	// credential deletion, so reference checks cannot race new bindings.
 	mutation := strings.HasPrefix(r.URL.Path, "/admin/") && r.Method != "GET" && r.Method != "HEAD"
-	if mutation {
+	if mutation || r.URL.Path == "/admin/status" {
 		p.changes.Lock()
 		defer p.changes.Unlock()
 	}
@@ -134,7 +136,7 @@ func (p *ControlPlane) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer p.release(g)
-	if strings.HasPrefix(r.URL.Path, "/admin/config") || managedResource(r.URL.Path) {
+	if strings.HasPrefix(r.URL.Path, "/admin/config") || managedResource(r.URL.Path) || r.URL.Path == "/admin/status" {
 		w.Header().Set("Cache-Control", "no-store")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		if !authorized(r, g.server.adminKey) {
@@ -143,6 +145,14 @@ func (p *ControlPlane) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		if mutation && !sameOrigin(r) {
 			fail(w, 403, "cross-origin mutation rejected")
+			return
+		}
+		if r.URL.Path == "/admin/status" {
+			if r.Method != "GET" {
+				fail(w, 405, "method not allowed")
+			} else {
+				reply(w, p.controlStatus(g.server))
+			}
 			return
 		}
 		if managedResource(r.URL.Path) {

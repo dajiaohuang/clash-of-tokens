@@ -12,6 +12,7 @@ import (
 )
 
 type Entry struct {
+	Binding          string    `json:"binding,omitempty"`
 	Sequence         uint64    `json:"sequence"`
 	Revision         uint64    `json:"revision"`
 	Kind             string    `json:"kind"`
@@ -61,7 +62,7 @@ func (s *Store) List() []Entry {
 func (s *Store) Append(entry Entry) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if len(entry.Resource) > 512 || len(entry.Model) > 512 || len(entry.Method) > 128 || len(entry.Status) > 128 || len(entry.Kind) > 64 {
+	if len(entry.Binding) > 64 || len(entry.Resource) > 512 || len(entry.Model) > 512 || len(entry.Method) > 128 || len(entry.Status) > 128 || len(entry.Kind) > 64 {
 		return errors.New("invalid evidence field size")
 	}
 	entry.Sequence = 1

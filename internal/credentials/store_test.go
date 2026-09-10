@@ -48,6 +48,16 @@ func TestEncryptedPersistenceRedactionAndFailedTransaction(t *testing.T) {
 	if s.Resolve("cred://one") != "private-test-secret" {
 		t.Fatal("failed transaction changed state")
 	}
+	if s.List()[0].Version != 1 {
+		t.Fatal("failed transaction changed credential version")
+	}
+	if err = loaded.Put("cred://one", "api_key", "manual", "rotated-secret"); err != nil || loaded.List()[0].Version != 2 {
+		t.Fatal("successful replacement did not increment version", err)
+	}
+	rotated, err := open(path, seal, unseal)
+	if err != nil || rotated.List()[0].Version != 2 {
+		t.Fatal("credential version did not survive reopen", err)
+	}
 	if loaded.Delete("cred://one") != nil || loaded.Resolve("cred://one") != "" {
 		t.Fatal("delete failed")
 	}

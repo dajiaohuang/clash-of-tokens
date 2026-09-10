@@ -16,6 +16,7 @@ import (
 )
 
 type ValidationEvidence struct {
+	Binding         string                   `json:"binding"`
 	HistoryRecorded bool                     `json:"history_recorded"`
 	Source          string                   `json:"source"`
 	Model           string                   `json:"model"`
@@ -121,7 +122,7 @@ func (p *ControlPlane) sourceCheckAdmin(w http.ResponseWriter, r *http.Request, 
 	}
 	status := 502
 	defer func() { lease.Release(status, 0) }()
-	evidence := ValidationEvidence{Source: source.ID, Model: model.ID, Protocol: input.Protocol, CheckedAt: time.Now().UTC(), Method: "explicit_stream_generation"}
+	evidence := ValidationEvidence{Binding: p.sourceBinding(s.cfg, source), Source: source.ID, Model: model.ID, Protocol: input.Protocol, CheckedAt: time.Now().UTC(), Method: "explicit_stream_generation"}
 	resp, err := s.client(index).Do(ctx, input.Protocol, model.Upstream, true, body, nil)
 	if err != nil {
 		evidence.Result.UpstreamError = "transport_or_adapter_error"
@@ -148,7 +149,7 @@ func (p *ControlPlane) sourceCheckAdmin(w http.ResponseWriter, r *http.Request, 
 	if evidence.Verified {
 		checkStatus = "verified"
 	}
-	evidence.HistoryRecorded = p.evidence.Append(audit.Entry{Revision: p.service.Current().Revision, Kind: "validation", Resource: source.ID, Model: model.ID, Protocol: input.Protocol, CheckedAt: evidence.CheckedAt, Method: evidence.Method, Status: checkStatus, UpstreamStatus: evidence.Result.UpstreamStatus, ProtocolComplete: evidence.Result.ProtocolComplete, OutputObserved: evidence.OutputObserved}) == nil
+	evidence.HistoryRecorded = p.evidence.Append(audit.Entry{Binding: evidence.Binding, Revision: p.service.Current().Revision, Kind: "validation", Resource: source.ID, Model: model.ID, Protocol: input.Protocol, CheckedAt: evidence.CheckedAt, Method: evidence.Method, Status: checkStatus, UpstreamStatus: evidence.Result.UpstreamStatus, ProtocolComplete: evidence.Result.ProtocolComplete, OutputObserved: evidence.OutputObserved}) == nil
 	reply(w, evidence)
 	return true
 }

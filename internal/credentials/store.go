@@ -14,6 +14,7 @@ import (
 )
 
 type Metadata struct {
+	Version   uint64    `json:"version"`
 	ID        string    `json:"id"`
 	Kind      string    `json:"kind"`
 	Source    string    `json:"source"`
@@ -89,10 +90,15 @@ func (s *Store) Put(id, kind, source, value string) error {
 	next := s.copy()
 	now := time.Now().UTC()
 	created := now
+	version := uint64(1)
 	if old, ok := next[id]; ok {
 		created = old.CreatedAt
+		version = old.Version + 1
+		if version == 0 {
+			return errors.New("credential version exhausted")
+		}
 	}
-	next[id] = record{Metadata: Metadata{ID: id, Kind: kind, Source: source, CreatedAt: created, UpdatedAt: now}, Value: value}
+	next[id] = record{Metadata: Metadata{Version: version, ID: id, Kind: kind, Source: source, CreatedAt: created, UpdatedAt: now}, Value: value}
 	return s.save(next)
 }
 func (s *Store) Delete(id string) error {

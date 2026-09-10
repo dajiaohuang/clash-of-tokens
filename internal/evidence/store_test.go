@@ -12,11 +12,11 @@ func TestEvidenceRestartAndFailedCommit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err = s.Append(Entry{Revision: 7, Kind: "validation", Resource: "source", Status: "verified"}); err != nil {
+	if err = s.Append(Entry{Binding: "test-binding", Revision: 7, Kind: "validation", Resource: "source", Status: "verified"}); err != nil {
 		t.Fatal(err)
 	}
 	reloaded, err := Open(path)
-	if err != nil || len(reloaded.List()) != 1 || reloaded.List()[0].Revision != 7 {
+	if err != nil || len(reloaded.List()) != 1 || reloaded.List()[0].Revision != 7 || reloaded.List()[0].Binding != "test-binding" {
 		t.Fatal("history not preserved", err)
 	}
 	copy := s.List()

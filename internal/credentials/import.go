@@ -131,7 +131,7 @@ func (s *Store) ImportSelected(entries []ImportEntry, selected []int) ([]Metadat
 			Username string `json:"username"`
 			Password string `json:"password"`
 		}{e.Email, e.Username, e.Password})
-		m := Metadata{ID: id, Kind: "username_password", Source: "selected-export", CreatedAt: now, UpdatedAt: now}
+		m := Metadata{Version: 1, ID: id, Kind: "username_password", Source: "selected-export", CreatedAt: now, UpdatedAt: now}
 		next[id] = record{Metadata: m, Value: string(value)}
 		clear(value)
 		out = append(out, m)

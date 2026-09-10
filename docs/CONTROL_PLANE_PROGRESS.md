@@ -1,6 +1,8 @@
 # Control plane implementation progress
 
 Acceptance scope: [complete synthesis](CONTROL_PLANE_REQUIREMENTS.md).
+Current gaps: [all 51 sections](CONTROL_PLANE_AUDIT.md). This working ledger is
+not a completed acceptance audit.
 
 ## Completed batches
 
@@ -103,12 +105,19 @@ CLI format references: [Codex auth fixture](https://github.com/openai/codex/blob
     Synthetic UI verification covers auth/rejection/error states and closing
     the watcher; it does not establish live provider compatibility.
     See [browser login behavior](BROWSER_LOGIN.md).
+25. Verification status/counts now derive from retained model/protocol results,
+    source settings and versioned credential bindings. Credential replacement
+    makes old evidence historical without deleting it; environment evidence is
+    scoped to one server run. Overview and Source verification display separate
+    catalog/configuration/generation layers. Synthetic UI regression confirms
+    count 1 after validation and 0 after credential replacement.
+    See [verification semantics](VERIFICATION.md).
 
 Discovery protocol references: [Anthropic models](https://platform.claude.com/docs/en/api/models/list),
 [Gemini models](https://ai.google.dev/api/models),
 [OpenAI models](https://platform.openai.com/docs/api-reference/models).
 
-Validation: `go test ./...` passed, 537 tests in 38 packages on Windows.
+Validation: `go test ./...` passed, 538 tests in 38 packages on Windows.
 Windows and Linux-target `govulncheck` reported no vulnerabilities.
 Browser regression: credential creation/redaction, account binding, source
 creation, group membership, preview/apply, every navigation destination and
@@ -118,21 +127,13 @@ Race detection is outstanding: the current Go environment has cgo disabled.
 
 ## Remaining implementation
 
-- A: Descriptor registry, accounts and credential references, group metadata
-  validation, transactional configuration history, persistence and runtime swaps.
-- B: Protected credential store, selected export importers, matching,
-  environment/CLI imports, browser profile registry and interactive login.
-- C: Complete authenticated administration APIs, model discovery, validation,
-  health, quota pools, session controls and live evidence.
-- D: Complete embedded frontend with forms, previews, navigation, search,
-  routing simulator, fallback ordering and configuration history.
-- E: Request-level safe fallback, protocol completion tracking, verification
-  provenance, documentation and end-to-end regression validation.
-
-Browser profiles and login launching now have management controls. Device and
-Session destinations still primarily expose settings. Login detection, session
-operations, specialized imports, discovery and live validation remain required. Account pool strategies now execute in the router. Activity
-currently covers configuration history, not a complete runtime event log.
+The [51-section ledger](CONTROL_PLANE_AUDIT.md) now replaces the previous generic
+A–E checklist. The main gaps include unified account discovery/onboarding,
+complete provider-specific setup and checks, quota/account pool views, richer
+model management, owned browser/device controls, broader session management,
+runtime log redaction, remaining routing policies and native macOS verification.
+All explicit subrequirements and the end-to-end install-to-routing workflow must
+be verified before completion.
 
 The current application is not yet the completed control plane. Credentials
 and upstream availability must never be inferred from catalog implementation.

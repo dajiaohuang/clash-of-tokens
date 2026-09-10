@@ -500,7 +500,7 @@ func (s *Server) admin(w http.ResponseWriter, r *http.Request) {
 	case r.Method == "GET" && r.URL.Path == "/admin/catalog":
 		reply(w, catalog.All())
 	case r.Method == "GET" && r.URL.Path == "/admin/status":
-		reply(w, map[string]any{"sources": s.Router.Status(), "requests": s.requests.Load(), "rejected": s.rejected.Load(), "buffered_bytes": s.buffered.Load(), "output_bytes": s.outputBytes.Load(), "stream_errors": s.streamErrors.Load(), "live_verified_sources": 0})
+		reply(w, s.runtimeStatus())
 	case r.Method == "GET" && r.URL.Path == "/admin/explain":
 		reply(w, s.Router.Explain(routing.Query{Model: r.URL.Query().Get("model"), Protocol: r.URL.Query().Get("protocol")}))
 	case r.Method == "POST" && strings.HasPrefix(r.URL.Path, "/admin/sources/"):

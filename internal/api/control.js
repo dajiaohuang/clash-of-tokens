@@ -276,7 +276,7 @@ function overview(){
  return [pageHead('Overview','A direct view of your provider pool.',button('Add account',()=>addAccount()),button('Add source',()=>addSource(),'primary')),flow,h('div',{class:'split'},
   h('section',{class:'panel'},h('h2',{},'Needs attention'),attention.length?attention.map(s=>h('div',{class:'stat-line'},s.id,s.blocked?badge('Authentication / policy','bad'):badge(s.failures+' failures','warn'))):h('p',{class:'muted'},'No recorded failures. Untested sources still need verification.')),
   h('section',{class:'panel'},h('h2',{},'Routing groups'),c.groups.map(g=>h('div',{class:'stat-line'},h('a',{href:'#groups'},g.id),g.sources.length+' sources',badge(g.type))))
- ),h('section',{class:'panel'},h('h2',{},'Current gateway'),h('dl',{class:'key-value'},h('dt',{},'Listen'),h('dd',{},c.listen),h('dt',{},'Configuration'),h('dd',{},'Revision '+S.revision),h('dt',{},'Requests / rejected'),h('dd',{},status.requests+' / '+status.rejected),h('dt',{},'Restart pending'),h('dd',{},S.restart.join(', ')||'No')))];
+ ),h('section',{class:'panel'},h('h2',{},'Current gateway'),h('dl',{class:'key-value'},h('dt',{},'Listen'),h('dd',{},c.listen),h('dt',{},'Configuration'),h('dd',{},'Revision '+S.revision),h('dt',{},'Sources with matching validation'),h('dd',{},status.live_verified_sources||0),h('dt',{},'Requests / rejected'),h('dd',{},status.requests+' / '+status.rejected),h('dt',{},'Restart pending'),h('dd',{},S.restart.join(', ')||'No')))];
 }
 function providers(){
  const query=h('input',{type:'search',placeholder:'Filter providers','aria-label':'Filter providers'});
@@ -361,8 +361,14 @@ function importCredentials(){
 }
 function sources(){
  return [pageHead('Sources','A source binds an account to one or more model targets.',button('Add source',()=>addSource(),'primary')),table(['Source','Provider / account','Type','State','Models','Groups','Actions'],S.config.sources.map(s=>[
-  s.id,s.provider+(s.account_id?' / '+s.account_id:''),badge(s.source_kind||'Unspecified'),state(s),s.models.length,S.config.groups.filter(g=>g.sources.includes(s.id)).map(g=>g.id).join(', '),[button(s.enabled?'Disable':'Enable',()=>toggle('sources',s)),button('Edit',()=>edit('sources',s)),button('Discover models',()=>discoverModels(s)),button('Validate',()=>validateSource(s)),button('Delete',()=>remove('sources',s),'danger')]
+  s.id,s.provider+(s.account_id?' / '+s.account_id:''),badge(s.source_kind||'Unspecified'),state(s),s.models.length,S.config.groups.filter(g=>g.sources.includes(s.id)).map(g=>g.id).join(', '),[button(s.enabled?'Disable':'Enable',()=>toggle('sources',s)),button('Edit',()=>edit('sources',s)),button('Discover models',()=>discoverModels(s)),button('Validate',()=>validateSource(s)),button('Verification',()=>sourceVerification(s)),button('Delete',()=>remove('sources',s),'danger')]
  ]),'No sources. Add a provider preset and enter the model available to your account.')];
+}
+async function sourceVerification(source){
+ S.status=await api('/admin/status');
+ const v=(S.status.verification||[]).find(v=>v.source===source.id);
+ if(!v)throw new Error('Source verification metadata is unavailable.');
+ dialog('Source verification',[h('p',{class:'muted'},'Point-in-time evidence for this source and credential version. A successful check does not enable routing or guarantee future availability.'),table(['Layer','Evidence'],[['Catalog implementation',v.catalog_implemented?'Implemented':'Not established'],['Catalog live evidence',v.catalog_live_verified?'Recorded in catalog':'Not established'],['Credential configuration',v.credential_state],['Credential version',v.credential_version||'Legacy / external']]),table(['Model','Protocol','Latest check','Checked at','Configuration revision'],v.models.map(m=>[m.model,m.protocol,m.status,m.checked_at?new Date(m.checked_at).toLocaleString():'Not checked',m.revision||'—']))]);
 }
 async function discoverModels(source){
  const result=await api('/admin/sources/'+encodeURIComponent(source.id)+'/discover',{method:'POST'});
@@ -378,6 +384,7 @@ function validateSource(source){
  model.onchange=protocols;protocols();
  dialog('Validate source',[field('Model to validate',model),field('Protocol to validate',proto),h('p',{class:'muted'},'Sends one generation request: “Reply with OK.” Provider usage may be billed. This can check a disabled source without enabling its routes. No automatic retry is performed.')],[button('Run validation',async()=>{
   const result=await api('/admin/sources/'+encodeURIComponent(source.id)+'/validate',{method:'POST',body:JSON.stringify({model:model.value,protocol:proto.value})});
+  await refresh();
   dialog('Validation evidence',table(['Check','Result'],[['Source / model',result.source+' / '+result.model],['Verified',result.verified?'Yes':'No'],['Checked at',result.checked_at],['History saved',result.history_recorded?'Yes':'No: result was not persisted'],['Protocol complete',result.result.protocol_complete?'Yes':'No'],['Output observed',result.output_observed?'Yes':'No'],['Error',result.result.upstream_error||'None']]));
  },'primary')]);
 }

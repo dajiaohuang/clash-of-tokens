@@ -48,6 +48,21 @@ func TestExplicitValidationOfDisabledSource(t *testing.T) {
 			if !evidence.HistoryRecorded || len(p.evidence.List()) != 1 || p.evidence.List()[0].Revision != 1 {
 				t.Fatal("validation evidence missing revision history")
 			}
+			statusReq := httptest.NewRequest("GET", "/admin/status", nil)
+			statusReq.Header.Set("Authorization", "Bearer "+adminKey)
+			statusOut := httptest.NewRecorder()
+			p.ServeHTTP(statusOut, statusReq)
+			var status struct {
+				Count        int                  `json:"live_verified_sources"`
+				Verification []sourceVerification `json:"verification"`
+			}
+			wantCount, wantStatus := 0, "failed"
+			if complete {
+				wantCount, wantStatus = 1, "verified"
+			}
+			if statusOut.Code != 200 || json.Unmarshal(statusOut.Body.Bytes(), &status) != nil || status.Count != wantCount || len(status.Verification) != 1 || status.Verification[0].Models[0].Status != wantStatus {
+				t.Fatal("validation status was not derived from evidence", statusOut.Body.String())
+			}
 		})
 	}
 }

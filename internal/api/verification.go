@@ -1,0 +1,142 @@
+package api
+
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"os"
+	"time"
+
+	"clash-of-tokens/catalog"
+	"clash-of-tokens/internal/config"
+	"clash-of-tokens/internal/credentials"
+	audit "clash-of-tokens/internal/evidence"
+	"clash-of-tokens/internal/providerdef"
+)
+
+type modelVerification struct {
+	Model     string     `json:"model"`
+	Protocol  string     `json:"protocol"`
+	Status    string     `json:"status"`
+	CheckedAt *time.Time `json:"checked_at,omitempty"`
+	Revision  uint64     `json:"revision,omitempty"`
+}
+type sourceVerification struct {
+	Source              string              `json:"source"`
+	Provider            string              `json:"provider"`
+	Account             string              `json:"account,omitempty"`
+	CatalogImplemented  bool                `json:"catalog_implemented"`
+	CatalogLiveVerified bool                `json:"catalog_live_verified"`
+	CredentialState     string              `json:"credential_state"`
+	CredentialVersion   uint64              `json:"credential_version,omitempty"`
+	Models              []modelVerification `json:"models"`
+}
+
+func (p *ControlPlane) credentialMetadata(ref string) credentials.Metadata {
+	for _, m := range p.vault.List() {
+		if m.ID == ref {
+			return m
+		}
+	}
+	return credentials.Metadata{}
+}
+
+// Bind evidence to non-secret configuration and the exact vault revision.
+// Environment credentials have no persistent revision, so their evidence is
+// additionally limited to this server run. No secret or secret hash is stored.
+func (p *ControlPlane) sourceBinding(c config.Config, s config.Source) string {
+	meta := p.credentialMetadata(c.SourceCredentialRef(s))
+	return p.bindingWithMetadata(c, s, meta)
+}
+
+func (p *ControlPlane) bindingWithMetadata(c config.Config, s config.Source, meta credentials.Metadata) string {
+	run := ""
+	if s.AccountIDEnv != "" || (meta.ID == "" && s.KeyEnv != "") {
+		run = p.runtimeID
+	}
+	data, _ := json.Marshal(struct {
+		Source           config.Source
+		Browser          config.Browser
+		Device           config.Device
+		CredentialID     string
+		Version          uint64
+		Created, Updated time.Time
+		Runtime          string
+	}{s, c.SourceBrowser(s), c.Device, meta.ID, meta.Version, meta.CreatedAt, meta.UpdatedAt, run})
+	digest := sha256.Sum256(data)
+	return hex.EncodeToString(digest[:])
+}
+
+func (s *Server) runtimeStatus() map[string]any {
+	return map[string]any{"sources": s.Router.Status(), "requests": s.requests.Load(), "rejected": s.rejected.Load(), "buffered_bytes": s.buffered.Load(), "output_bytes": s.outputBytes.Load(), "stream_errors": s.streamErrors.Load(), "live_verified_sources": 0, "verification": []sourceVerification{}}
+}
+
+func (p *ControlPlane) controlStatus(s *Server) map[string]any {
+	out := s.runtimeStatus()
+	entries := p.evidence.List()
+	type checkKey struct{ source, model, protocol string }
+	latest := map[checkKey]audit.Entry{}
+	for _, entry := range entries {
+		if entry.Kind == "validation" {
+			latest[checkKey{entry.Resource, entry.Model, entry.Protocol}] = entry
+		}
+	}
+	metadata := map[string]credentials.Metadata{}
+	for _, meta := range p.vault.List() {
+		metadata[meta.ID] = meta
+	}
+	providers := map[string]catalog.Entry{}
+	for _, entry := range catalog.All() {
+		providers[entry.ID] = entry
+	}
+	verification := make([]sourceVerification, 0, len(s.cfg.Sources))
+	verifiedSources := 0
+	for _, source := range s.cfg.Sources {
+		meta := metadata[source.CredentialRef]
+		descriptor, _ := providerdef.Lookup(source.Adapter)
+		entry, known := providers[source.Provider]
+		v := sourceVerification{Source: source.ID, Provider: source.Provider, Account: source.AccountID, CatalogImplemented: known && entry.Adapter == source.Adapter && entry.Implementation != "not_implemented", CatalogLiveVerified: known && entry.Adapter == source.Adapter && entry.LiveVerified, CredentialState: "not_configured", CredentialVersion: meta.Version, Models: []modelVerification{}}
+		switch {
+		case source.CredentialRef != "":
+			v.CredentialState = "missing_reference"
+			if meta.ID != "" {
+				v.CredentialState = "protected_reference"
+			}
+		case source.KeyEnv != "" && os.Getenv(source.KeyEnv) != "":
+			v.CredentialState = "environment_present"
+		case descriptor.BrowserRequired && s.cfg.SourceBrowser(source).Enabled:
+			v.CredentialState = "browser_configured"
+		case source.Anonymous:
+			v.CredentialState = "anonymous"
+		}
+		binding := p.bindingWithMetadata(s.cfg, source, meta)
+		verified := false
+		for _, model := range source.Models {
+			for _, proto := range model.Protocols {
+				mv := modelVerification{Model: model.ID, Protocol: proto, Status: "not_checked"}
+				if e, ok := latest[checkKey{source.ID, model.ID, proto}]; ok {
+					checked := e.CheckedAt
+					mv.CheckedAt = &checked
+					mv.Revision = e.Revision
+					mv.Status = "historical"
+					if e.Binding != "" && e.Binding == binding {
+						mv.Status = "failed"
+						if e.Status == "verified" && e.Method == "explicit_stream_generation" && e.ProtocolComplete && e.OutputObserved && e.UpstreamStatus >= 200 && e.UpstreamStatus < 300 {
+							mv.Status = "verified"
+							verified = true
+						}
+					}
+				}
+				v.Models = append(v.Models, mv)
+			}
+		}
+		if verified {
+			verifiedSources++
+		}
+		verification = append(verification, v)
+	}
+	out["verification"] = verification
+	out["live_verified_sources"] = verifiedSources
+	out["revision"] = p.service.Current().Revision
+	return out
+}
