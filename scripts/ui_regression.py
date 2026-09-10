@@ -237,6 +237,7 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     page.get_by_role("button", name="openai", exact=True).click()
     expect(page.get_by_role("dialog").get_by_role("row").filter(has=page.get_by_text("Accounts / sources / models", exact=True))).to_contain_text("1 / 1 / 1")
     expect(page.get_by_role("dialog").get_by_role("row").filter(has=page.get_by_text("Sources with matching generation evidence", exact=True))).to_contain_text("1 / 1")
+    expect(page.get_by_role("dialog").get_by_role("row").filter(has=page.get_by_text("Provider health", exact=True))).to_be_visible()
     page.get_by_role("button", name="Validate provider", exact=True).click()
     expect(page.get_by_role("heading", name="Provider validation", exact=True)).to_be_visible()
     expect(page.get_by_role("dialog").get_by_role("row").filter(has=page.get_by_text("Status", exact=True))).to_contain_text("Verified")

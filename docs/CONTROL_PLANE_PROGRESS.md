@@ -463,3 +463,8 @@ claims.
 Batch 83 makes source verification choose the newest validation by its recorded
 timestamp. Out-of-order evidence writes no longer let an older result replace a
 newer status.
+
+Batch 84 brings provider health, authentication, pool strategy, catalog
+provenance, verified-source count and freshness timestamps into Provider Detail.
+The detail view now exposes the same runtime evidence as Health before showing
+source-level explanations.
