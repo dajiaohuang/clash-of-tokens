@@ -790,3 +790,9 @@ check now use `source_kind: browser_reverse` and
 `anonymous` credential mode. The catalog test covers every descriptor-backed
 browser entry so routing and credential views cannot classify it as a generic
 product reverse adapter.
+
+Batch 146 extends the isolated browser regression to the model enabled gate.
+It selects one configured model, applies a disabled state through the bulk
+editor and confirms the Models page reflects it, then restores the model to
+enabled before continuing the source validation journey. This keeps model
+enablement independently reviewable from provider, account and source gates.
