@@ -77,6 +77,10 @@ func readJournal(path string) ([]Version, error) {
 		return nil, err
 	}
 	defer f.Close()
+	info, err := f.Stat()
+	if err != nil || info.Size() > 32<<20 {
+		return nil, errors.New("configuration history exceeds size limit")
+	}
 	d := json.NewDecoder(io.LimitReader(f, 32<<20))
 	d.DisallowUnknownFields()
 	var j journal

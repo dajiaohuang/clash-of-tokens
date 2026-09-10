@@ -20,7 +20,18 @@ Acceptance scope: [complete synthesis](CONTROL_PLANE_REQUIREMENTS.md).
    authenticated PUT/DELETE endpoints and bound-credential deletion protection
    (8a2ccac). Non-Windows platform keychains remain outstanding and fail closed.
 
-Validation: `go test ./...` passed, 473 tests in 34 packages on Windows.
+6. Atomic configuration journal, optimistic revision checks, preview and
+   rollback (895308f). The sibling `.state` file becomes authoritative after
+   the first administrative change; the original JSON remains an import seed.
+7. Request-pinned runtime generations preserve shared account/quota capacity,
+   metrics and ingress admission. Source changes affect new requests while
+   held requests complete; listener/runtime/browser/device changes are marked
+   restart-required (61fb2bb).
+8. Persistent Provider/Account/Source/Group CRUD, revision-checked patches,
+   and a no-upstream routing simulator (811415d).
+
+Validation: `go test ./...` passed, 481 tests in 34 packages on Windows.
+Race detection is outstanding: the current Go environment has cgo disabled.
 
 ## Remaining implementation
 
