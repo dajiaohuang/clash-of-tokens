@@ -544,25 +544,27 @@ func (r *Router) SetEnabled(id string, on bool) bool {
 }
 
 type Status struct {
-	Health           string                    `json:"health"`
-	InputTokens      uint64                    `json:"input_tokens"`
-	OutputTokens     uint64                    `json:"output_tokens"`
-	TotalTokens      uint64                    `json:"total_tokens"`
-	EstimatedCostUSD float64                   `json:"estimated_cost_usd"`
-	CostKnown        bool                      `json:"cost_known"`
-	LastExecution    *protocol.ExecutionResult `json:"last_execution,omitempty"`
-	TTFTMS           float64                   `json:"ttft_ms"`
-	LastSuccess      time.Time                 `json:"last_success"`
-	LastFailure      time.Time                 `json:"last_failure"`
-	LastHTTPStatus   int                       `json:"last_http_status"`
-	ID               string                    `json:"id"`
-	Enabled          bool                      `json:"enabled"`
-	Active           int                       `json:"active"`
-	Completed        uint64                    `json:"completed"`
-	Failures         uint64                    `json:"failures"`
-	Blocked          bool                      `json:"blocked"`
-	Cooldown         time.Time                 `json:"cooldown"`
-	LatencyMS        float64                   `json:"latency_ms"`
+	Health              string                    `json:"health"`
+	LastValidatedAt     *time.Time                `json:"last_validated_at,omitempty"`
+	LastValidationState string                    `json:"last_validation_state,omitempty"`
+	InputTokens         uint64                    `json:"input_tokens"`
+	OutputTokens        uint64                    `json:"output_tokens"`
+	TotalTokens         uint64                    `json:"total_tokens"`
+	EstimatedCostUSD    float64                   `json:"estimated_cost_usd"`
+	CostKnown           bool                      `json:"cost_known"`
+	LastExecution       *protocol.ExecutionResult `json:"last_execution,omitempty"`
+	TTFTMS              float64                   `json:"ttft_ms"`
+	LastSuccess         time.Time                 `json:"last_success"`
+	LastFailure         time.Time                 `json:"last_failure"`
+	LastHTTPStatus      int                       `json:"last_http_status"`
+	ID                  string                    `json:"id"`
+	Enabled             bool                      `json:"enabled"`
+	Active              int                       `json:"active"`
+	Completed           uint64                    `json:"completed"`
+	Failures            uint64                    `json:"failures"`
+	Blocked             bool                      `json:"blocked"`
+	Cooldown            time.Time                 `json:"cooldown"`
+	LatencyMS           float64                   `json:"latency_ms"`
 }
 
 // SimulationCandidate describes one target considered by the read-only

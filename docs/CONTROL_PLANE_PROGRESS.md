@@ -487,3 +487,8 @@ capacity and validation evidence, with API coverage for the configured values.
 Batch 88 adds an embedded-frontend serving regression. The compiled Go server
 must return the dashboard, JavaScript and CSS with their expected content types,
 asset markers and same-origin connect policy; the test uses no Node runtime.
+
+Batch 89 carries the newest validation timestamp and provenance state onto each
+runtime source status row. The Health page now shows `not_checked`, `verified`,
+`failed` or `historical` beside source runtime counters, with an API regression
+covering the current binding.

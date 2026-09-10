@@ -13,6 +13,7 @@ import (
 	"clash-of-tokens/internal/credentials"
 	audit "clash-of-tokens/internal/evidence"
 	"clash-of-tokens/internal/providerdef"
+	"clash-of-tokens/internal/routing"
 )
 
 type modelVerification struct {
@@ -132,11 +133,15 @@ func (p *ControlPlane) controlStatus(s *Server) map[string]any {
 	entries := p.evidence.List()
 	type checkKey struct{ source, model, protocol string }
 	latest := map[checkKey]audit.Entry{}
+	latestSource := map[string]audit.Entry{}
 	for _, entry := range entries {
 		if entry.Kind == "validation" {
 			key := checkKey{entry.Resource, entry.Model, entry.Protocol}
 			if current, ok := latest[key]; !ok || entry.CheckedAt.After(current.CheckedAt) {
 				latest[key] = entry
+			}
+			if current, ok := latestSource[entry.Resource]; !ok || entry.CheckedAt.After(current.CheckedAt) {
+				latestSource[entry.Resource] = entry
 			}
 		}
 	}
@@ -194,6 +199,24 @@ func (p *ControlPlane) controlStatus(s *Server) map[string]any {
 			verifiedSources++
 		}
 		verification = append(verification, v)
+	}
+	if sourceRows, ok := out["sources"].([]routing.Status); ok {
+		for i := range sourceRows {
+			entry, found := latestSource[sourceRows[i].ID]
+			if !found {
+				sourceRows[i].LastValidationState = "not_checked"
+				continue
+			}
+			checked := entry.CheckedAt
+			sourceRows[i].LastValidatedAt = &checked
+			for _, source := range s.cfg.Sources {
+				if source.ID == sourceRows[i].ID {
+					sourceRows[i].LastValidationState = p.validationState(s.cfg, source, entry)
+					break
+				}
+			}
+		}
+		out["sources"] = sourceRows
 	}
 	out["verification"] = verification
 	out["live_verified_sources"] = verifiedSources
