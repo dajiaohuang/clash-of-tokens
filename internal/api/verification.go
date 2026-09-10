@@ -137,12 +137,13 @@ func (p *ControlPlane) controlStatus(s *Server) map[string]any {
 	verification := make([]sourceVerification, 0, len(s.cfg.Sources))
 	verifiedSources := 0
 	for _, source := range s.cfg.Sources {
-		meta := metadata[source.CredentialRef]
+		credentialRef := s.cfg.SourceCredentialRef(source)
+		meta := metadata[credentialRef]
 		descriptor, _ := providerdef.Lookup(source.Adapter)
 		entry, known := providers[source.Provider]
 		v := sourceVerification{Source: source.ID, Provider: source.Provider, Account: source.AccountID, CatalogImplemented: known && entry.Adapter == source.Adapter && entry.Implementation != "not_implemented", CatalogLiveVerified: known && entry.Adapter == source.Adapter && entry.LiveVerified, CredentialState: "not_configured", CredentialVersion: meta.Version, Models: []modelVerification{}}
 		switch {
-		case source.CredentialRef != "":
+		case credentialRef != "":
 			v.CredentialState = "missing_reference"
 			if meta.ID != "" {
 				v.CredentialState = "protected_reference"

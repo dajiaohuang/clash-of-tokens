@@ -441,3 +441,8 @@ not claim current upstream availability.
 Batch 78 adds last-auth-check timestamps to provider and account health. The
 generation-validation and browser-auth clocks remain separate so a successful
 login check is not presented as generation proof.
+
+Batch 79 fixes verification provenance for account-bound sources. Status now
+resolves the inherited credential reference before reporting protected/missing
+state and credential version, matching the binding used for evidence invalidation
+without exposing the secret.

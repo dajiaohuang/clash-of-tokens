@@ -46,13 +46,16 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 	defer upstream.Close()
 	c := config.Default()
 	c.Providers = []config.Provider{{ID: "p", Enabled: true}, {ID: "disabled-provider", Enabled: false}}
-	c.Accounts = []config.Account{{ID: "a", ProviderID: "p", DisplayName: "Account", Enabled: true, MaxInflight: 1, Weight: 1, QuotaDomain: "q"}}
+	c.Accounts = []config.Account{{ID: "a", ProviderID: "p", DisplayName: "Account", Enabled: true, CredentialRef: "cred://account-key", MaxInflight: 1, Weight: 1, QuotaDomain: "q"}}
 	c.Accounts = append(c.Accounts, config.Account{ID: "b", ProviderID: "p", DisplayName: "Needs login", Enabled: true, MaxInflight: 1, Weight: 1, QuotaDomain: "q-b"})
 	c.Accounts = append(c.Accounts, config.Account{ID: "c", ProviderID: "disabled-provider", DisplayName: "Provider disabled", Enabled: true, MaxInflight: 1, Weight: 1, QuotaDomain: "q-c"})
 	c.Sources = []config.Source{{ID: "s", Provider: "p", Adapter: "openai", BaseURL: upstream.URL, Local: true, Enabled: true, MaxInflight: 1, AccountID: "a", QuotaDomain: "q", QuotaMaxInflight: 1, Models: []config.Model{{ID: "m", Upstream: "m", Protocols: []string{"chat"}, Tier: "unrated", Tools: "none", MaxInputBytes: 1024}}}}
 	dir := t.TempDir()
 	vault, err := credentials.Open(filepath.Join(dir, "vault"))
 	if err != nil {
+		t.Fatal(err)
+	}
+	if err := vault.Put("cred://account-key", "api_key", "test", "secret-value"); err != nil {
 		t.Fatal(err)
 	}
 	p, err := NewControlPlane(filepath.Join(dir, "config.json"), c, testKey, adminKey, vault)
@@ -97,6 +100,11 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 			LastValidated   *time.Time `json:"last_validated_at"`
 			LastAuthChecked *time.Time `json:"last_auth_checked_at"`
 		} `json:"account_health"`
+		Verification []struct {
+			Source            string `json:"source"`
+			CredentialState   string `json:"credential_state"`
+			CredentialVersion uint64 `json:"credential_version"`
+		} `json:"verification"`
 	}
 	if err := json.Unmarshal(w.Body.Bytes(), &out); err != nil {
 		t.Fatal(err)
@@ -106,6 +114,9 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 	}
 	if len(out.Providers) != 2 {
 		t.Fatalf("provider health rows = %+v", out.Providers)
+	}
+	if len(out.Verification) != 1 || out.Verification[0].CredentialState != "protected_reference" || out.Verification[0].CredentialVersion != 1 {
+		t.Fatalf("inherited credential provenance missing: %+v", out.Verification)
 	}
 	if out.Providers[0].ID != "p" || out.Providers[0].Health != "auth_required" || out.Providers[0].AuthStatus != "auth_required" || len(out.Providers[0].Accounts) != 2 || len(out.Providers[0].Sources) != 1 {
 		t.Fatalf("unexpected provider health: %+v", out.Providers[0])
