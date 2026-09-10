@@ -83,6 +83,13 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     page.get_by_role("button", name="Apply changes", exact=True).click()
     expect(page.get_by_role("dialog")).not_to_be_visible()
     expect(page.get_by_text("ui-profile", exact=True)).to_be_visible()
+    page.get_by_role("button", name="Check connections", exact=True).click()
+    connection_dialog = page.get_by_role("dialog")
+    expect(connection_dialog).to_contain_text("Bound accounts")
+    expect(connection_dialog).to_contain_text("Bound sources")
+    expect(connection_dialog).to_contain_text("Session limit")
+    expect(connection_dialog.get_by_role("cell", name="ui-profile", exact=True)).to_be_visible()
+    page.get_by_role("button", name="Close", exact=True).click()
     setup_login_requests = []
     def synthetic_setup_login(route):
         payload = route.request.post_data_json or {}
