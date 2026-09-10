@@ -128,6 +128,11 @@ CLI format references: [Codex auth fixture](https://github.com/openai/codex/blob
     unknown-price/latency, validation and browser editing coverage. This rate
     ceiling is not a total-request spending budget.
     See [routing policies](ROUTING_POLICIES.md).
+29. Source detail consolidates models, quota/account capacity, runtime duration,
+    TTFT, verification evidence and read-only eligibility explanations. Optional
+    three-sample validation exposes billing and measurement limits; browser
+    regression covers samples/history, first-failure stop and cancellation.
+    See [source detail](SOURCE_DETAIL.md).
 
 Discovery protocol references: [Anthropic models](https://platform.claude.com/docs/en/api/models/list),
 [Gemini models](https://ai.google.dev/api/models),

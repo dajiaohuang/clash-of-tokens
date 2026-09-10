@@ -429,8 +429,42 @@ function importCredentials(onSaved){
 }
 function sources(){
  return [pageHead('Sources','A source binds an account to one or more model targets.',button('Add source',()=>addSource(),'primary')),table(['Source','Provider / account','Type','State','Models','Groups','Actions'],S.config.sources.map(s=>[
-  s.id,s.provider+(s.account_id?' / '+s.account_id:''),badge(s.source_kind||'Unspecified'),state(s),s.models.length,S.config.groups.filter(g=>g.sources.includes(s.id)).map(g=>g.id).join(', '),[button(s.enabled?'Disable':'Enable',()=>toggle('sources',s)),button('Edit',()=>edit('sources',s)),button('Discover models',()=>discoverModels(s)),button('Validate',()=>validateSource(s)),button('Verification',()=>sourceVerification(s)),button('Delete',()=>remove('sources',s),'danger')]
+  button(s.id,()=>sourceDetail(s)),s.provider+(s.account_id?' / '+s.account_id:''),badge(s.source_kind||'Unspecified'),state(s),s.models.length,S.config.groups.filter(g=>g.sources.includes(s.id)).map(g=>g.id).join(', '),[button(s.enabled?'Disable':'Enable',()=>toggle('sources',s)),button('Edit',()=>edit('sources',s)),button('Discover models',()=>discoverModels(s)),button('Validate',()=>validateSource(s)),button('Verification',()=>sourceVerification(s)),button('Delete',()=>remove('sources',s),'danger')]
  ]),'No sources. Add a provider preset and enter the model available to your account.')];
+}
+async function sourceDetail(source){
+ await refresh();source=S.config.sources.find(s=>s.id===source.id);if(!source)throw Error('Source no longer exists.');
+ const runtime=S.status.sources.find(s=>s.id===source.id)||{},verification=(S.status.verification||[]).find(v=>v.source===source.id),account=(S.config.accounts||[]).find(a=>a.id===source.account_id);
+ const quota=(S.status.quota_domains||[]).find(q=>q.id===source.quota_domain),pool=(S.status.accounts||[]).find(a=>a.id===source.account_id);
+ const timestamp=value=>value&&Date.parse(value)>0?new Date(value).toLocaleString():'Not observed';
+ const millis=value=>value>0?value.toFixed(1)+' ms':'Not measured';
+ const finished=(runtime.completed||0)+(runtime.failures||0),explanations=h('div',{}),group=select(S.config.groups.map(g=>g.id),'auto'),protocol=select([...new Set(source.models.flatMap(m=>m.protocols))],'chat'),size=h('input',{type:'number',value:100,min:0});
+ const explain=button('Explain eligibility',async()=>{const result=await api('/admin/routing/simulate',{method:'POST',body:JSON.stringify({model:group.value,protocol:protocol.value,bytes:Number(size.value)})});explanations.replaceChildren(table(['Model','Eligibility for this request'],Object.entries(result).filter(([id])=>id.startsWith(source.id+'/')).map(([id,reason])=>[id,reason])))});
+ dialog('Source / '+source.id,[
+  h('h3',{},'Configuration'),table(['Setting','Value'],[['Provider / adapter',source.provider+' / '+source.adapter],['Account',account?.display_name||source.account_id||'No account'],['Credential configuration',verification?.credential_state||'Not established'],['Source type',source.source_kind||'Unspecified'],['Source enabled',source.enabled?'Yes':'No'],['Source Auto approval',source.auto_approved?'Yes':'No'],['Runtime routing state',state(source)],['Source concurrency',(runtime.active||0)+' / '+source.max_inflight],['Account concurrency',pool?pool.active+' / '+pool.limit:'No account limit'],['Shared quota',source.quota_domain+' · '+(quota?quota.active+' / '+quota.limit:'Not observed')],['Groups',S.config.groups.filter(g=>g.sources.includes(source.id)).map(g=>g.id).join(', ')||'None']]),
+  h('h3',{},'Models'),table(['Model / upstream','Protocols','Tier / basis','Tools / vision','Enabled / Auto','USD input / output per million'],source.models.map(m=>[m.id+' / '+m.upstream,m.protocols.join(', '),m.tier+' / '+(m.rating_basis||'Not rated'),m.tools+' / '+(m.vision?'Yes':'No'),(m.enabled!==false?'Yes':'No')+' / '+(m.auto_approved===false?'No':m.auto_approved===true?'Yes':'Inherit'),(m.input_usd_per_million??'Unknown')+' / '+(m.output_usd_per_million??'Unknown')])),
+  h('h3',{},'Observed runtime'),h('p',{class:'muted'},'Counters include explicit validation requests. Observations are for this runtime and do not prove current login, quota balance or model capability.'),table(['Metric','Value'],[['Successful / failed requests',(runtime.completed||0)+' / '+(runtime.failures||0)],['Observed success rate',finished?((runtime.completed||0)*100/finished).toFixed(1)+'%':'No completed requests'],['Rolling request duration',millis(runtime.latency_ms)],['Rolling time to first output',millis(runtime.ttft_ms)],['Last success',timestamp(runtime.last_success)],['Last failure',timestamp(runtime.last_failure)],['Last upstream HTTP status',runtime.last_http_status||'Not observed'],['Cooldown until',Date.parse(runtime.cooldown)>Date.now()?timestamp(runtime.cooldown):'Not cooling down']]),
+  h('h3',{},'Generation evidence'),table(['Model','Protocol','Latest evidence','Checked at'],(verification?.models||[]).map(m=>[m.model,m.protocol,m.status,timestamp(m.checked_at)])),
+  h('h3',{},'Routing eligibility'),h('p',{class:'muted'},'Read-only simulation for a text request. Eligibility is separate from which candidate the router will select.'),field('Group to explain',group),field('Protocol to explain',protocol),field('Request bytes to explain',size),explain,explanations
+ ],[button('Edit source',()=>edit('sources',source)),button('Validate source',()=>validateSource(source)),button('Benchmark',()=>benchmarkSource(source)),button('Verification details',()=>sourceVerification(source))]);
+}
+function benchmarkSource(source){
+ const model=select(source.models.map(m=>m.id),source.models[0]?.id),protocol=h('select',{}),output=h('div',{});
+ const populate=()=>protocol.replaceChildren(...(source.models.find(m=>m.id===model.value)?.protocols||[]).map(p=>h('option',{value:p},p)));model.onchange=populate;populate();
+ let stopped=false,running=false,controller=null;const stop=()=>{stopped=true;controller?.abort()};
+ const run=button('Run 3 samples',async()=>{
+  if(running)return;if(!model.value||!protocol.value)throw Error('Choose a configured model and protocol.');
+  running=true;stopped=false;run.disabled=true;model.disabled=true;protocol.disabled=true;const rows=[];
+  try{for(let i=0;i<3&&!stopped;i++){
+   controller=new AbortController();const start=performance.now();
+   const result=await api('/admin/sources/'+encodeURIComponent(source.id)+'/validate',{method:'POST',signal:controller.signal,body:JSON.stringify({model:model.value,protocol:protocol.value})});
+   if(stopped)break;rows.push([String(i+1),result.verified?'Verified':'Failed',Math.round(performance.now()-start)+' ms',result.history_recorded?'Saved':'Not saved']);
+   output.replaceChildren(table(['Sample','Generation result','Admin round-trip duration','Evidence history'],rows));
+   if(!result.verified)break;
+  }}catch(error){if(!stopped)throw error}finally{running=false;run.disabled=false;model.disabled=false;protocol.disabled=false}
+ },'primary');
+ dialog('Benchmark / '+source.id,[field('Benchmark model',model),field('Benchmark protocol',protocol),h('p',{class:'warning'},'Sends up to three sequential “Reply with OK.” generation requests. Provider usage may be billed. Stops at the first unsuccessful result. Closing or stopping cancels the current request and prevents further samples; already incurred usage cannot be undone.'),h('p',{class:'muted'},'Duration includes admin request, queue and generation time; it is not TTFT. Three samples are a small observation, not a capacity or quality guarantee. Each completed check is saved separately when evidence storage succeeds.'),output],[run,button('Stop samples',stop)]);
+ dialogCleanup=stop;
 }
 async function sourceVerification(source){
  S.status=await api('/admin/status');

@@ -141,6 +141,57 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     page.get_by_role("button", name="Verification", exact=True).click()
     expect(page.get_by_role("dialog").get_by_text("verified", exact=True)).to_be_visible()
     page.get_by_role("button", name="Close", exact=True).click()
+    page.get_by_role("button", name="openai", exact=True).click()
+    expect(page.get_by_role("heading", name="Source / openai", exact=True)).to_be_visible()
+    expect(page.get_by_role("dialog").get_by_text("0.25 / 1.5", exact=True)).to_be_visible()
+    expect(page.get_by_role("dialog").get_by_text("verified", exact=True)).to_be_visible()
+    page.get_by_role("button", name="Explain eligibility", exact=True).click()
+    expect(page.get_by_role("columnheader", name="Eligibility for this request", exact=True)).to_be_visible()
+    page.get_by_role("button", name="Benchmark", exact=True).click()
+    page.get_by_role("button", name="Run 3 samples", exact=True).click()
+    expect(page.get_by_role("dialog").get_by_role("cell", name="Verified", exact=True)).to_have_count(3)
+    expect(page.get_by_role("dialog").get_by_role("cell", name="Saved", exact=True)).to_have_count(3)
+    expect(page.get_by_role("button", name="Run 3 samples", exact=True)).to_be_enabled()
+    page.get_by_role("button", name="Close", exact=True).click()
+    # A failed sample must stop the run instead of blindly consuming all three.
+    benchmark_requests = []
+    def failed_sample(route):
+        benchmark_requests.append(route.request.url)
+        route.fulfill(status=200, content_type="application/json", body='{"verified":false,"history_recorded":false}')
+    page.route("**/admin/sources/openai/validate", failed_sample)
+    page.get_by_role("button", name="openai", exact=True).click()
+    page.get_by_role("button", name="Benchmark", exact=True).click()
+    page.get_by_role("button", name="Run 3 samples", exact=True).click()
+    expect(page.get_by_role("dialog").get_by_role("cell", name="Failed", exact=True)).to_have_count(1)
+    expect(page.get_by_role("button", name="Run 3 samples", exact=True)).to_be_enabled()
+    assert len(benchmark_requests) == 1
+    page.get_by_role("button", name="Close", exact=True).click()
+    page.unroute("**/admin/sources/openai/validate", failed_sample)
+    # Hold a synthetic request until the UI aborts it; no upstream is contacted.
+    page.evaluate("""() => {
+      window.benchmarkFetch = window.fetch;
+      window.heldSamples = 0;
+      window.fetch = (url, options) => {
+        if (String(url).endsWith('/admin/sources/openai/validate')) {
+          window.heldSamples++;
+          return new Promise((resolve, reject) => options.signal.addEventListener('abort', () => reject(new DOMException('Canceled', 'AbortError')), {once:true}));
+        }
+        return window.benchmarkFetch(url, options);
+      };
+    }""")
+    page.get_by_role("button", name="openai", exact=True).click()
+    page.get_by_role("button", name="Benchmark", exact=True).click()
+    page.get_by_role("button", name="Run 3 samples", exact=True).click()
+    expect(page.get_by_role("button", name="Run 3 samples", exact=True)).to_be_disabled()
+    page.get_by_role("button", name="Stop samples", exact=True).click()
+    expect(page.get_by_role("button", name="Run 3 samples", exact=True)).to_be_enabled()
+    assert page.evaluate("window.heldSamples") == 1
+    page.get_by_role("button", name="Run 3 samples", exact=True).click()
+    expect(page.get_by_role("button", name="Run 3 samples", exact=True)).to_be_disabled()
+    page.get_by_role("button", name="Close", exact=True).click()
+    page.wait_for_timeout(100)
+    assert page.evaluate("window.heldSamples") == 2
+    page.evaluate("window.fetch = window.benchmarkFetch; delete window.benchmarkFetch")
     page.get_by_role("link", name="Overview", exact=True).click()
     expect(page.get_by_text("Sources with matching validation", exact=True).locator("xpath=following-sibling::dd[1]")).to_have_text("1")
     page.get_by_role("link", name="Credentials", exact=True).click()
@@ -158,7 +209,7 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     page.get_by_role("button", name="Close", exact=True).click()
     page.get_by_role("link", name="Activity", exact=True).click()
     page.get_by_role("button", name="Refresh history", exact=True).click()
-    expect(page.get_by_text("explicit_stream_generation", exact=True)).to_be_visible()
+    expect(page.get_by_text("explicit_stream_generation", exact=True)).to_have_count(4)
     page.get_by_role("link", name="Credentials", exact=True).click()
     page.get_by_role("button", name="Import token", exact=True).click()
     page.get_by_label("Configured source for environment import", exact=True).select_option("openai")
