@@ -803,3 +803,8 @@ browser and web reverse adapters, app and CLI subscriptions, local runtimes and
 research entries now have stable human-readable labels while the underlying
 machine metadata remains unchanged. The browser regression asserts the OpenAI
 row renders `Official API`.
+
+Batch 148 carries the same taxonomy into the Sources table and Source Detail.
+Badges and detail values now explain `vendor_api`, `browser_reverse`,
+`app_reverse`, `cli_reverse`, `local_model` and `custom_api` in operator-facing
+language while configuration forms continue to submit their stable enum values.
