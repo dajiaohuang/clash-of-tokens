@@ -82,13 +82,14 @@ type capacity struct {
 	current          *Router
 }
 type Query struct {
-	Affinity string `json:"affinity,omitempty"`
-	Model    string `json:"model"`
-	Protocol string `json:"protocol"`
-	Tools    bool   `json:"tools"`
-	Bytes    int64  `json:"bytes"`
-	Stateful bool   `json:"stateful"`
-	Vision   bool   `json:"vision"`
+	ExcludedSources []string `json:"-"`
+	Affinity        string   `json:"affinity,omitempty"`
+	Model           string   `json:"model"`
+	Protocol        string   `json:"protocol"`
+	Tools           bool     `json:"tools"`
+	Bytes           int64    `json:"bytes"`
+	Stateful        bool     `json:"stateful"`
+	Vision          bool     `json:"vision"`
 }
 type Lease struct {
 	firstOutput sync.Once
@@ -189,6 +190,9 @@ func contains(a []string, v string) bool {
 }
 func (r *Router) eligible(t Target, q Query) (bool, string) {
 	s := r.cfg.Sources[t.Source]
+	if contains(q.ExcludedSources, s.ID) {
+		return false, "already_attempted"
+	}
 	st := r.state[t.Source]
 	if t.Model.Enabled != nil && !*t.Model.Enabled {
 		return false, "model_disabled"

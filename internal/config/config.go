@@ -102,6 +102,7 @@ type Model struct {
 	MaxInputBytes  int64    `json:"max_input_bytes"`
 }
 type Group struct {
+	MaxAttempts        int      `json:"max_attempts,omitempty"`
 	AllowMetered       *bool    `json:"allow_metered,omitempty"`
 	AllowSubscription  *bool    `json:"allow_subscription,omitempty"`
 	AllowUnknownCost   *bool    `json:"allow_unknown_cost,omitempty"`
@@ -357,6 +358,9 @@ func (c Config) Validate() error {
 	}
 	gids := map[string]bool{}
 	for _, g := range c.Groups {
+		if g.MaxAttempts < 0 || g.MaxAttempts > 8 {
+			return fmt.Errorf("group %s: max_attempts must be between 0 and 8", g.ID)
+		}
 		if !identifier.MatchString(g.ID) || gids[g.ID] {
 			return errors.New("invalid or duplicate group id")
 		}

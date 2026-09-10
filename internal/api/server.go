@@ -275,10 +275,8 @@ func (s *Server) generate(w http.ResponseWriter, r *http.Request, proto, pathMod
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(s.cfg.Runtime.RequestTimeoutMS)*time.Millisecond)
 	defer cancel()
-	queueCtx, qcancel := context.WithTimeout(ctx, time.Duration(s.cfg.Runtime.QueueTimeoutMS)*time.Millisecond)
-	lease, e := s.Router.Acquire(queueCtx, routing.Query{Model: meta.Model, Protocol: proto, Tools: meta.Tools, Bytes: int64(n), Stateful: meta.Stateful, Vision: meta.Vision, Affinity: affinity})
-	qcancel()
-	if e != nil {
+	lease, resp, e := s.acquireResponse(ctx, routing.Query{Model: meta.Model, Protocol: proto, Tools: meta.Tools, Bytes: int64(n), Stateful: meta.Stateful, Vision: meta.Vision, Affinity: affinity}, meta.Stream, r.Header, func(model string) []byte { return protocol.Rewrite(body, meta, model) })
+	if lease == nil {
 		s.rejected.Add(1)
 		fail(w, 503, e.Error())
 		return
@@ -286,8 +284,6 @@ func (s *Server) generate(w http.ResponseWriter, r *http.Request, proto, pathMod
 	status := 0
 	var cooldown time.Duration
 	defer func() { lease.Release(status, cooldown) }()
-	body = protocol.Rewrite(body, meta, lease.Target.Model.Upstream)
-	resp, e := s.client(lease.Target.Source).Do(ctx, proto, lease.Target.Model.Upstream, meta.Stream, body, r.Header)
 	// Client.Do closes the payload reader before returning, including on an
 	// early response. Long generations no longer retain large prompt buffers.
 	body = nil

@@ -37,7 +37,19 @@ Acceptance scope: [complete synthesis](CONTROL_PLANE_REQUIREMENTS.md).
     simulator, health/metrics, all configuration fields, history, preview/apply
     and global search (c78e6a0). Model enabled/Auto approval flags are independent.
 
-Validation: `go test ./...` passed, 483 tests in 35 packages on Windows.
+11. Account pool round-robin, weighted, least-load and sticky dispatch; weighted
+    source groups (031b120).
+12. Protocol-aware stream completion/error detection, bounded SSE buffering and
+    execution health/TTFT tracking (ec8f263).
+13. Conservative pre-submission transport classification (052f3ea) and bounded
+    request fallback. Groups accept max_attempts 0..8: zero defaults to one, or
+    up to eight group members for fallback groups. Select and stateful requests
+    always use one attempt. Only proven pre-connection failures or native API
+    401/403/429 rejections can advance; ambiguous errors and stream failures
+    never replay. Each attempt rewrites the original input and excludes all
+    previously attempted sources.
+
+Validation: `go test ./...` passed, 509 tests in 35 packages on Windows.
 Browser regression: credential creation/redaction, account binding, source
 creation, group membership, preview/apply, every navigation destination and
 390px viewport passed via `scripts/ui_fixture.py --test` after building
@@ -59,8 +71,7 @@ Race detection is outstanding: the current Go environment has cgo disabled.
 
 The console's Browser/Device/Session destinations currently expose environment
 settings. Profile launching, login, session operations, imports, discovery and
-live validation are still required. Account pool strategy fields are present,
-but weighted/sticky account-pool dispatch still needs implementation. Activity
+live validation are still required. Account pool strategies now execute in the router. Activity
 currently covers configuration history, not a complete runtime event log.
 
 The current application is not yet the completed control plane. Credentials
