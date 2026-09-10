@@ -59,7 +59,7 @@ Acceptance scope: [complete synthesis](CONTROL_PLANE_REQUIREMENTS.md).
     reported as authenticated.
 
 16. ChatGPT Web authentication evidence without generation or token extraction
-    (73148a3). Other providers return explicitly unsupported login checks.
+    (73148a3). Additional browser checks and persisted evidence are in batch 24.
 17. Native OpenAI/Anthropic/Gemini model discovery with bounded pagination,
     explicit partial-list reporting and disabled model configuration; manual
     source validation observes output and protocol completion under a lease.
@@ -96,12 +96,19 @@ CLI format references: [Codex auth fixture](https://github.com/openai/codex/blob
     fallback. Linux native create/reopen/update and unavailable-service checks
     passed in an isolated Ubuntu 24.04 WSL keyring session. macOS cgo/native
     execution remains unverified. See [storage and verification](CREDENTIAL_STORAGE.md).
+24. Claude Web / Blackbox read-only browser session checks, account/revision
+    evidence persistence, authentication history on Accounts, and sequential
+    login polling with cancellation and a five-minute UI limit. ChatGPT checks
+    also reject changed origins. Other browser adapters remain unsupported.
+    Synthetic UI verification covers auth/rejection/error states and closing
+    the watcher; it does not establish live provider compatibility.
+    See [browser login behavior](BROWSER_LOGIN.md).
 
 Discovery protocol references: [Anthropic models](https://platform.claude.com/docs/en/api/models/list),
 [Gemini models](https://ai.google.dev/api/models),
 [OpenAI models](https://platform.openai.com/docs/api-reference/models).
 
-Validation: `go test ./...` passed, 535 tests in 37 packages on Windows.
+Validation: `go test ./...` passed, 537 tests in 38 packages on Windows.
 Windows and Linux-target `govulncheck` reported no vulnerabilities.
 Browser regression: credential creation/redaction, account binding, source
 creation, group membership, preview/apply, every navigation destination and

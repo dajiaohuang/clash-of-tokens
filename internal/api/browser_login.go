@@ -13,8 +13,10 @@ import (
 	"time"
 
 	"clash-of-tokens/catalog"
+	"clash-of-tokens/internal/browserauth"
 	"clash-of-tokens/internal/chatgptweb"
 	"clash-of-tokens/internal/config"
+	audit "clash-of-tokens/internal/evidence"
 )
 
 func browserExecutable(engine string) (string, error) {
@@ -82,18 +84,30 @@ func (p *ControlPlane) browserLoginAdmin(w http.ResponseWriter, r *http.Request)
 		return true
 	}
 	if parts[1] == "check-login" {
-		adapter := ""
+		adapter, origin := "", ""
 		for _, entry := range catalog.All() {
 			if entry.ID == account.ProviderID {
 				adapter = entry.Adapter
+				origin = entry.BaseURL
 			}
 		}
-		if adapter != "chatgpt-web" {
-			reply(w, map[string]any{"status": "unsupported", "generation_verified": false, "message": "This provider does not yet implement a login check."})
-			return true
+		var result browserauth.Evidence
+		if adapter == "chatgpt-web" {
+			driver := chatgptweb.New(c.SourceBrowser(config.Source{AccountID: account.ID}), "login-check")
+			v := driver.CheckAuth(r.Context())
+			result = browserauth.Evidence{Status: v.Status, Method: v.Method, CheckedAt: v.CheckedAt, ComposerReady: v.ComposerReady}
+		} else {
+			result = browserauth.Check(r.Context(), profile.CDPURL, origin, adapter)
 		}
-		driver := chatgptweb.New(c.SourceBrowser(config.Source{AccountID: account.ID}), "login-check")
-		reply(w, driver.CheckAuth(r.Context()))
+		revision := p.service.Current().Revision
+		recorded := p.evidence.Append(audit.Entry{Revision: revision, Kind: "authentication", Resource: account.ID, CheckedAt: result.CheckedAt, Method: result.Method, Status: result.Status, UpstreamStatus: result.UpstreamStatus}) == nil
+		reply(w, struct {
+			browserauth.Evidence
+			Account         string `json:"account"`
+			Profile         string `json:"profile"`
+			Revision        uint64 `json:"revision"`
+			HistoryRecorded bool   `json:"history_recorded"`
+		}{result, account.ID, profile.ID, revision, recorded})
 		return true
 	}
 	destination := ""

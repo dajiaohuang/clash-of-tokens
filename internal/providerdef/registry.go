@@ -20,6 +20,7 @@ type Descriptor struct {
 	TextOnly           bool              `json:"text_only"`
 	ToolsAllowed       bool              `json:"tools_allowed"`
 	BrowserRequired    bool              `json:"browser_required"`
+	BrowserAuthCheck   bool              `json:"browser_auth_check"`
 	CredentialModes    []string          `json:"credential_modes"`
 	CredentialFields   []CredentialField `json:"credential_fields"`
 	DefaultMaxInflight int               `json:"default_max_inflight"`
@@ -80,6 +81,11 @@ func build() map[string]Descriptor {
 		d := out[id]
 		d.CredentialModes = []string{"api_key"}
 		d.CredentialFields[0].Label = "API key"
+		out[id] = d
+	}
+	for _, id := range []string{"chatgpt-web", "claude-web", "blackbox"} {
+		d := out[id]
+		d.BrowserAuthCheck = true
 		out[id] = d
 	}
 	for _, id := range []string{"devin-cli", "zcode", "codex", "claude-code", "gemini-cli", "qwen-code", "kimi-code", "kiro", "antigravity", "amazon-q"} {

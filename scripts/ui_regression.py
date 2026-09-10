@@ -1,5 +1,6 @@
 """Browser smoke test against scripts/ui_fixture.py on port 18317."""
 from pathlib import Path
+import json
 import os
 import socket
 import tempfile
@@ -36,6 +37,21 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     expect(page.get_by_role("heading", name="Review changes", exact=True)).to_be_visible()
     page.get_by_role("button", name="Apply changes", exact=True).click()
     expect(page.get_by_role("dialog")).not_to_be_visible()
+    auth_status = {"claude-web": 200, "blackbox": 200}
+    auth_requests = []
+    existing_browser_pages = len(browser.pages)
+    def synthetic_auth(route):
+        adapter = "claude-web" if route.request.url.startswith("https://claude.ai/") else "blackbox"
+        auth_requests.append((adapter, route.request.method, route.request.url))
+        assert route.request.method == "GET", "Login check performed a write"
+        endpoint = "/api/organizations" if adapter == "claude-web" else "/api/auth/session"
+        if route.request.url.endswith(endpoint):
+            payload = [{"uuid":"private-organization-id"}] if adapter == "claude-web" else {"user":{"email":"private@example.test"}, "accessToken":"private-session-token"}
+            route.fulfill(status=auth_status[adapter], content_type="application/json", body=json.dumps(payload))
+        else:
+            route.fulfill(status=200, content_type="text/html", body='<html><body><div contenteditable="true" style="width:300px;height:60px"></div></body></html>')
+    browser.route("https://claude.ai/**", synthetic_auth)
+    browser.route("https://app.blackbox.ai/**", synthetic_auth)
     page.get_by_role("link", name="Accounts", exact=True).click()
     expect(page.get_by_text("UI test account", exact=True)).to_be_visible()
     page.get_by_role("link", name="Browsers", exact=True).click()
@@ -150,6 +166,53 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     expect(page.get_by_role("heading", name="Review changes", exact=True)).to_be_visible()
     page.get_by_role("button", name="Apply changes", exact=True).click()
     expect(page.get_by_role("dialog")).not_to_be_visible()
+    for adapter in ["claude-web", "blackbox"]:
+        page.get_by_role("link", name="Providers", exact=True).click()
+        page.get_by_role("searchbox", name="Filter providers").fill(adapter)
+        page.get_by_role("button", name=adapter, exact=True).click()
+        page.get_by_role("button", name="Add account", exact=True).click()
+        page.get_by_label("ID", exact=True).fill("ui-" + adapter)
+        page.get_by_label("Quota domain", exact=True).fill("ui-" + adapter)
+        page.get_by_label("Browser Profile Id", exact=True).select_option("ui-profile")
+        page.get_by_role("button", name="Review changes", exact=True).click()
+        page.get_by_role("button", name="Apply changes", exact=True).click()
+        expect(page.get_by_role("dialog")).not_to_be_visible()
+        page.get_by_role("link", name="Accounts", exact=True).click()
+        row = page.get_by_role("row").filter(has=page.get_by_text("ui-" + adapter, exact=True))
+        row.get_by_role("button", name="Check login", exact=True).click()
+        expect(page.get_by_role("dialog").get_by_text("authenticated", exact=True)).to_be_visible()
+        expect(page.get_by_role("dialog").get_by_role("row").filter(has=page.get_by_text("History saved", exact=True))).to_contain_text("Yes")
+        expect(page.get_by_role("dialog").get_by_role("row").filter(has=page.get_by_text("Generation verified", exact=True))).to_contain_text("No")
+        assert "private-organization-id" not in page.content()
+        assert "private@example.test" not in page.content()
+        assert "private-session-token" not in page.content()
+        auth_status[adapter] = 401
+        page.get_by_role("button", name="Check now", exact=True).click()
+        expect(page.get_by_role("dialog").get_by_text("login_required", exact=True)).to_be_visible()
+        auth_status[adapter] = 200
+        page.get_by_role("button", name="Wait for login", exact=True).click()
+        expect(page.get_by_role("dialog").get_by_text("authenticated", exact=True)).to_be_visible()
+        for status, expected in [(403, "challenge_or_access_denied"), (429, "rate_limited"), (500, "unknown")]:
+            auth_status[adapter] = status
+            page.get_by_role("button", name="Check now", exact=True).click()
+            expect(page.get_by_role("dialog").get_by_text(expected, exact=True)).to_be_visible()
+        auth_status[adapter] = 200
+        page.get_by_role("button", name="Check now", exact=True).click()
+        expect(page.get_by_role("dialog").get_by_text("authenticated", exact=True)).to_be_visible()
+        page.get_by_role("button", name="Close", exact=True).click()
+        expect(row).to_contain_text("authenticated")
+    expect(page.get_by_role("row").filter(has=page.get_by_text("ui-claude-web", exact=True))).to_contain_text("historical configuration")
+    auth_status["blackbox"] = 401
+    page.get_by_role("row").filter(has=page.get_by_text("ui-blackbox", exact=True)).get_by_role("button", name="Check login", exact=True).click()
+    expect(page.get_by_role("dialog").get_by_text("login_required", exact=True)).to_be_visible()
+    page.get_by_role("button", name="Wait for login", exact=True).click()
+    expect(page.get_by_role("button", name="Wait for login", exact=True)).to_be_enabled()
+    page.get_by_role("button", name="Close", exact=True).click()
+    finished_checks = len(auth_requests)
+    page.wait_for_timeout(5500)
+    assert len(auth_requests) == finished_checks, "Closing the login dialog did not stop polling"
+    assert len(browser.pages) == existing_browser_pages, "Login checks left owned browser tabs open"
+    assert all(method == "GET" for _, method, _ in auth_requests)
     for label in ["Credentials", "Sources", "Models", "Groups", "Routing", "Health", "Metrics", "Browsers", "Devices", "Sessions", "Configuration", "Activity", "About"]:
         page.get_by_role("link", name=label, exact=True).click()
         expect(page.get_by_role("heading", name=label, exact=True)).to_be_visible()

@@ -66,7 +66,10 @@ function connectView(){
  return h('section',{class:'connection-panel'},h('h2',{},'Your sources, one place.'),h('p',{},'Manage accounts, models and routing on this gateway.'),field('Admin key',key),button('Connect',connect,'primary'),h('p',{},'The key stays in this tab’s memory. Disconnect or close the tab to clear it.'));
 }
 async function buttonAction(fn){try{await fn()}catch(e){message(e.message,true)}}
+let dialogCleanup=null;
+$('dialog').addEventListener('close',()=>{dialogCleanup?.();dialogCleanup=null});
 function dialog(name,body,actions=[]){
+ dialogCleanup?.();dialogCleanup=null;
  const close=button('Close',()=> $('dialog').close());
  $('dialog-content').replaceChildren(h('div',{class:'dialog-head'},h('h2',{id:'dialog-title'},name),close),h('div',{id:'dialog-error',class:'warning',role:'alert'}),h('div',{class:'dialog-body'},body),h('div',{class:'dialog-footer'},actions));
  if(!$('dialog').open)$('dialog').showModal();
@@ -251,7 +254,7 @@ function providerDetail(provider){
  const configured=(S.config.providers||[]).find(p=>p.id===provider.id);
  const descriptor=S.descriptors.find(d=>d.id===provider.adapter);
  const accounts=(S.config.accounts||[]).filter(a=>a.provider_id===provider.id);
- const rows=[['Type',provider.kind],['Adapter',provider.adapter],['Protocols',(provider.protocols||[]).join(', ')],['Implementation',provider.implementation],['Credential types',(descriptor?.credential_modes||[]).join(', ')],['Upstream verification',provider.live_verified?'Catalog contains live evidence':'Not live verified']];
+ const rows=[['Type',provider.kind],['Adapter',provider.adapter],['Protocols',(provider.protocols||[]).join(', ')],['Implementation',provider.implementation],['Credential types',(descriptor?.credential_modes||[]).join(', ')],['Browser login check',descriptor?.browser_auth_check?'Supported':'Not implemented'],['Upstream verification',provider.live_verified?'Catalog contains live evidence':'Not live verified']];
  dialog(provider.id,[
   h('dl',{class:'key-value'},rows.flatMap(([k,v])=>[h('dt',{},k),h('dd',{},v)])),
   h('p',{class:'muted'},provider.notes||''),
@@ -289,10 +292,37 @@ function providers(){
  query.oninput=draw;type.onchange=draw;draw();
  return [pageHead('Providers','Browse the catalog, then configure accounts and sources.',button('Add source',()=>addSource(),'primary')),h('div',{class:'toolbar'},query,type),target];
 }
+function accountAuth(a){
+ const last=[...(S.evidence||[])].reverse().find(e=>e.kind==='authentication'&&e.resource===a.id);
+ if(!last)return 'Not checked';
+ return last.status+' · '+new Date(last.checked_at).toLocaleString()+(last.revision===S.revision?'':' · historical configuration');
+}
+function loginEvidence(a,watch=false,launchMessage=''){
+ let live=true,busy=false,timer,deadline,controller;
+ const progress=h('p',{role:'status'},watch?'Checking every 5 seconds after each result, for up to 5 minutes.':'Checking browser session…');
+ const details=h('div',{});
+ const stop=()=>{watch=false;clearTimeout(timer);clearTimeout(deadline);controller?.abort();if(live)progress.textContent='Checks stopped. Use Check now to run another check.'};
+ const run=async()=>{
+  if(!live||busy)return;busy=true;controller=new AbortController();
+  try{
+   const result=await api('/admin/accounts/'+encodeURIComponent(a.id)+'/check-login',{method:'POST',signal:controller.signal});
+   if(!live)return;
+   details.replaceChildren(table(['Check','Result'],[['Status',result.status],['Profile',result.profile],['Checked at',result.checked_at],['Configuration revision',result.revision],['Method',result.method],['Composer ready',result.composer_ready?'Yes':'Not established'],['Generation verified','No'],['History saved',result.history_recorded?'Yes':'No']]));
+   if(['authenticated','unsupported','rate_limited'].includes(result.status)){watch=false;clearTimeout(deadline)}
+   progress.textContent=result.status==='authenticated'?'Browser session authenticated. Validate a configured source separately.':result.status==='unsupported'?'This provider does not yet implement a browser login check.':watch?'Waiting for you to finish login in the browser…':'Check complete.';
+   S.evidence=await api('/admin/evidence',{signal:controller.signal});if(live)render();
+  }catch(e){if(live&&e.name!=='AbortError'){watch=false;clearTimeout(deadline);progress.textContent=e.message}}
+  finally{busy=false;if(live&&watch)timer=setTimeout(run,5000)}
+ };
+ dialog('Login evidence',[h('p',{},launchMessage||'Checks do not submit a prompt. Browser authentication and source generation are separate.'),progress,details],[button('Check now',run),button('Wait for login',()=>{watch=true;clearTimeout(timer);clearTimeout(deadline);deadline=setTimeout(stop,300000);return run()}),button('Stop checks',stop),button('Open sources',()=>{$('dialog').close();location.hash='sources'})]);
+ dialogCleanup=()=>{live=false;stop()};
+ if(watch)deadline=setTimeout(stop,300000);
+ run();
+}
 function accounts(){
- return [pageHead('Accounts','Account switches and capacity apply across their sources.',button('Add account',()=>addAccount(),'primary')),table(['Account','Provider','Credential','Quota / concurrency','Auto','Actions'],(S.config.accounts||[]).map(a=>[
-  a.display_name||a.id,a.provider_id,a.credential_ref||'Not bound',a.quota_domain+' / '+a.max_inflight,badge(a.auto_approved?'Approved':'Manual',a.auto_approved?'accent':''),
-  [button(a.enabled?'Disable':'Enable',()=>toggle('accounts',a)),button('Edit',()=>edit('accounts',a)),a.browser_profile_id?button('Login',async()=>{const result=await api('/admin/accounts/'+encodeURIComponent(a.id)+'/login',{method:'POST'});message(result.message)}):null,a.browser_profile_id?button('Check login',async()=>{const result=await api('/admin/accounts/'+encodeURIComponent(a.id)+'/check-login',{method:'POST'});dialog('Login evidence',table(['Check','Result'],[['Status',result.status],['Checked at',result.checked_at||'Not checked'],['Method',result.method||'Not supported'],['Composer ready',result.composer_ready?'Yes':'Not established'],['Generation verified','No']]))}):null,button('Delete',()=>remove('accounts',a),'danger')]
+ return [pageHead('Accounts','Account switches and capacity apply across their sources.',button('Add account',()=>addAccount(),'primary')),table(['Account','Provider','Credential','Browser authentication','Quota / concurrency','Auto','Actions'],(S.config.accounts||[]).map(a=>[
+  a.display_name||a.id,a.provider_id,a.credential_ref||'Not bound',accountAuth(a),a.quota_domain+' / '+a.max_inflight,badge(a.auto_approved?'Approved':'Manual',a.auto_approved?'accent':''),
+  [button(a.enabled?'Disable':'Enable',()=>toggle('accounts',a)),button('Edit',()=>edit('accounts',a)),a.browser_profile_id?button('Login',async()=>{const result=await api('/admin/accounts/'+encodeURIComponent(a.id)+'/login',{method:'POST'});loginEvidence(a,true,result.message)}):null,a.browser_profile_id?button('Check login',()=>loginEvidence(a)):null,button('Delete',()=>remove('accounts',a),'danger')]
  ]),'No accounts. Add an account and bind a credential before enabling its sources.')];
 }
 function importBrowserCookies(){

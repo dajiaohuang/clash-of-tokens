@@ -38,7 +38,7 @@ func (d *Driver) CheckAuth(ctx context.Context) AuthEvidence {
 		Authenticated bool `json:"authenticated"`
 		Ready         bool `json:"ready"`
 	}
-	err := evaluate(check, `await auth(); return {authenticated:true,ready:!!composer()};`, nil, &result)
+	err := evaluate(check, `if(location.origin!==args.origin)return {authenticated:false,ready:false};await auth(); return {authenticated:true,ready:!!composer()};`, map[string]string{"origin": d.origin}, &result)
 	if err != nil {
 		var classified *Error
 		if errors.As(err, &classified) && classified.Code == 401 {
@@ -46,6 +46,9 @@ func (d *Driver) CheckAuth(ctx context.Context) AuthEvidence {
 		}
 		if errors.As(err, &classified) && classified.Code == 403 {
 			evidence.Status = "challenge_or_access_denied"
+		}
+		if errors.As(err, &classified) && classified.Code == 429 {
+			evidence.Status = "rate_limited"
 		}
 		return evidence
 	}
