@@ -351,8 +351,19 @@ function accountWizard(draft={}){
   next.accounts=next.accounts||[];next.accounts.push({id:value.id,provider_id:value.provider_id,display_name:value.display_name,base_url:value.base_url,organization:value.organization,project:value.project,quota_domain:value.quota_domain,credential_ref:value.credential_ref,browser_profile_id:value.browser_profile_id,enabled:false,auto_approved:false,max_inflight:1,weight:1,created_at:new Date().toISOString()});
   await preview(next,'Add account '+value.id,()=>accountWizard(value),clone(S.config),S.revision,value.authenticated?async()=>{await api('/admin/accounts/'+encodeURIComponent(value.id)+'/check-login',{method:'POST'});await refresh()}:undefined);
  },'primary')]);
-}
-function newWizardProfile(draft){
+ }
+ function credentialDescriptor(credential){
+  const account=(S.config.accounts||[]).find(a=>a.credential_ref===credential.id);
+  const source=(S.config.sources||[]).find(s=>s.credential_ref===credential.id||(!s.credential_ref&&account&&s.account_id===account.id));
+  const providerID=account?.provider_id||source?.provider;
+  const provider=S.catalog.find(p=>p.id===providerID);
+  return S.descriptors.find(d=>d.id===provider?.adapter);
+ }
+ function editCredential(credential){
+  const descriptor=credentialDescriptor(credential);
+  credentialForm(credential,undefined,undefined,descriptor?()=>descriptor:undefined);
+ }
+ function newWizardProfile(draft){
  const id=h('input',{value:draft.id?draft.id+'-browser':''}),engine=select(browserEngines,'chrome');
  const used=new Set((S.config.browser_profiles||[]).map(p=>new URL(p.cdp_url).port));let port=9223;while(used.has(String(port)))port++;
  const endpoint=h('input',{value:'http://127.0.0.1:'+port});
@@ -621,7 +632,7 @@ function reloginCredential(credential){
 }
 function credentials(){
  return [pageHead('Credentials','Protected values are stored separately from configuration.',h('div',{},button('Import export',importCredentials),button('Import token',importToken),button('Import browser cookies',importBrowserCookies),button('Add credential',()=>credentialForm(),'primary'))),table(['Credential','Type','Used by','Imported from','Updated','Last used','Actions'],S.credentials.map(c=>[
-  c.id,badge(c.kind),(()=>{const accounts=(S.config.accounts||[]).filter(a=>a.credential_ref===c.id),ids=accounts.map(a=>a.id);return [...ids,...S.config.sources.filter(s=>s.credential_ref===c.id||(!s.credential_ref&&accounts.some(a=>a.id===s.account_id))).map(s=>s.id)].join(', ')||'Unbound'})(),c.source,new Date(c.updated_at).toLocaleString(),c.last_used_at?new Date(c.last_used_at).toLocaleString():'Not used', [button('Replace',()=>credentialForm(c)),(S.config.accounts||[]).some(a=>a.credential_ref===c.id&&a.browser_profile_id)?button('Re-login',()=>reloginCredential(c)):null,button('Unbind',()=>unbindCredential(c)),button('Delete',()=>deleteCredential(c),'danger')]
+   c.id,badge(c.kind),(()=>{const accounts=(S.config.accounts||[]).filter(a=>a.credential_ref===c.id),ids=accounts.map(a=>a.id);return [...ids,...S.config.sources.filter(s=>s.credential_ref===c.id||(!s.credential_ref&&accounts.some(a=>a.id===s.account_id))).map(s=>s.id)].join(', ')||'Unbound'})(),c.source,new Date(c.updated_at).toLocaleString(),c.last_used_at?new Date(c.last_used_at).toLocaleString():'Not used', [button('Replace',()=>editCredential(c)),(S.config.accounts||[]).some(a=>a.credential_ref===c.id&&a.browser_profile_id)?button('Re-login',()=>reloginCredential(c)):null,button('Unbind',()=>unbindCredential(c)),button('Delete',()=>deleteCredential(c),'danger')]
  ]),'No credentials. Add a key or session, then bind its reference to an account.')];
 }
 function importCredentials(onSaved){
@@ -901,7 +912,7 @@ function searchResults(query){
  for(const source of S.config.sources)for(const model of source.models)if([model.id,model.upstream,model.canonical_model,model.declared_model,source.id,source.provider].filter(Boolean).join(' ').toLowerCase().includes(q))results.push([model.id+' · '+source.id,'Model',()=>bulkModels([{source,model}])]);
  for(const profile of S.config.browser_profiles||[])if((profile.id+' '+profile.engine).toLowerCase().includes(q))results.push([profile.id,'Browser profile',()=>edit('browser_profiles',profile)]);
  if(('device android '+(S.config.device?.serial||'')).toLowerCase().includes(q))results.push(['Android device settings','Device',()=>{$('search').value='';location.hash='devices';render()}]);
- for(const c of S.credentials)if([c.id,c.kind,c.source,c.domain].filter(Boolean).join(' ').toLowerCase().includes(q))results.push([c.id,'Credential',()=>credentialForm(c)]);
+ for(const c of S.credentials)if([c.id,c.kind,c.source,c.domain].filter(Boolean).join(' ').toLowerCase().includes(q))results.push([c.id,'Credential',()=>editCredential(c)]);
  return [pageHead('Search',results.length+' matching entries'),h('div',{class:'search-results'},results.map(([name,type,action])=>h('div',{class:'search-result'},button(name,action),h('span',{},type))))];
 }
 function render(){

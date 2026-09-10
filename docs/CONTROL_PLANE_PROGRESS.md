@@ -897,3 +897,9 @@ leaves the edit form unchanged.
 Batch 164 resets the quota confirmation state whenever an Account or Source
 editor is reopened, including after Back or a stale-revision response, so a
 later quota mutation cannot reuse an earlier approval.
+
+Batch 165 carries the bound provider descriptor into Credentials replacement
+and global-search editors. Provider-specific secret-field labels remain
+visible when replacing an existing protected value, while the vault keeps its
+explicit credential-kind choices; the browser regression verifies the OpenAI
+`API key` label without exposing the value.
