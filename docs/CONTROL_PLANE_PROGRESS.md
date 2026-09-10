@@ -533,3 +533,8 @@ shows the same account-level state beside its credential binding.
 Batch 98 carries the same redacted account credential state/version into the
 main Accounts table, keeping the account list consistent with Health and
 Provider Detail.
+
+Batch 99 derives account credential posture from effective source bindings when
+an account has no direct reference. Protected, missing, environment-backed,
+browser-profile, and multiple-source states remain metadata-only; a focused
+API regression covers protected and environment source bindings.

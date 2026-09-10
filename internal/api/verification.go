@@ -468,17 +468,7 @@ func (p *ControlPlane) accountHealth(s *Server, entries []audit.Entry) []account
 	}
 	out := make([]accountHealth, 0, len(s.cfg.Accounts))
 	for _, account := range s.cfg.Accounts {
-		credentialState := "not_configured"
-		credentialVersion := uint64(0)
-		if account.CredentialRef != "" {
-			credentialState = "missing_reference"
-			if meta := p.credentialMetadata(account.CredentialRef); meta.ID != "" {
-				credentialState = "protected_reference"
-				credentialVersion = meta.Version
-			}
-		} else if account.BrowserProfileID != "" {
-			credentialState = "browser_configured"
-		}
+		credentialState, credentialVersion := p.accountCredentialState(s.cfg, account)
 		health := accountHealth{ID: account.ID, Provider: account.ProviderID, CredentialState: credentialState, CredentialVersion: credentialVersion, Enabled: account.Enabled, AutoApproved: account.AutoApproved, Health: "untested", AuthStatus: "not_checked", Limit: account.MaxInflight, Weight: account.Weight, LastValidationState: "not_checked", Sources: []string{}}
 		var lastValidation audit.Entry
 		hasValidation := false
@@ -551,6 +541,48 @@ func (p *ControlPlane) accountHealth(s *Server, entries []audit.Entry) []account
 		out = append(out, health)
 	}
 	return out
+}
+
+// accountCredentialState reports the effective credential posture without
+// exposing a reference or secret. A source may intentionally own its own
+// reference, so account health must include those bindings when the account
+// itself has no credential reference.
+func (p *ControlPlane) accountCredentialState(c config.Config, account config.Account) (string, uint64) {
+	if account.CredentialRef != "" {
+		if meta := p.credentialMetadata(account.CredentialRef); meta.ID != "" {
+			return "protected_reference", meta.Version
+		}
+		return "missing_reference", 0
+	}
+	var sourceRef string
+	environment := false
+	for _, source := range c.Sources {
+		if source.AccountID != account.ID {
+			continue
+		}
+		if source.CredentialRef != "" {
+			if sourceRef != "" && sourceRef != source.CredentialRef {
+				return "multiple_source_references", 0
+			}
+			sourceRef = source.CredentialRef
+		}
+		if source.KeyEnv != "" && os.Getenv(source.KeyEnv) != "" {
+			environment = true
+		}
+	}
+	if sourceRef != "" {
+		if meta := p.credentialMetadata(sourceRef); meta.ID != "" {
+			return "protected_reference", meta.Version
+		}
+		return "missing_reference", 0
+	}
+	if environment {
+		return "environment_present", 0
+	}
+	if account.BrowserProfileID != "" {
+		return "browser_configured", 0
+	}
+	return "not_configured", 0
 }
 
 func authRequiresLogin(status string) bool {

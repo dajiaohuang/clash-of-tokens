@@ -207,6 +207,40 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 	}
 }
 
+func TestAccountHealthReportsSourceCredentialBindings(t *testing.T) {
+	t.Setenv("COT_SOURCE_ACCOUNT_KEY", "environment-secret")
+	c := config.Default()
+	c.Providers = []config.Provider{{ID: "p", Enabled: true}}
+	c.Accounts = []config.Account{{ID: "a", ProviderID: "p", Enabled: true, MaxInflight: 1, Weight: 1, QuotaDomain: "q"}, {ID: "b", ProviderID: "p", Enabled: true, MaxInflight: 1, Weight: 1, QuotaDomain: "q-b"}}
+	c.Sources = []config.Source{
+		{ID: "s-protected", Provider: "p", Adapter: "openai", BaseURL: "https://example.com", AccountID: "a", CredentialRef: "cred://source", MaxInflight: 1, QuotaDomain: "q", QuotaMaxInflight: 1, Models: []config.Model{{ID: "m", Upstream: "m", Protocols: []string{"chat"}, Tier: "unrated", Tools: "none", MaxInputBytes: 1024}}},
+		{ID: "s-env", Provider: "p", Adapter: "openai", BaseURL: "https://example.com", AccountID: "b", KeyEnv: "COT_SOURCE_ACCOUNT_KEY", MaxInflight: 1, QuotaDomain: "q-b", QuotaMaxInflight: 1, Models: []config.Model{{ID: "m", Upstream: "m", Protocols: []string{"chat"}, Tier: "unrated", Tools: "none", MaxInputBytes: 1024}}},
+	}
+	dir := t.TempDir()
+	vault, err := credentials.Open(filepath.Join(dir, "vault"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := vault.Put("cred://source", "api_key", "test", "secret"); err != nil {
+		t.Fatal(err)
+	}
+	p, err := NewControlPlane(filepath.Join(dir, "config.json"), c, testKey, adminKey, vault)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer p.Close()
+	rows := p.accountHealth(p.current.server, nil)
+	if len(rows) != 2 {
+		t.Fatalf("account rows = %+v", rows)
+	}
+	if rows[0].CredentialState != "protected_reference" || rows[0].CredentialVersion != 1 {
+		t.Fatalf("source-bound protected credential was not reported: %+v", rows[0])
+	}
+	if rows[1].CredentialState != "environment_present" || rows[1].CredentialVersion != 0 {
+		t.Fatalf("source-bound environment credential was not reported: %+v", rows[1])
+	}
+}
+
 func TestProviderHealthIncludesCatalogProvenance(t *testing.T) {
 	dir := t.TempDir()
 	c := config.Default()
