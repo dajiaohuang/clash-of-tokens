@@ -655,3 +655,8 @@ browser-auth-check descriptors (ChatGPT Web, Claude Web and Blackbox). The
 browser regression now launches a password-manager CSV import from the Claude
 Web account wizard, returns the protected reference into the draft, saves the
 account and confirms that the imported secret never reaches the DOM.
+
+Batch 122 verifies the hot-reload boundary in the browser regression. A runtime
+queue-limit edit shows the restart-required warning during preview and remains
+visible as pending after apply, while the transaction and configuration history
+still complete normally.
