@@ -468,3 +468,10 @@ Batch 84 brings provider health, authentication, pool strategy, catalog
 provenance, verified-source count and freshness timestamps into Provider Detail.
 The detail view now exposes the same runtime evidence as Health before showing
 source-level explanations.
+
+Batch 85 adds explicit validation-state labels to provider and account health.
+The latest audit entry remains available alongside its timestamp; current
+binding evidence is classified as `verified` or `failed`, while entries from a
+previous credential/source binding are retained as `historical`. Health and
+Provider Detail display the state next to the timestamp, and API regressions
+cover both provider and account projections.

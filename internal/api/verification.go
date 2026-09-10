@@ -34,21 +34,22 @@ type sourceVerification struct {
 }
 
 type accountHealth struct {
-	ID                string     `json:"id"`
-	Provider          string     `json:"provider"`
-	PoolStrategy      string     `json:"pool_strategy"`
-	Weight            int        `json:"weight"`
-	Health            string     `json:"health"`
-	AuthStatus        string     `json:"auth_status"`
-	Active            int        `json:"active"`
-	Limit             int        `json:"limit"`
-	Sources           []string   `json:"sources"`
-	Completed         uint64     `json:"completed"`
-	Failures          uint64     `json:"failures"`
-	LastSuccess       *time.Time `json:"last_success,omitempty"`
-	LastFailure       *time.Time `json:"last_failure,omitempty"`
-	LastValidatedAt   *time.Time `json:"last_validated_at,omitempty"`
-	LastAuthCheckedAt *time.Time `json:"last_auth_checked_at,omitempty"`
+	ID                  string     `json:"id"`
+	Provider            string     `json:"provider"`
+	PoolStrategy        string     `json:"pool_strategy"`
+	Weight              int        `json:"weight"`
+	Health              string     `json:"health"`
+	AuthStatus          string     `json:"auth_status"`
+	Active              int        `json:"active"`
+	Limit               int        `json:"limit"`
+	Sources             []string   `json:"sources"`
+	Completed           uint64     `json:"completed"`
+	Failures            uint64     `json:"failures"`
+	LastSuccess         *time.Time `json:"last_success,omitempty"`
+	LastFailure         *time.Time `json:"last_failure,omitempty"`
+	LastValidatedAt     *time.Time `json:"last_validated_at,omitempty"`
+	LastValidationState string     `json:"last_validation_state"`
+	LastAuthCheckedAt   *time.Time `json:"last_auth_checked_at,omitempty"`
 }
 
 type providerHealth struct {
@@ -69,6 +70,7 @@ type providerHealth struct {
 	LastSuccess         *time.Time `json:"last_success,omitempty"`
 	LastFailure         *time.Time `json:"last_failure,omitempty"`
 	LastValidatedAt     *time.Time `json:"last_validated_at,omitempty"`
+	LastValidationState string     `json:"last_validation_state"`
 	LastAuthCheckedAt   *time.Time `json:"last_auth_checked_at,omitempty"`
 }
 
@@ -176,7 +178,7 @@ func (p *ControlPlane) controlStatus(s *Server) map[string]any {
 					mv.Status = "historical"
 					if e.Binding != "" && e.Binding == binding {
 						mv.Status = "failed"
-						if e.Status == "verified" && e.Method == "explicit_stream_generation" && e.ProtocolComplete && e.OutputObserved && e.UpstreamStatus >= 200 && e.UpstreamStatus < 300 {
+						if isVerifiedValidation(e) {
 							mv.Status = "verified"
 							verified = true
 						}
@@ -219,6 +221,20 @@ func (p *ControlPlane) controlStatus(s *Server) map[string]any {
 	return out
 }
 
+func isVerifiedValidation(entry audit.Entry) bool {
+	return entry.Status == "verified" && entry.Method == "explicit_stream_generation" && entry.ProtocolComplete && entry.OutputObserved && entry.UpstreamStatus >= 200 && entry.UpstreamStatus < 300
+}
+
+func (p *ControlPlane) validationState(c config.Config, source config.Source, entry audit.Entry) string {
+	if entry.Binding == "" || entry.Binding != p.sourceBinding(c, source) {
+		return "historical"
+	}
+	if isVerifiedValidation(entry) {
+		return "verified"
+	}
+	return "failed"
+}
+
 func (p *ControlPlane) providerHealth(s *Server, accounts []accountHealth, entries []audit.Entry) []providerHealth {
 	type aggregate struct {
 		providerHealth
@@ -237,7 +253,7 @@ func (p *ControlPlane) providerHealth(s *Server, accounts []accountHealth, entri
 		if current := byID[id]; current != nil {
 			return current
 		}
-		current := &aggregate{providerHealth: providerHealth{ID: id, Enabled: true, Health: "untested", AuthStatus: "not_checked", Accounts: []string{}, Sources: []string{}}}
+		current := &aggregate{providerHealth: providerHealth{ID: id, Enabled: true, Health: "untested", AuthStatus: "not_checked", LastValidationState: "not_checked", Accounts: []string{}, Sources: []string{}}}
 		byID[id] = current
 		ordered = append(ordered, id)
 		return current
@@ -278,13 +294,13 @@ func (p *ControlPlane) providerHealth(s *Server, accounts []accountHealth, entri
 		}
 	}
 	runtimeByID := map[string]runtimeAggregate{}
-	latestValidation := map[string]time.Time{}
+	latestValidation := map[string]audit.Entry{}
 	for _, entry := range entries {
 		if entry.Kind != "validation" {
 			continue
 		}
-		if current, ok := latestValidation[entry.Resource]; !ok || entry.CheckedAt.After(current) {
-			latestValidation[entry.Resource] = entry.CheckedAt
+		if current, ok := latestValidation[entry.Resource]; !ok || entry.CheckedAt.After(current.CheckedAt) {
+			latestValidation[entry.Resource] = entry
 		}
 	}
 	for _, status := range s.Router.Status() {
@@ -293,9 +309,10 @@ func (p *ControlPlane) providerHealth(s *Server, accounts []accountHealth, entri
 	for _, source := range s.cfg.Sources {
 		row := ensure(source.Provider)
 		row.Sources = append(row.Sources, source.ID)
-		if checked, ok := latestValidation[source.ID]; ok && checked.After(valueTime(row.LastValidatedAt)) {
-			value := checked
+		if checked, ok := latestValidation[source.ID]; ok && checked.CheckedAt.After(valueTime(row.LastValidatedAt)) {
+			value := checked.CheckedAt
 			row.LastValidatedAt = &value
+			row.LastValidationState = p.validationState(s.cfg, source, checked)
 		}
 		status, ok := runtimeByID[source.ID]
 		if !ok {
@@ -411,7 +428,7 @@ func (p *ControlPlane) accountHealth(s *Server, entries []audit.Entry) []account
 	}
 	out := make([]accountHealth, 0, len(s.cfg.Accounts))
 	for _, account := range s.cfg.Accounts {
-		health := accountHealth{ID: account.ID, Provider: account.ProviderID, Health: "untested", AuthStatus: "not_checked", Limit: account.MaxInflight, Weight: account.Weight, Sources: []string{}}
+		health := accountHealth{ID: account.ID, Provider: account.ProviderID, Health: "untested", AuthStatus: "not_checked", Limit: account.MaxInflight, Weight: account.Weight, LastValidationState: "not_checked", Sources: []string{}}
 		for _, provider := range s.cfg.Providers {
 			if provider.ID == account.ProviderID {
 				health.PoolStrategy = provider.PoolStrategy
@@ -441,6 +458,7 @@ func (p *ControlPlane) accountHealth(s *Server, entries []audit.Entry) []account
 			if entry, ok := latestValidation[source.ID]; ok && entry.CheckedAt.After(valueTime(health.LastValidatedAt)) {
 				v := entry.CheckedAt
 				health.LastValidatedAt = &v
+				health.LastValidationState = p.validationState(s.cfg, source, entry)
 			}
 		}
 		if entry, ok := latestAuth[account.ID]; ok {

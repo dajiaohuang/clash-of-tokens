@@ -96,19 +96,21 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 			Accounts            []string   `json:"accounts"`
 			Sources             []string   `json:"sources"`
 			LastValidated       *time.Time `json:"last_validated_at"`
+			LastValidationState string     `json:"last_validation_state"`
 			LastAuthChecked     *time.Time `json:"last_auth_checked_at"`
 		} `json:"provider_health"`
 		Accounts []struct {
-			ID              string     `json:"id"`
-			PoolStrategy    string     `json:"pool_strategy"`
-			Weight          int        `json:"weight"`
-			Health          string     `json:"health"`
-			AuthStatus      string     `json:"auth_status"`
-			Active          int        `json:"active"`
-			Limit           int        `json:"limit"`
-			Sources         []string   `json:"sources"`
-			LastValidated   *time.Time `json:"last_validated_at"`
-			LastAuthChecked *time.Time `json:"last_auth_checked_at"`
+			ID                  string     `json:"id"`
+			PoolStrategy        string     `json:"pool_strategy"`
+			Weight              int        `json:"weight"`
+			Health              string     `json:"health"`
+			AuthStatus          string     `json:"auth_status"`
+			Active              int        `json:"active"`
+			Limit               int        `json:"limit"`
+			Sources             []string   `json:"sources"`
+			LastValidated       *time.Time `json:"last_validated_at"`
+			LastValidationState string     `json:"last_validation_state"`
+			LastAuthChecked     *time.Time `json:"last_auth_checked_at"`
 		} `json:"account_health"`
 		Verification []struct {
 			Source            string `json:"source"`
@@ -140,6 +142,9 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 	if out.Providers[0].LastValidated == nil || !out.Providers[0].LastValidated.Equal(checked) {
 		t.Fatalf("provider validation timestamp missing: %+v", out.Providers[0].LastValidated)
 	}
+	if out.Providers[0].LastValidationState != "verified" {
+		t.Fatalf("provider validation state missing: %+v", out.Providers[0])
+	}
 	if out.Providers[0].LastAuthChecked == nil || !out.Providers[0].LastAuthChecked.Equal(checked) {
 		t.Fatalf("provider auth timestamp missing: %+v", out.Providers[0].LastAuthChecked)
 	}
@@ -152,6 +157,9 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 	}
 	if a.LastAuthChecked == nil || !a.LastAuthChecked.Equal(checked) {
 		t.Fatalf("account auth timestamp missing: %+v", a.LastAuthChecked)
+	}
+	if a.LastValidationState != "verified" {
+		t.Fatalf("account validation state missing: %+v", a)
 	}
 	if a.PoolStrategy != "least-load" || a.Weight != 3 {
 		t.Fatalf("account pool metadata missing: %+v", a)
