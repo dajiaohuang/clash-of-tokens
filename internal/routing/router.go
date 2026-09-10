@@ -82,6 +82,7 @@ type capacity struct {
 	current          *Router
 }
 type Query struct {
+	Probe           bool     `json:"-"`
 	ExcludedSources []string `json:"-"`
 	Affinity        string   `json:"affinity,omitempty"`
 	Model           string   `json:"model"`
@@ -190,20 +191,23 @@ func contains(a []string, v string) bool {
 }
 func (r *Router) eligible(t Target, q Query) (bool, string) {
 	s := r.cfg.Sources[t.Source]
+	if q.Probe && q.Model != s.ID+"/"+t.Model.ID {
+		return false, "probe_requires_explicit_source"
+	}
 	if contains(q.ExcludedSources, s.ID) {
 		return false, "already_attempted"
 	}
 	st := r.state[t.Source]
-	if t.Model.Enabled != nil && !*t.Model.Enabled {
+	if !q.Probe && t.Model.Enabled != nil && !*t.Model.Enabled {
 		return false, "model_disabled"
 	}
-	if !st.enabled {
+	if !q.Probe && !st.enabled {
 		return false, "disabled"
 	}
-	if !r.parentEnabled[t.Source] {
+	if !q.Probe && !r.parentEnabled[t.Source] {
 		return false, "provider_or_account_disabled"
 	}
-	if st.blocked {
+	if !q.Probe && st.blocked {
 		return false, "authentication_or_policy_block"
 	}
 	if !contains(t.Model.Protocols, q.Protocol) {

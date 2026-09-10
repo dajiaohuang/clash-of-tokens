@@ -318,8 +318,25 @@ function importCredentials(){
 }
 function sources(){
  return [pageHead('Sources','A source binds an account to one or more model targets.',button('Add source',()=>addSource(),'primary')),table(['Source','Provider / account','Type','State','Models','Groups','Actions'],S.config.sources.map(s=>[
-  s.id,s.provider+(s.account_id?' / '+s.account_id:''),badge(s.source_kind||'Unspecified'),state(s),s.models.length,S.config.groups.filter(g=>g.sources.includes(s.id)).map(g=>g.id).join(', '),[button(s.enabled?'Disable':'Enable',()=>toggle('sources',s)),button('Edit',()=>edit('sources',s)),button('Delete',()=>remove('sources',s),'danger')]
+  s.id,s.provider+(s.account_id?' / '+s.account_id:''),badge(s.source_kind||'Unspecified'),state(s),s.models.length,S.config.groups.filter(g=>g.sources.includes(s.id)).map(g=>g.id).join(', '),[button(s.enabled?'Disable':'Enable',()=>toggle('sources',s)),button('Edit',()=>edit('sources',s)),button('Discover models',()=>discoverModels(s)),button('Validate',()=>validateSource(s)),button('Delete',()=>remove('sources',s),'danger')]
  ]),'No sources. Add a provider preset and enter the model available to your account.')];
+}
+async function discoverModels(source){
+ const result=await api('/admin/sources/'+encodeURIComponent(source.id)+'/discover',{method:'POST'});
+ dialog('Discovered models',[h('p',{class:'muted'},(result.complete?'Complete list':'Partial list: limit reached')+' · '+result.pages+' pages · '+result.checked_at+'. Listing does not verify generation, tools or quality.'),table(['Upstream model','Action'],result.models.map(m=>[m.id,button('Configure model',()=>{
+  const next=clone(source);if(next.models.some(x=>x.id===m.id||x.upstream===m.id))throw new Error('This model is already configured.');
+  next.models.push({id:m.id,upstream:m.id,protocols:[],tier:'unrated',tools:'unknown',vision:false,max_input_bytes:65536,enabled:false,auto_approved:false});
+  edit('sources',next);
+ })]))],[button('Close',()=> $('dialog').close())]);
+}
+function validateSource(source){
+ const model=h('select',{},source.models.map(m=>h('option',{value:m.id},m.id))),proto=h('select',{});
+ function protocols(){proto.replaceChildren(...source.models.find(m=>m.id===model.value).protocols.map(p=>h('option',{value:p},p)))}
+ model.onchange=protocols;protocols();
+ dialog('Validate source',[field('Model to validate',model),field('Protocol to validate',proto),h('p',{class:'muted'},'Sends one generation request: “Reply with OK.” Provider usage may be billed. This can check a disabled source without enabling its routes. No automatic retry is performed.')],[button('Run validation',async()=>{
+  const result=await api('/admin/sources/'+encodeURIComponent(source.id)+'/validate',{method:'POST',body:JSON.stringify({model:model.value,protocol:proto.value})});
+  dialog('Validation evidence',table(['Check','Result'],[['Source / model',result.source+' / '+result.model],['Verified',result.verified?'Yes':'No'],['Checked at',result.checked_at],['Protocol complete',result.result.protocol_complete?'Yes':'No'],['Output observed',result.output_observed?'Yes':'No'],['Error',result.result.upstream_error||'None']]),[button('Close',()=> $('dialog').close())]);
+ },'primary')]);
 }
 function models(){
  return [pageHead('Models','Model names, capabilities and Auto approval remain explicit.'),table(['Model','Source','Upstream','Tier','Tools / vision','State',''],S.config.sources.flatMap(s=>s.models.map(m=>[
