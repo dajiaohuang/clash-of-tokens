@@ -14,15 +14,17 @@ import (
 )
 
 type Config struct {
-	SchemaVersion int      `json:"schema_version"`
-	Listen        string   `json:"listen"`
-	APIKeyEnv     string   `json:"api_key_env"`
-	AdminKeyEnv   string   `json:"admin_key_env"`
-	Runtime       Runtime  `json:"runtime"`
-	Browser       Browser  `json:"browser"`
-	Device        Device   `json:"device"`
-	Sources       []Source `json:"sources"`
-	Groups        []Group  `json:"groups"`
+	Providers     []Provider `json:"providers,omitempty"`
+	Accounts      []Account  `json:"accounts,omitempty"`
+	SchemaVersion int        `json:"schema_version"`
+	Listen        string     `json:"listen"`
+	APIKeyEnv     string     `json:"api_key_env"`
+	AdminKeyEnv   string     `json:"admin_key_env"`
+	Runtime       Runtime    `json:"runtime"`
+	Browser       Browser    `json:"browser"`
+	Device        Device     `json:"device"`
+	Sources       []Source   `json:"sources"`
+	Groups        []Group    `json:"groups"`
 }
 
 // Device is an explicitly configured physical execution environment. It is not
@@ -58,6 +60,8 @@ type Runtime struct {
 	BodyReadTimeoutMS int   `json:"body_read_timeout_ms"`
 }
 type Source struct {
+	AccountID         string  `json:"account_id,omitempty"`
+	CredentialRef     string  `json:"credential_ref,omitempty"`
 	SourceKind        string  `json:"source_kind,omitempty"`
 	ExecutionLocation string  `json:"execution_location,omitempty"`
 	InferenceLocation string  `json:"inference_location,omitempty"`
@@ -144,6 +148,9 @@ func Tier(s string) int {
 	return -1
 }
 func (c Config) Validate() error {
+	if err := c.ValidateAccounts(); err != nil {
+		return err
+	}
 	if c.SchemaVersion != 1 {
 		return errors.New("unsupported schema_version")
 	}
@@ -289,7 +296,7 @@ func (c Config) Validate() error {
 				return fmt.Errorf("source %s: local requires loopback endpoint", s.ID)
 			}
 		}
-		if !s.Local && !s.Anonymous && s.KeyEnv == "" && s.Adapter != "chatgpt-web" && s.Adapter != "doubao" && s.Adapter != "gemini-web" && s.Adapter != "gigachat-web" && s.Adapter != "duckduckgo-web" && s.Adapter != "aistudio-build" {
+		if !s.Local && !s.Anonymous && s.KeyEnv == "" && c.SourceCredentialRef(s) == "" && s.Adapter != "chatgpt-web" && s.Adapter != "doubao" && s.Adapter != "gemini-web" && s.Adapter != "gigachat-web" && s.Adapter != "duckduckgo-web" && s.Adapter != "aistudio-build" {
 			return fmt.Errorf("source %s: key_env required", s.ID)
 		}
 		if s.MaxInflight < 1 || s.MaxInflight > 10000 || s.QuotaDomain == "" || s.QuotaMaxInflight < 1 || s.QuotaMaxInflight > 10000 {

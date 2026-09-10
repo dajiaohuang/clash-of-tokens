@@ -49,6 +49,9 @@ type Router struct {
 	candidates      map[string][]int
 	state           []state
 	quotas          []*quota
+	accounts        []*quota
+	parentEnabled   []bool
+	parentApproved  []bool
 	active, waiting int
 	cursor          uint64
 	head, tail      *waiter
@@ -70,7 +73,28 @@ type Lease struct {
 func New(c config.Config) *Router {
 	r := &Router{cfg: c, groups: make(map[string]compiledGroup), candidates: make(map[string][]int), state: make([]state, len(c.Sources))}
 	qs := map[string]*quota{}
+	accountLimits := map[string]*quota{}
+	accountConfig := map[string]config.Account{}
+	providerConfig := map[string]config.Provider{}
+	for _, p := range c.Providers {
+		providerConfig[p.ID] = p
+	}
+	for _, a := range c.Accounts {
+		accountConfig[a.ID] = a
+		accountLimits[a.ID] = &quota{limit: a.MaxInflight}
+	}
 	for i, s := range c.Sources {
+		enabled, approved := true, true
+		if p, ok := providerConfig[s.Provider]; ok {
+			enabled, approved = p.Enabled, p.AutoApproved
+		}
+		if a, ok := accountConfig[s.AccountID]; ok {
+			enabled = enabled && a.Enabled
+			approved = approved && a.AutoApproved
+		}
+		r.parentEnabled = append(r.parentEnabled, enabled)
+		r.parentApproved = append(r.parentApproved, approved)
+		r.accounts = append(r.accounts, accountLimits[s.AccountID])
 		r.state[i].enabled = s.Enabled
 		if qs[s.QuotaDomain] == nil {
 			qs[s.QuotaDomain] = &quota{limit: s.QuotaMaxInflight}
@@ -129,6 +153,9 @@ func (r *Router) eligible(t Target, q Query) (bool, string) {
 	if !st.enabled {
 		return false, "disabled"
 	}
+	if !r.parentEnabled[t.Source] {
+		return false, "provider_or_account_disabled"
+	}
 	if st.blocked {
 		return false, "authentication_or_policy_block"
 	}
@@ -158,7 +185,7 @@ func (r *Router) eligible(t Target, q Query) (bool, string) {
 			return false, "stateful_requires_explicit_source"
 		}
 		_, member := g.members[s.ID]
-		if !s.AutoApproved || !member {
+		if !s.AutoApproved || !r.parentApproved[t.Source] || !member {
 			return false, "not_approved"
 		}
 		if g.LocalOnly && !s.LocalInference() {
@@ -224,6 +251,9 @@ func (r *Router) choose(q Query, now time.Time) (int, bool) {
 		}
 		st := r.state[t.Source]
 		quota := r.quotas[t.Source]
+		if a := r.accounts[t.Source]; a != nil && a.active >= a.limit {
+			continue
+		}
 		if r.active >= r.cfg.Runtime.MaxInflight || st.active >= r.cfg.Sources[t.Source].MaxInflight || quota.active >= quota.limit || now.Before(st.cooldown) || now.Before(quota.cooldown) {
 			continue
 		}
@@ -272,6 +302,9 @@ func (r *Router) Acquire(ctx context.Context, q Query) (*Lease, error) {
 			r.active++
 			r.state[t.Source].active++
 			r.quotas[t.Source].active++
+			if a := r.accounts[t.Source]; a != nil {
+				a.active++
+			}
 			r.cursor++
 			return &Lease{router: r, Target: t, started: time.Now()}, nil
 		}
@@ -347,6 +380,9 @@ func (l *Lease) Release(status int, retryAfter time.Duration) {
 		r.active--
 		r.state[i].active--
 		r.quotas[i].active--
+		if a := r.accounts[i]; a != nil {
+			a.active--
+		}
 		st := &r.state[i]
 		if status == 401 || status == 403 {
 			st.blocked = true
@@ -406,7 +442,7 @@ func (r *Router) Status() []Status {
 	defer r.mu.Unlock()
 	out := make([]Status, 0, len(r.state))
 	for i, s := range r.state {
-		out = append(out, Status{r.cfg.Sources[i].ID, s.enabled, s.active, s.completed, s.failures, s.blocked, maxTime(s.cooldown, r.quotas[i].cooldown), s.latency})
+		out = append(out, Status{r.cfg.Sources[i].ID, s.enabled && r.parentEnabled[i], s.active, s.completed, s.failures, s.blocked, maxTime(s.cooldown, r.quotas[i].cooldown), s.latency})
 	}
 	return out
 }
@@ -426,6 +462,8 @@ func (r *Router) Explain(q Query) map[string]string {
 			s := r.state[t.Source]
 			qt := r.quotas[t.Source]
 			switch {
+			case r.accounts[t.Source] != nil && r.accounts[t.Source].active >= r.accounts[t.Source].limit:
+				reason = "account_capacity"
 			case time.Now().Before(maxTime(s.cooldown, qt.cooldown)):
 				reason = "cooldown"
 			case s.active >= r.cfg.Sources[t.Source].MaxInflight || qt.active >= qt.limit || r.active >= r.cfg.Runtime.MaxInflight:
