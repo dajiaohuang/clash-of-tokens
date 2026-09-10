@@ -79,21 +79,23 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 	}
 	var out struct {
 		Providers []struct {
-			ID            string     `json:"id"`
-			Health        string     `json:"health"`
-			AuthStatus    string     `json:"auth_status"`
-			Accounts      []string   `json:"accounts"`
-			Sources       []string   `json:"sources"`
-			LastValidated *time.Time `json:"last_validated_at"`
+			ID              string     `json:"id"`
+			Health          string     `json:"health"`
+			AuthStatus      string     `json:"auth_status"`
+			Accounts        []string   `json:"accounts"`
+			Sources         []string   `json:"sources"`
+			LastValidated   *time.Time `json:"last_validated_at"`
+			LastAuthChecked *time.Time `json:"last_auth_checked_at"`
 		} `json:"provider_health"`
 		Accounts []struct {
-			ID            string     `json:"id"`
-			Health        string     `json:"health"`
-			AuthStatus    string     `json:"auth_status"`
-			Active        int        `json:"active"`
-			Limit         int        `json:"limit"`
-			Sources       []string   `json:"sources"`
-			LastValidated *time.Time `json:"last_validated_at"`
+			ID              string     `json:"id"`
+			Health          string     `json:"health"`
+			AuthStatus      string     `json:"auth_status"`
+			Active          int        `json:"active"`
+			Limit           int        `json:"limit"`
+			Sources         []string   `json:"sources"`
+			LastValidated   *time.Time `json:"last_validated_at"`
+			LastAuthChecked *time.Time `json:"last_auth_checked_at"`
 		} `json:"account_health"`
 	}
 	if err := json.Unmarshal(w.Body.Bytes(), &out); err != nil {
@@ -111,12 +113,18 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 	if out.Providers[0].LastValidated == nil || !out.Providers[0].LastValidated.Equal(checked) {
 		t.Fatalf("provider validation timestamp missing: %+v", out.Providers[0].LastValidated)
 	}
+	if out.Providers[0].LastAuthChecked == nil || !out.Providers[0].LastAuthChecked.Equal(checked) {
+		t.Fatalf("provider auth timestamp missing: %+v", out.Providers[0].LastAuthChecked)
+	}
 	if out.Providers[1].ID != "disabled-provider" || out.Providers[1].Health != "disabled" {
 		t.Fatalf("disabled provider was not classified: %+v", out.Providers[1])
 	}
 	a := out.Accounts[0]
 	if a.ID != "a" || a.Health != "untested" || a.AuthStatus != "authenticated" || a.Active != 0 || a.Limit != 1 || len(a.Sources) != 1 || a.Sources[0] != "s" || a.LastValidated == nil {
 		t.Fatalf("unexpected account health: %+v", a)
+	}
+	if a.LastAuthChecked == nil || !a.LastAuthChecked.Equal(checked) {
+		t.Fatalf("account auth timestamp missing: %+v", a.LastAuthChecked)
 	}
 	b := out.Accounts[1]
 	if b.ID != "b" || b.Health != "auth_required" || b.AuthStatus != "login_required" || b.Limit != 1 || len(b.Sources) != 0 {

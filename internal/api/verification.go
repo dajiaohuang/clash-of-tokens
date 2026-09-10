@@ -34,34 +34,36 @@ type sourceVerification struct {
 }
 
 type accountHealth struct {
-	ID              string     `json:"id"`
-	Provider        string     `json:"provider"`
-	Health          string     `json:"health"`
-	AuthStatus      string     `json:"auth_status"`
-	Active          int        `json:"active"`
-	Limit           int        `json:"limit"`
-	Sources         []string   `json:"sources"`
-	Completed       uint64     `json:"completed"`
-	Failures        uint64     `json:"failures"`
-	LastSuccess     *time.Time `json:"last_success,omitempty"`
-	LastFailure     *time.Time `json:"last_failure,omitempty"`
-	LastValidatedAt *time.Time `json:"last_validated_at,omitempty"`
+	ID                string     `json:"id"`
+	Provider          string     `json:"provider"`
+	Health            string     `json:"health"`
+	AuthStatus        string     `json:"auth_status"`
+	Active            int        `json:"active"`
+	Limit             int        `json:"limit"`
+	Sources           []string   `json:"sources"`
+	Completed         uint64     `json:"completed"`
+	Failures          uint64     `json:"failures"`
+	LastSuccess       *time.Time `json:"last_success,omitempty"`
+	LastFailure       *time.Time `json:"last_failure,omitempty"`
+	LastValidatedAt   *time.Time `json:"last_validated_at,omitempty"`
+	LastAuthCheckedAt *time.Time `json:"last_auth_checked_at,omitempty"`
 }
 
 type providerHealth struct {
-	ID              string     `json:"id"`
-	Enabled         bool       `json:"enabled"`
-	Health          string     `json:"health"`
-	AuthStatus      string     `json:"auth_status"`
-	Active          int        `json:"active"`
-	Limit           int        `json:"limit"`
-	Accounts        []string   `json:"accounts"`
-	Sources         []string   `json:"sources"`
-	Completed       uint64     `json:"completed"`
-	Failures        uint64     `json:"failures"`
-	LastSuccess     *time.Time `json:"last_success,omitempty"`
-	LastFailure     *time.Time `json:"last_failure,omitempty"`
-	LastValidatedAt *time.Time `json:"last_validated_at,omitempty"`
+	ID                string     `json:"id"`
+	Enabled           bool       `json:"enabled"`
+	Health            string     `json:"health"`
+	AuthStatus        string     `json:"auth_status"`
+	Active            int        `json:"active"`
+	Limit             int        `json:"limit"`
+	Accounts          []string   `json:"accounts"`
+	Sources           []string   `json:"sources"`
+	Completed         uint64     `json:"completed"`
+	Failures          uint64     `json:"failures"`
+	LastSuccess       *time.Time `json:"last_success,omitempty"`
+	LastFailure       *time.Time `json:"last_failure,omitempty"`
+	LastValidatedAt   *time.Time `json:"last_validated_at,omitempty"`
+	LastAuthCheckedAt *time.Time `json:"last_auth_checked_at,omitempty"`
 }
 
 func (p *ControlPlane) credentialMetadata(ref string) credentials.Metadata {
@@ -228,6 +230,10 @@ func (p *ControlPlane) providerHealth(s *Server, accounts []accountHealth, entri
 		if account.LastFailure != nil && account.LastFailure.After(valueTime(row.LastFailure)) {
 			value := *account.LastFailure
 			row.LastFailure = &value
+		}
+		if account.LastAuthCheckedAt != nil && account.LastAuthCheckedAt.After(valueTime(row.LastAuthCheckedAt)) {
+			value := *account.LastAuthCheckedAt
+			row.LastAuthCheckedAt = &value
 		}
 		switch account.AuthStatus {
 		case "authenticated":
@@ -402,6 +408,8 @@ func (p *ControlPlane) accountHealth(s *Server, entries []audit.Entry) []account
 		}
 		if entry, ok := latestAuth[account.ID]; ok {
 			health.AuthStatus = entry.Status
+			checked := entry.CheckedAt
+			health.LastAuthCheckedAt = &checked
 		}
 		switch {
 		case !account.Enabled || !providerEnabled[account.ProviderID]:

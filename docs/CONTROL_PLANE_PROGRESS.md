@@ -437,3 +437,7 @@ Batch 77 adds the latest source generation-validation timestamp to provider
 health. The Health page now surfaces provider freshness beside the existing
 account and source timestamps; the value describes recorded evidence and does
 not claim current upstream availability.
+
+Batch 78 adds last-auth-check timestamps to provider and account health. The
+generation-validation and browser-auth clocks remain separate so a successful
+login check is not presented as generation proof.
