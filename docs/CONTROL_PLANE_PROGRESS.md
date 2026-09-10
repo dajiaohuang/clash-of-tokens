@@ -30,7 +30,18 @@ Acceptance scope: [complete synthesis](CONTROL_PLANE_REQUIREMENTS.md).
 8. Persistent Provider/Account/Source/Group CRUD, revision-checked patches,
    and a no-upstream routing simulator (811415d).
 
-Validation: `go test ./...` passed, 481 tests in 34 packages on Windows.
+9. Shared descriptor registry for 100 adapters, protocol/capability validation,
+   factory dispatch and form schemas (6bc2756).
+10. Embedded management console with provider catalog, accounts, protected
+    credentials, sources/models, multi-group membership and ordering, routing
+    simulator, health/metrics, all configuration fields, history, preview/apply
+    and global search (c78e6a0). Model enabled/Auto approval flags are independent.
+
+Validation: `go test ./...` passed, 483 tests in 35 packages on Windows.
+Browser regression: credential creation/redaction, account binding, source
+creation, group membership, preview/apply, every navigation destination and
+390px viewport passed via `scripts/ui_fixture.py --test` after building
+`.clash-tokens/ui-test.exe`. Screenshots are in `.clash-tokens/ui-artifacts/`.
 Race detection is outstanding: the current Go environment has cgo disabled.
 
 ## Remaining implementation
@@ -45,6 +56,12 @@ Race detection is outstanding: the current Go environment has cgo disabled.
   routing simulator, fallback ordering and configuration history.
 - E: Request-level safe fallback, protocol completion tracking, verification
   provenance, documentation and end-to-end regression validation.
+
+The console's Browser/Device/Session destinations currently expose environment
+settings. Profile launching, login, session operations, imports, discovery and
+live validation are still required. Account pool strategy fields are present,
+but weighted/sticky account-pool dispatch still needs implementation. Activity
+currently covers configuration history, not a complete runtime event log.
 
 The current application is not yet the completed control plane. Credentials
 and upstream availability must never be inferred from catalog implementation.
