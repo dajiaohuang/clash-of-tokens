@@ -17,6 +17,7 @@ import (
 	"clash-of-tokens/internal/api"
 	"clash-of-tokens/internal/chatgptweb"
 	"clash-of-tokens/internal/config"
+	"clash-of-tokens/internal/credentials"
 	"clash-of-tokens/internal/providers/appdevice"
 	"clash-of-tokens/internal/secrets"
 )
@@ -122,7 +123,11 @@ func run() error {
 	if command == "keys" {
 		return json.NewEncoder(os.Stdout).Encode(keys)
 	}
-	handler, e := api.NewWithKeys(c, keys.API, keys.Admin)
+	vault, e := credentials.Open(filepath.Join(filepath.Dir(c.Browser.StateFile), "credentials.vault"))
+	if e != nil {
+		return e
+	}
+	handler, e := api.NewWithVault(c, keys.API, keys.Admin, vault)
 	if e != nil {
 		return e
 	}

@@ -17,12 +17,14 @@ import (
 
 	"clash-of-tokens/catalog"
 	"clash-of-tokens/internal/config"
+	"clash-of-tokens/internal/credentials"
 	"clash-of-tokens/internal/protocol"
 	"clash-of-tokens/internal/routing"
 	"clash-of-tokens/internal/upstream"
 )
 
 type Server struct {
+	vault                                         *credentials.Store
 	cfg                                           config.Config
 	Router                                        *routing.Router
 	clients                                       []clientSlot
@@ -424,6 +426,20 @@ func (s *Server) models(w http.ResponseWriter) {
 	}{"list", out})
 }
 func (s *Server) admin(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" && r.Method != "HEAD" {
+		scheme := "http"
+		if r.TLS != nil {
+			scheme = "https"
+		}
+		if origin := r.Header.Get("Origin"); origin != "" && origin != scheme+"://"+r.Host {
+			fail(w, 403, "cross-origin mutation rejected")
+			return
+		}
+	}
+	if strings.HasPrefix(r.URL.Path, "/admin/credentials") {
+		s.credentialAdmin(w, r)
+		return
+	}
 	switch {
 	case r.Method == "GET" && r.URL.Path == "/admin/catalog":
 		w.Header().Set("Content-Type", "application/json")
