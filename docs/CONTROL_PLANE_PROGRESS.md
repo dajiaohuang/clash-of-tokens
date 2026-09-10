@@ -617,3 +617,10 @@ supported; browser-cookie import, isolated-profile creation and login checks
 appear only for browser-capable providers. The regression keeps OpenAI's
 environment API-key import path and checks the contrasting browser-only Doubao
 toolbar without exposing protected values.
+
+Batch 116 carries descriptor credential-mode filtering into the schema-driven
+source editor. A source now sees only vault references compatible with its
+adapter, while an existing incompatible reference remains visible for an
+explicit review or override instead of being silently discarded. The browser
+regression binds an API-key source and confirms a cookie reference is absent
+from the OpenAI source dropdown.

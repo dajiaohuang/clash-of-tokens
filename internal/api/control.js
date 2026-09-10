@@ -144,9 +144,9 @@ function members(value){
  }
  draw();return {element:list,read:()=>selected};
 }
-function formField(schema,value,label=schema.name){
+function formField(schema,value,label=schema.name,context={}){
  if(schema.type==='object'){
-  const form=objectForm(schema.fields,value||{});
+  const form=objectForm(schema.fields,value||{},context);
   return {element:h('details',{open:true},h('summary',{},title(label),' ',schema.restart_required?badge('Restart required','warn'):null),form.element),read:form.read};
  }
  if(schema.type==='array'){
@@ -162,7 +162,7 @@ function formField(schema,value,label=schema.name){
   if(schema.name==='sources'&&schema.item.type==='string'){const list=members(value);return {element:h('div',{class:'array'},h('h3',{},'Sources and order'),h('p',{class:'muted'},'Drag selected sources, or use Up and Down. Fallback uses this order.'),list.element),read:list.read}}
   const root=h('div',{class:'array'}),rows=h('div',{});let entries=[];
   const add=v=>{
-   const entry=formField(schema.item,v,schema.item.type==='object'?((v&&v.id)||'New item'):'');
+   const entry=formField(schema.item,v,schema.item.type==='object'?((v&&v.id)||'New item'):'',context);
    const row=h('div',{class:'array-row'},entry.element,button('Remove',()=>{entries=entries.filter(x=>x!==entry);row.remove()},'danger'));
    entries.push(entry);rows.append(row);
   };
@@ -183,7 +183,10 @@ function formField(schema,value,label=schema.name){
  if(['provider','provider_id'].includes(schema.name))choices=[...new Set([...S.catalog.map(p=>p.id),...(S.config.providers||[]).map(p=>p.id),...(value?[value]:[])])].sort();
  if(schema.name==='adapter')choices=S.descriptors.map(d=>d.id);
  if(schema.name==='account_id')choices=(S.config.accounts||[]).map(a=>a.id);
- if(schema.name==='credential_ref')choices=[...new Set([...S.credentials.map(c=>c.id),...(value?[value]:[])])];
+ if(schema.name==='credential_ref'){
+  const credentials=context.credentialModes?.length?S.credentials.filter(c=>context.credentialModes.includes(c.kind)||c.id===value):S.credentials;
+  choices=[...new Set([...credentials.map(c=>c.id),...(value?[value]:[])])];
+ }
  if(schema.name==='browser_profile_id')choices=(S.config.browser_profiles||[]).map(p=>p.id);
  if(choices)input=select(choices,value,true);
  else input=h('input',{type:['integer','number'].includes(schema.type)?'number':'text',value:value??'',step:schema.type==='integer'?'1':schema.type==='number'?'any':null});
@@ -194,12 +197,14 @@ function formField(schema,value,label=schema.name){
   return input.value;
  }};
 }
-function objectForm(fields,value){
- const entries=fields.map(schema=>({schema,field:formField(schema,value[schema.name])}));
+function objectForm(fields,value,context={}){
+ const entries=fields.map(schema=>({schema,field:formField(schema,value[schema.name],schema.name,context)}));
  return {element:h('div',{class:'form-grid'},entries.map(x=>x.field.element)),read:()=>Object.fromEntries(entries.map(x=>[x.schema.name,x.field.read()]))};
 }
 function edit(kind,item,create=false){
- const base=clone(S.config),revision=S.revision,form=objectForm(schemaFor(kind).item.fields,item);
+ const base=clone(S.config),revision=S.revision;
+ const descriptor=kind==='sources'&&item.adapter?S.descriptors.find(d=>d.id===item.adapter):null;
+ const form=objectForm(schemaFor(kind).item.fields,item,{credentialModes:descriptor?.credential_modes});
  let membership;
  if(kind==='sources'){
   membership=h('div',{class:'array'},h('h3',{},'Group membership'));
