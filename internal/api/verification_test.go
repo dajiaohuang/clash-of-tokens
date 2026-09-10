@@ -87,6 +87,8 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 	var out struct {
 		Providers []struct {
 			ID                  string     `json:"id"`
+			Enabled             bool       `json:"enabled"`
+			AutoApproved        bool       `json:"auto_approved"`
 			PoolStrategy        string     `json:"pool_strategy"`
 			CatalogImplemented  bool       `json:"catalog_implemented"`
 			CatalogLiveVerified bool       `json:"catalog_live_verified"`
@@ -101,6 +103,8 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 		} `json:"provider_health"`
 		Accounts []struct {
 			ID                  string     `json:"id"`
+			Enabled             bool       `json:"enabled"`
+			AutoApproved        bool       `json:"auto_approved"`
 			PoolStrategy        string     `json:"pool_strategy"`
 			Weight              int        `json:"weight"`
 			Health              string     `json:"health"`
@@ -136,6 +140,9 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 	if out.Providers[0].ID != "p" || out.Providers[0].Health != "auth_required" || out.Providers[0].AuthStatus != "auth_required" || len(out.Providers[0].Accounts) != 2 || len(out.Providers[0].Sources) != 1 {
 		t.Fatalf("unexpected provider health: %+v", out.Providers[0])
 	}
+	if !out.Providers[0].Enabled || out.Providers[0].AutoApproved {
+		t.Fatalf("provider policy flags missing: %+v", out.Providers[0])
+	}
 	if out.Providers[0].PoolStrategy != "least-load" {
 		t.Fatalf("provider pool strategy missing: %+v", out.Providers[0])
 	}
@@ -154,6 +161,9 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 	a := out.Accounts[0]
 	if a.ID != "a" || a.Health != "untested" || a.AuthStatus != "authenticated" || a.Active != 0 || a.Limit != 1 || len(a.Sources) != 1 || a.Sources[0] != "s" || a.LastValidated == nil {
 		t.Fatalf("unexpected account health: %+v", a)
+	}
+	if !a.Enabled || a.AutoApproved {
+		t.Fatalf("account policy flags missing: %+v", a)
 	}
 	if a.LastAuthChecked == nil || !a.LastAuthChecked.Equal(checked) {
 		t.Fatalf("account auth timestamp missing: %+v", a.LastAuthChecked)

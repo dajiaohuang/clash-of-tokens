@@ -249,6 +249,7 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     expect(page.get_by_role("heading", name="Source / openai", exact=True)).to_be_visible()
     page.get_by_role("button", name="Close", exact=True).click()
     page.get_by_role("link", name="Health", exact=True).click()
+    expect(page.get_by_role("columnheader", name="Auto", exact=True).first).to_be_visible()
     health_provider_row = page.get_by_role("row").filter(has=page.get_by_text("openai", exact=True)).first
     expect(health_provider_row).to_contain_text("verified")
     page.get_by_role("link", name="Overview", exact=True).click()
@@ -391,7 +392,7 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     page.get_by_role("link", name="Health", exact=True).click()
     expect(page.get_by_role("heading", name="Provider health", exact=True)).to_be_visible()
     expect(page.get_by_role("heading", name="Account health", exact=True)).to_be_visible()
-    expect(page.get_by_role("columnheader", name="Enabled", exact=True)).to_be_visible()
+    expect(page.get_by_role("columnheader", name="Enabled", exact=True).first).to_be_visible()
     expect(page.get_by_role("row").filter(has=page.get_by_text("openai", exact=True)).first).to_contain_text("Yes")
     expect(page.get_by_role("row").filter(has=page.get_by_text("ui-account", exact=True)).last).to_contain_text("openai")
     page.get_by_role("button", name="Edit shared quota", exact=True).click()

@@ -36,6 +36,8 @@ type sourceVerification struct {
 type accountHealth struct {
 	ID                  string     `json:"id"`
 	Provider            string     `json:"provider"`
+	Enabled             bool       `json:"enabled"`
+	AutoApproved        bool       `json:"auto_approved"`
 	PoolStrategy        string     `json:"pool_strategy"`
 	Weight              int        `json:"weight"`
 	Health              string     `json:"health"`
@@ -55,6 +57,7 @@ type accountHealth struct {
 type providerHealth struct {
 	ID                  string     `json:"id"`
 	Enabled             bool       `json:"enabled"`
+	AutoApproved        bool       `json:"auto_approved"`
 	PoolStrategy        string     `json:"pool_strategy"`
 	CatalogImplemented  bool       `json:"catalog_implemented"`
 	CatalogLiveVerified bool       `json:"catalog_live_verified"`
@@ -261,6 +264,7 @@ func (p *ControlPlane) providerHealth(s *Server, accounts []accountHealth, entri
 	for _, provider := range s.cfg.Providers {
 		row := ensure(provider.ID)
 		row.Enabled = provider.Enabled
+		row.AutoApproved = provider.AutoApproved
 		row.PoolStrategy = provider.PoolStrategy
 	}
 	for _, account := range accounts {
@@ -428,7 +432,7 @@ func (p *ControlPlane) accountHealth(s *Server, entries []audit.Entry) []account
 	}
 	out := make([]accountHealth, 0, len(s.cfg.Accounts))
 	for _, account := range s.cfg.Accounts {
-		health := accountHealth{ID: account.ID, Provider: account.ProviderID, Health: "untested", AuthStatus: "not_checked", Limit: account.MaxInflight, Weight: account.Weight, LastValidationState: "not_checked", Sources: []string{}}
+		health := accountHealth{ID: account.ID, Provider: account.ProviderID, Enabled: account.Enabled, AutoApproved: account.AutoApproved, Health: "untested", AuthStatus: "not_checked", Limit: account.MaxInflight, Weight: account.Weight, LastValidationState: "not_checked", Sources: []string{}}
 		for _, provider := range s.cfg.Providers {
 			if provider.ID == account.ProviderID {
 				health.PoolStrategy = provider.PoolStrategy
