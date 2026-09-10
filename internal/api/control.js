@@ -590,6 +590,29 @@ function environment(type){
  const key=type==='browsers'?'browser':'device',form=formField(schemaFor(key),S.config[key]),base=clone(S.config),revision=S.revision;
  return [pageHead(labels[type],type==='browsers'?'Browser connection and session limits.':'Explicitly configured Android execution environment.'),h('section',{class:'panel'},form.element,h('div',{class:'toolbar'},button('Review settings',async()=>{const next=clone(base);next[key]=form.read();await preview(next,'Update '+key,null,base,revision)},'primary')))];
 }
+function devices(){
+ const target=h('section',{class:'panel'},h('p',{class:'muted'},'No device check has run in this tab. The check is read-only: it probes configured ADB metadata and never starts an emulator, opens an app, changes the clipboard or sends a message.'));
+ const draw=result=>{
+  const report=result.report||{},checks=Object.fromEntries((report.checks||[]).map(item=>[item.name,item]));
+  const value=name=>checks[name]?.ok?'Pass':'Not ready';
+  target.replaceChildren(
+   h('div',{class:'device-summary'},
+    h('div',{class:'stat-line'},'Doctor status',badge(report.ready?'Ready':'Needs attention',report.ready?'good':'warn')),
+    h('div',{class:'stat-line'},'ADB',value('adb')),
+    h('div',{class:'stat-line'},'Connected',value('device_online')),
+    h('div',{class:'stat-line'},'Resolution',report.resolution||'Not observed'),
+    h('div',{class:'stat-line'},'Foreground app',report.foreground_app||'Not observed'),
+    result.restart_pending?h('p',{class:'warning'},'Device settings are saved but require a gateway restart before this check uses them.'):null
+   ),
+   h('h2',{},'App providers'),
+   table(['Provider','Source','Installed','Login state','Last test'],(result.providers||[]).map(item=>[item.provider,item.source_id,item.installed?'Yes':'No',item.login_state==='detected'?'Detected':'Not observed',item.last_test==='pass'?'Pass':item.last_test==='failed'?'Failed':'Not tested']),'No app-device sources configured.'),
+   h('h2',{},'Checks'),
+   table(['Check','Status','Detail'],(report.checks||[]).map(item=>[item.name,item.ok?'Pass':'Not ready',item.detail]))
+  );
+ };
+ const check=async()=>{target.replaceChildren(h('p',{class:'muted'},'Checking the configured physical device…'));draw(await api('/admin/device/check',{method:'POST'}));};
+ return [pageHead('Devices','Connected Android device status and app-session evidence.',button('Check device',check,'primary')),...environment('devices').slice(1),target];
+}
 function browsers(){
  return [pageHead('Browsers','Dedicated profiles keep account browser state separate.',button('Owned processes',ownedBrowserProcesses),button('Discover profiles',async()=>{const rows=await api('/admin/browser_profiles/discover',{method:'POST'});dialog('Discovered browser profiles',[h('p',{class:'muted'},'Up to 256 profiles from standard browser metadata locations. Discovery does not read cookies, verify login or copy sessions. Use Add profile and Accounts → Login to create an isolated session.'),table(['Browser','Profile','Name','Location','Authentication'],rows.map(p=>[p.browser,p.profile,p.name,p.root,p.authentication]),'No readable profile metadata found.')])}),button('Check connections',async()=>{const rows=await api('/admin/browser_profiles/status',{method:'POST'});dialog('Browser connection status',table(['Profile','Connection','Browser','Pages','Authentication'],rows.map(p=>[p.profile,p.state,p.browser||'Unknown',p.pages,p.authentication]),'No configured profiles.'))}),button('Add profile',()=>edit('browser_profiles',{id:'',enabled:true,engine:'chrome',cdp_url:'http://127.0.0.1:9223'},true),'primary')),table(['Profile','Engine','CDP endpoint','Accounts','Actions'],(S.config.browser_profiles||[]).map(p=>[
   p.id,p.engine,p.cdp_url,(S.config.accounts||[]).filter(a=>a.browser_profile_id===p.id).map(a=>a.display_name||a.id).join(', ')||'Unbound',[button(p.enabled?'Disable':'Enable',()=>toggle('browser_profiles',p)),button('Edit',()=>edit('browser_profiles',p)),button('Launch provider',()=>launchBrowserProfile(p)),button('Delete',()=>remove('browser_profiles',p),'danger')]
@@ -661,7 +684,7 @@ function render(){
  for(const a of $('navigation').querySelectorAll('a'))a.setAttribute('aria-current',a.hash==='#'+route?'page':'false');
  if(!S.config){$('view').replaceChildren(connectView());return}
  if($('search').value){$('view').replaceChildren(...searchResults($('search').value));return}
- const renderers={overview,providers,accounts,credentials,sources,models,groups,routing,health,metrics,config:configuration,logs:activity,about,browsers,devices:()=>environment('devices'),sessions};
+ const renderers={overview,providers,accounts,credentials,sources,models,groups,routing,health,metrics,config:configuration,logs:activity,about,browsers,devices,sessions};
  $('view').replaceChildren(...(renderers[route]||overview)().filter(x=>x!=null));
 }
 for(const [group,items] of pages){$('navigation').append(h('div',{class:'nav-group'},group),...items.map(id=>h('a',{href:'#'+id},labels[id])))}

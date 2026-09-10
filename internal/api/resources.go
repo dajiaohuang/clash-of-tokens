@@ -21,7 +21,7 @@ func managedResource(path string) bool {
 			return true
 		}
 	}
-	return path == "/admin/routing/simulate" || path == "/admin/evidence"
+	return path == "/admin/routing/simulate" || path == "/admin/evidence" || path == "/admin/device/check"
 }
 
 func (p *ControlPlane) resourceAdmin(w http.ResponseWriter, r *http.Request, server *Server) {

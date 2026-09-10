@@ -46,10 +46,10 @@ must be checked again before final acceptance.
 | 35. Sessions | ChatGPT metadata and expire/clear | Other stateful adapter inventories and controls |
 | 36. Browsers | Batch 37 retains launch handles/identities, lists owned processes, opens provider origins and confirms exact-launch stops; synthetic process/UI tests | Browser child-process lifecycle across platforms and session capacity view |
 | 37. Login wizard | Batch 27 unifies existing/isolated profile, import/manual credential and login-to-save with synthetic browser tests | All installed-browser account discovery, provider-specific setup and real provider compatibility |
-| 38. Devices | Frontend device settings | Connected-device/ADB/resolution/foreground app/login/test evidence; implement with synthetic tests, no emulator operations |
+| 38. Devices | `POST /admin/device/check` read-only doctor reports ADB/OCR paths, connection, resolution, foreground package, app installation, and evidence-backed login/last-test rows; Devices page and synthetic API/UI tests | Physical-device login and live test evidence still require explicit operator action; no emulator operations |
 | 39. Implementation status | Catalog implementation field | Reference/factory/runtime/verified/broken/research view |
 | 40. Descriptor registry | Shared validation/factory/schema contract | More provider-specific credential/discovery/auth capabilities; eliminate residual setup switches |
-| 41. Administration API | Persistent CRUD, config, simulator, source checks | Account validate and complete browser/device lifecycle operations |
+| 41. Administration API | Persistent CRUD, config, simulator, source checks, browser process controls and device doctor | Account validate and broader browser/device lifecycle operations |
 | 42. Embedded frontend | Go-embedded static HTML/CSS/JS, no Node runtime | Packaging/build verification |
 | 43. Navigation | All named destinations; batch 32 adds bounded runtime execution events and source/outcome filters in Activity | Complete content on every destination and broader event coverage |
 | 44. Search | Batch 36 adds explicit model/browser/device matches and tests all eight entity navigation paths | Broader naming/localization and large-catalog usability acceptance |
