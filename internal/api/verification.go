@@ -137,10 +137,10 @@ func (p *ControlPlane) controlStatus(s *Server) map[string]any {
 	for _, entry := range entries {
 		if entry.Kind == "validation" {
 			key := checkKey{entry.Resource, entry.Model, entry.Protocol}
-			if current, ok := latest[key]; !ok || entry.CheckedAt.After(current.CheckedAt) {
+			if current, ok := latest[key]; !ok || newerEvidence(entry, current) {
 				latest[key] = entry
 			}
-			if current, ok := latestSource[entry.Resource]; !ok || entry.CheckedAt.After(current.CheckedAt) {
+			if current, ok := latestSource[entry.Resource]; !ok || newerEvidence(entry, current) {
 				latestSource[entry.Resource] = entry
 			}
 		}
@@ -251,6 +251,13 @@ func isVerifiedValidation(entry audit.Entry) bool {
 	return entry.Status == "verified" && entry.Method == "explicit_stream_generation" && entry.ProtocolComplete && entry.OutputObserved && entry.UpstreamStatus >= 200 && entry.UpstreamStatus < 300
 }
 
+func newerEvidence(candidate, current audit.Entry) bool {
+	if candidate.CheckedAt.After(current.CheckedAt) {
+		return true
+	}
+	return candidate.CheckedAt.Equal(current.CheckedAt) && candidate.Sequence > current.Sequence
+}
+
 func (p *ControlPlane) validationState(c config.Config, source config.Source, entry audit.Entry) string {
 	if entry.Binding == "" || entry.Binding != p.sourceBinding(c, source) {
 		return "historical"
@@ -326,7 +333,7 @@ func (p *ControlPlane) providerHealth(s *Server, accounts []accountHealth, entri
 		if entry.Kind != "validation" {
 			continue
 		}
-		if current, ok := latestValidation[entry.Resource]; !ok || entry.CheckedAt.After(current.CheckedAt) {
+		if current, ok := latestValidation[entry.Resource]; !ok || newerEvidence(entry, current) {
 			latestValidation[entry.Resource] = entry
 		}
 	}
@@ -444,11 +451,11 @@ func (p *ControlPlane) accountHealth(s *Server, entries []audit.Entry) []account
 	for _, entry := range entries {
 		switch entry.Kind {
 		case "authentication":
-			if current, ok := latestAuth[entry.Resource]; !ok || entry.CheckedAt.After(current.CheckedAt) {
+			if current, ok := latestAuth[entry.Resource]; !ok || newerEvidence(entry, current) {
 				latestAuth[entry.Resource] = entry
 			}
 		case "validation":
-			if current, ok := latestValidation[entry.Resource]; !ok || entry.CheckedAt.After(current.CheckedAt) {
+			if current, ok := latestValidation[entry.Resource]; !ok || newerEvidence(entry, current) {
 				latestValidation[entry.Resource] = entry
 			}
 		}

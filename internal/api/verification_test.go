@@ -41,6 +41,19 @@ func TestVerificationBindingTracksCredentialAndRuntime(t *testing.T) {
 	}
 }
 
+func TestNewerEvidenceUsesSequenceWhenTimestampsTie(t *testing.T) {
+	checked := time.Unix(100, 0).UTC()
+	if !newerEvidence(audit.Entry{CheckedAt: checked, Sequence: 2}, audit.Entry{CheckedAt: checked, Sequence: 1}) {
+		t.Fatal("higher sequence did not win an equal timestamp")
+	}
+	if newerEvidence(audit.Entry{CheckedAt: checked, Sequence: 1}, audit.Entry{CheckedAt: checked, Sequence: 2}) {
+		t.Fatal("lower sequence replaced an equal timestamp")
+	}
+	if !newerEvidence(audit.Entry{CheckedAt: checked.Add(time.Second), Sequence: 1}, audit.Entry{CheckedAt: checked, Sequence: 99}) {
+		t.Fatal("newer timestamp did not win")
+	}
+}
+
 func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNotImplemented) }))
 	defer upstream.Close()

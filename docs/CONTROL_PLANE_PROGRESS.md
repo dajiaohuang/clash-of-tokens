@@ -497,3 +497,8 @@ Batch 90 locally cross-builds the gateway for `linux/amd64`, `windows/amd64`
 and `darwin/amd64` from the same source revision. The binaries are kept under
 the ignored `.clash-tokens/platform-builds/` workspace area; hosted CI and
 signed release packaging remain separate work.
+
+Batch 91 makes newest-evidence selection deterministic when timestamps tie.
+Across model, source, account and provider projections, the persisted evidence
+sequence now breaks equal-time ties; a focused regression covers both ordering
+directions.
