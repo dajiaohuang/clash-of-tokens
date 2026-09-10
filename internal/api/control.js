@@ -97,7 +97,7 @@ function diff(a,b,path=''){
 }
 function display(value){if(value===undefined)return 'Not set';if(value===null)return 'Inherit';return typeof value==='object'?JSON.stringify(value):String(value)}
 function diffTable(changes){return h('div',{class:'diff'},table(['Setting','Before','After'],changes.map(c=>[c.path,h('span',{class:'diff-before'},display(c.before)),h('span',{class:'diff-after'},display(c.after))])))}
-async function preview(next,summary,back,base=clone(S.config),revision=S.revision){
+async function preview(next,summary,back,base=clone(S.config),revision=S.revision,applied){
  const changes=diff(base,next);
  if(!changes.length){message('No changes to apply.');return}
  const result=await api('/admin/config/preview',{method:'POST',body:JSON.stringify({revision,config:next})});
@@ -107,6 +107,7 @@ async function preview(next,summary,back,base=clone(S.config),revision=S.revisio
  dialog('Review changes',body,[button('Back',back||(()=> $('dialog').close())),button('Apply changes',async()=>{
   await api('/admin/config',{method:'PATCH',body:JSON.stringify({revision,config:next,summary})});
   $('dialog').close();await refresh();message('Changes saved. Revision '+S.revision+'.');
+  await applied?.();
  },'primary')]);
 }
 function schemaFor(name){return S.schema.find(x=>x.name===name)}
@@ -219,7 +220,39 @@ async function remove(kind,item){
  await preview(next,'Delete '+kind+'/'+item.id);
 }
 function addAccount(provider=''){
- edit('accounts',{id:'',provider_id:provider,display_name:'',enabled:false,auto_approved:false,credential_ref:'',browser_profile_id:'',quota_domain:'',max_inflight:1,weight:1,created_at:new Date().toISOString()},true);
+ accountWizard({provider_id:provider});
+}
+function accountWizard(draft={}){
+ const provider=select([...new Set([...S.catalog.map(p=>p.id),...(S.config.providers||[]).map(p=>p.id)])],draft.provider_id||'',true);
+ const id=h('input',{value:draft.id||''}),name=h('input',{value:draft.display_name||''}),quota=h('input',{value:draft.quota_domain||''});
+ const credential=select(S.credentials.map(c=>({value:c.id,label:c.id+' · '+c.kind})),draft.credential_ref||'',true);
+ const available=[...(S.config.browser_profiles||[]),...(draft.newProfile?[draft.newProfile]:[])];
+ const profile=select(available.map(p=>({value:p.id,label:p.id+(p===draft.newProfile?' (new isolated profile)':'')})),draft.browser_profile_id||'',true);
+ const hints=h('p',{class:'muted'});
+ const authNotice=h('p',{},draft.authenticated?'Login detected for this selected profile. Review and save the account.':'Choose a protected credential or a browser profile. Import actions return here with the new reference.');
+ const capture=()=>({...draft,id:id.value.trim(),display_name:name.value.trim(),quota_domain:quota.value.trim(),provider_id:provider.value,credential_ref:credential.value,browser_profile_id:profile.value,newProfile:draft.newProfile?.id===profile.value?draft.newProfile:undefined});
+ const hint=()=>{const p=S.catalog.find(p=>p.id===provider.value),d=S.descriptors.find(d=>d.id===p?.adapter);hints.textContent='Credential types: '+(d?.credential_modes||[]).join(', ')+'. Password imports are login material, not API keys. Accounts are saved disabled and excluded from Auto.'};provider.onchange=()=>{draft.authenticated=false;authNotice.textContent='Selection changed. Check login again for this selection.';hint()};profile.onchange=()=>{draft.authenticated=false;authNotice.textContent='Selection changed. Check login again for this selection.'};hint();
+ const imported=saved=>{const next=capture(),items=Array.isArray(saved)?saved:[saved];if(items.length===1)next.credential_ref=items[0].id;accountWizard(next)};
+ dialog('Set up account',[h('div',{class:'form-grid'},field('Provider',provider),field('ID',id),field('Display Name',name),field('Quota domain',quota),field('Credential',credential),field('Browser Profile Id',profile)),hints,authNotice,h('div',{class:'toolbar'},button('New credential',()=>credentialForm(undefined,imported)),button('Import password manager',()=>importCredentials(imported)),button('Import token',()=>importToken(imported)),button('Import browser cookies',()=>importBrowserCookies(imported)),button('New isolated profile',()=>newWizardProfile(capture())),button('Login with selected profile',async()=>{
+  const next=capture(),selected=available.find(p=>p.id===next.browser_profile_id);if(!selected||!next.provider_id)throw new Error('Choose a provider and browser profile first.');
+  const payload={profile:selected,provider:next.provider_id,action:'launch'};
+  const check=()=>loginEvidence({id:next.id},true,'Finish signing in to the selected provider. The account has not been saved yet.',{path:'/admin/browser_profiles/setup-login',payload:{...payload,action:'check'},authenticated:()=>accountWizard({...next,authenticated:true}),back:()=>accountWizard(next)});
+  try{await api('/admin/browser_profiles/setup-login',{method:'POST',body:JSON.stringify(payload)});check()}catch(e){if(!e.message.includes('port is already in use'))throw e;dialog('Browser port occupied',h('p',{},'Confirm that the selected connection belongs to the intended browser profile before checking login.'),[button('Back',()=>accountWizard(next)),button('Use running browser',check)])}
+ }))],[button('Review changes',async()=>{
+  const next=clone(S.config),value=capture();
+  if(!value.id||!value.provider_id||!value.quota_domain)throw new Error('Enter account ID, provider and quota domain.');
+  if((next.accounts||[]).some(a=>a.id===value.id))throw new Error('This account ID already exists.');
+  if(value.newProfile){next.browser_profiles=next.browser_profiles||[];next.browser_profiles.push(value.newProfile)}
+  next.providers=next.providers||[];if(!next.providers.some(p=>p.id===value.provider_id))next.providers.push({id:value.provider_id,enabled:true,auto_approved:false,pool_strategy:'round-robin'});
+  next.accounts=next.accounts||[];next.accounts.push({id:value.id,provider_id:value.provider_id,display_name:value.display_name,quota_domain:value.quota_domain,credential_ref:value.credential_ref,browser_profile_id:value.browser_profile_id,enabled:false,auto_approved:false,max_inflight:1,weight:1,created_at:new Date().toISOString()});
+  await preview(next,'Add account '+value.id,()=>accountWizard(value),clone(S.config),S.revision,value.authenticated?async()=>{await api('/admin/accounts/'+encodeURIComponent(value.id)+'/check-login',{method:'POST'});await refresh()}:undefined);
+ },'primary')]);
+}
+function newWizardProfile(draft){
+ const id=h('input',{value:draft.id?draft.id+'-browser':''}),engine=select(['chrome','edge','chromium'],'chrome');
+ const used=new Set((S.config.browser_profiles||[]).map(p=>new URL(p.cdp_url).port));let port=9223;while(used.has(String(port)))port++;
+ const endpoint=h('input',{value:'http://127.0.0.1:'+port});
+ dialog('New isolated profile',[field('Profile ID',id),field('Browser engine',engine),field('Browser connection URL',endpoint),h('p',{class:'muted'},'A dedicated data directory is used. The profile and account are saved together after review. A launched browser stays open if you cancel setup.')],[button('Use profile',()=>accountWizard({...draft,newProfile:{id:id.value.trim(),engine:engine.value,cdp_url:endpoint.value,enabled:true},browser_profile_id:id.value.trim(),authenticated:false}),'primary')]);
 }
 function addSource(provider=''){
  const choice=select(S.catalog.filter(p=>p.implementation!=='not_implemented').map(p=>p.id),provider,true);
@@ -232,16 +265,18 @@ function addSource(provider=''){
   },'primary')
  ]);
 }
-function credentialForm(existing){
+function credentialForm(existing,onSaved){
  const id=h('input',{value:existing?.id?.replace('cred://','')||'',disabled:!!existing,placeholder:'credential-id'});
  const kind=select(['api_key','oauth','cookie','browser_session','username_password','cli_session','device_session','browser_profile'],existing?.kind||'api_key');
  const value=h('input',{type:'password',autocomplete:'new-password',placeholder:'New secret value'});
  const username=h('input',{autocomplete:'off',placeholder:'Username (username/password only)'});
  dialog(existing?'Replace credential':'Add credential',[h('div',{class:'form-grid'},field('Credential ID',id),field('Type',kind),field('Username',username),field('Secret value',value)),h('p',{class:'muted'},'The existing secret is never sent to this page. Saving replaces the protected value.')],[
   button('Save credential',async()=>{
+   if(!existing&&S.credentials.some(c=>c.id==='cred://'+id.value))throw new Error('This credential ID exists. Use Replace from Credentials to change it.');
    const secret=kind.value==='username_password'?JSON.stringify({username:username.value,password:value.value}):value.value;
-   await api('/admin/credentials/'+encodeURIComponent(id.value),{method:'PUT',body:JSON.stringify({kind:kind.value,source:'manual',value:secret})});
+   const saved=await api('/admin/credentials/'+encodeURIComponent(id.value),{method:'PUT',body:JSON.stringify({kind:kind.value,source:'manual',value:secret})});
    value.value='';$('dialog').close();await refresh();
+   onSaved?.(saved);
   },'primary')
  ]);
 }
@@ -297,7 +332,7 @@ function accountAuth(a){
  if(!last)return 'Not checked';
  return last.status+' · '+new Date(last.checked_at).toLocaleString()+(last.revision===S.revision?'':' · historical configuration');
 }
-function loginEvidence(a,watch=false,launchMessage=''){
+function loginEvidence(a,watch=false,launchMessage='',setup){
  let live=true,busy=false,timer,deadline,controller;
  const progress=h('p',{role:'status'},watch?'Checking every 5 seconds after each result, for up to 5 minutes.':'Checking browser session…');
  const details=h('div',{});
@@ -305,16 +340,17 @@ function loginEvidence(a,watch=false,launchMessage=''){
  const run=async()=>{
   if(!live||busy)return;busy=true;controller=new AbortController();
   try{
-   const result=await api('/admin/accounts/'+encodeURIComponent(a.id)+'/check-login',{method:'POST',signal:controller.signal});
+   const result=await api(setup?.path||'/admin/accounts/'+encodeURIComponent(a.id)+'/check-login',{method:'POST',signal:controller.signal,...(setup?{body:JSON.stringify(setup.payload)}:{})});
    if(!live)return;
    details.replaceChildren(table(['Check','Result'],[['Status',result.status],['Profile',result.profile],['Checked at',result.checked_at],['Configuration revision',result.revision],['Method',result.method],['Composer ready',result.composer_ready?'Yes':'Not established'],['Generation verified','No'],['History saved',result.history_recorded?'Yes':'No']]));
    if(['authenticated','unsupported','rate_limited'].includes(result.status)){watch=false;clearTimeout(deadline)}
+   if(result.status==='authenticated'&&setup?.authenticated){setup.authenticated();return}
    progress.textContent=result.status==='authenticated'?'Browser session authenticated. Validate a configured source separately.':result.status==='unsupported'?'This provider does not yet implement a browser login check.':watch?'Waiting for you to finish login in the browser…':'Check complete.';
    S.evidence=await api('/admin/evidence',{signal:controller.signal});if(live)render();
   }catch(e){if(live&&e.name!=='AbortError'){watch=false;clearTimeout(deadline);progress.textContent=e.message}}
   finally{busy=false;if(live&&watch)timer=setTimeout(run,5000)}
  };
- dialog('Login evidence',[h('p',{},launchMessage||'Checks do not submit a prompt. Browser authentication and source generation are separate.'),progress,details],[button('Check now',run),button('Wait for login',()=>{watch=true;clearTimeout(timer);clearTimeout(deadline);deadline=setTimeout(stop,300000);return run()}),button('Stop checks',stop),button('Open sources',()=>{$('dialog').close();location.hash='sources'})]);
+ dialog('Login evidence',[h('p',{},launchMessage||'Checks do not submit a prompt. Browser authentication and source generation are separate.'),progress,details],[button('Check now',run),button('Wait for login',()=>{watch=true;clearTimeout(timer);clearTimeout(deadline);deadline=setTimeout(stop,300000);return run()}),button('Stop checks',stop),setup?button('Back to account setup',setup.back):button('Open sources',()=>{$('dialog').close();location.hash='sources'})]);
  dialogCleanup=()=>{live=false;stop()};
  if(watch)deadline=setTimeout(stop,300000);
  run();
@@ -325,7 +361,7 @@ function accounts(){
   [button(a.enabled?'Disable':'Enable',()=>toggle('accounts',a)),button('Edit',()=>edit('accounts',a)),a.browser_profile_id?button('Login',async()=>{const result=await api('/admin/accounts/'+encodeURIComponent(a.id)+'/login',{method:'POST'});loginEvidence(a,true,result.message)}):null,a.browser_profile_id?button('Check login',()=>loginEvidence(a)):null,button('Delete',()=>remove('accounts',a),'danger')]
  ]),'No accounts. Add an account and bind a credential before enabling its sources.')];
 }
-function importBrowserCookies(){
+function importBrowserCookies(onSaved){
  const profile=select((S.config.browser_profiles||[]).filter(p=>p.enabled).map(p=>p.id),'',true);
  const provider=select(S.catalog.filter(p=>(p.credentials?.accepted||[]).includes('cookie')&&p.base_url.startsWith('https://')).map(p=>p.id),'',true);
  dialog('Import browser cookies',[field('Configured browser profile',profile),field('Provider',provider),h('p',{class:'muted'},'Reads cookies only for the selected provider URL through the configured debugging connection. It does not scan other sites or verify login. Some browser adapters use their bound profile instead of a cookie credential.')],[button('Preview cookies',async()=>{
@@ -333,7 +369,7 @@ function importBrowserCookies(){
   const preview=await api(path,{method:'POST',body:JSON.stringify(payload)});
   dialog('Browser cookie preview',[h('p',{},preview.domain+': '+preview.count+' cookies'),h('p',{class:'muted'},preview.message)],[button('Save cookies',async()=>{
    if(!preview.count)throw new Error('No cookies available.');
-   await api(path,{method:'POST',body:JSON.stringify({...payload,apply:true})});$('dialog').close();await refresh();message('Cookies saved. Bind the new reference from Accounts and check login separately.');
+   const saved=await api(path,{method:'POST',body:JSON.stringify({...payload,apply:true})});$('dialog').close();await refresh();message('Cookies saved. Bind the new reference from Accounts and check login separately.');onSaved?.(saved);
   },'primary')]);
  },'primary')]);
 }
@@ -361,7 +397,7 @@ function credentials(){
   c.id,badge(c.kind),[...(S.config.accounts||[]).filter(a=>a.credential_ref===c.id).map(a=>a.id),...S.config.sources.filter(s=>s.credential_ref===c.id).map(s=>s.id)].join(', ')||'Unbound',c.source,new Date(c.updated_at).toLocaleString(),[button('Replace',()=>credentialForm(c)),button('Delete',()=>deleteCredential(c),'danger')]
  ]),'No credentials. Add a key or session, then bind its reference to an account.')];
 }
-function importCredentials(){
+function importCredentials(onSaved){
  const file=h('input',{type:'file',accept:'.csv,.json'});
  const formatChoice=select(['auto','bitwarden-json','bitwarden-csv','1password-csv','keepassxc-csv','protonpass-csv','dashlane-csv','nordpass-csv','apple-passwords-csv','google-passwords-csv'],'auto');
  dialog('Import selected export',[field('Export format',formatChoice),field('CSV or JSON file',file),h('p',{class:'muted'},'Auto accepts CSV columns name (optional), url, username, password, or a JSON array with those fields. Choose the matching manager format for its native export. Up to 4 MiB and 1,000 login candidates. Notes, TOTP, cards and password history are not imported.')],[button('Preview entries',async()=>{
@@ -375,6 +411,7 @@ function importCredentials(){
    if(!selected.size)throw new Error('Select at least one entry.');
    const saved=await api('/admin/credentials/import',{method:'POST',body:JSON.stringify({format,data,selected:[...selected],apply:true})});
    data='';$('dialog').close();await refresh();message('Imported '+saved.length+' credentials. Bind their references from Accounts.');
+   onSaved?.(saved);
   },'primary')]);
  },'primary')]);
 }
@@ -463,7 +500,7 @@ function browsers(){
   p.id,p.engine,p.cdp_url,(S.config.accounts||[]).filter(a=>a.browser_profile_id===p.id).map(a=>a.display_name||a.id).join(', ')||'Unbound',[button(p.enabled?'Disable':'Enable',()=>toggle('browser_profiles',p)),button('Edit',()=>edit('browser_profiles',p)),button('Delete',()=>remove('browser_profiles',p),'danger')]
  ]),'No profiles. Add a profile, bind it from Accounts, then use Login.'),...environment('browsers').slice(1)];
 }
-function importToken(){
+function importToken(onSaved){
  const mode=select(['environment','codex','gemini-cli','oauth'],'environment');
  const source=select(S.config.sources.filter(s=>s.key_env).map(s=>s.id),'',true);
  const kind=select(['api_key','oauth','cookie'],'api_key');
@@ -475,7 +512,7 @@ function importToken(){
   const preview=await api(path,{method:'POST',body:JSON.stringify(payload)});
   dialog('Token import preview',[h('p',{},'Available: '+(preview.available?'Yes':'No')),h('p',{},'Type: '+preview.kind),h('p',{class:'muted'},preview.message||'Variable: '+preview.variable+'. The value is never returned to this page.')],[button('Save imported token',async()=>{
    if(!preview.available)throw new Error('The selected credential is unavailable.');
-   await api(path,{method:'POST',body:JSON.stringify({...payload,apply:true})});payload=null;$('dialog').close();await refresh();message('Imported token saved. Bind its new reference from Accounts.');
+   const saved=await api(path,{method:'POST',body:JSON.stringify({...payload,apply:true})});payload=null;$('dialog').close();await refresh();message('Imported token saved. Bind its new reference from Accounts.');onSaved?.(saved);
   },'primary')]);
  },'primary')]);
 }

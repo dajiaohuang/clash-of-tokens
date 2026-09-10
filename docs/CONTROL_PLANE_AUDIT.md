@@ -13,7 +13,7 @@ must be checked again before final acceptance.
 | 2. Account/credential separation | `config/accounts.go`, `credential.go`, injected adapter resolution | Finish provider-specific credential setup and migration UX |
 | 3. Account model | Account configuration and authentication evidence | Account health/capacity/last validation aggregation |
 | 4. Protected store | DPAPI; Linux native Secret Service integration tests; AES-GCM envelope tests | Native macOS cgo build/runtime verification |
-| 5. Add any account | Provider Add Account and credential references | Provider-specific forms, login/import paths, organization/project setup |
+| 5. Add any account | Batch 27 account wizard combines credential/import selection and profile login | Complete provider-specific forms, organization/project setup and broader login checks |
 | 6. Browser import | Standard profile metadata and selected CDP Cookie import | Selected existing-profile account candidates and all named browser import paths |
 | 7. Manager import | All named CSV formats, Bitwarden JSON, redacted selection | End-to-end account binding from import; verify all format fixtures |
 | 8. Provider matching | Exact catalog-domain/type suggestions | Complete domain aliases and direct binding workflow |
@@ -38,14 +38,14 @@ must be checked again before final acceptance.
 | 27. Health | Runtime outcome, TTFT, last status/timestamps exist | Surface all fields; provider/account aggregation and distinct degraded/exhausted/broken states |
 | 28. Test Provider | Explicit one-request stream validation | Separate connection/auth/request/stream/completion/latency presentation |
 | 29. Live verification | Batch 25 derives status/counts from model/protocol evidence and source/credential-version bindings; rotation invalidation tested | Real configured-provider checks and complete account/capability evidence still require verification |
-| 30. Discovery hub | Separate browser/export/environment/CLI import actions | Unified Discover Accounts candidates and import/bind flow |
+| 30. Discovery hub | Batch 27 returns import results to account setup with single-result binding | Unified automatic Discover Accounts candidates and broader matching |
 | 31. Shared credential | Account reference shared by multiple sources and quota domain | End-to-end reference reuse/capacity display |
 | 32. Manual binding override | Matching and incompatible-type rejection | Explicit reviewed type-override requested by the synthesis is absent |
 | 33. Quota domain view | Batch 26 adds domain members/shared counters, retiring leases and atomic all-member limit editing | Account/domain moves and rename behavior still need complete UX/runtime audit |
 | 34. Account pools | Four router strategies; batch 26 adds pool editor, account switches/capacity/weights and UI persistence tests | Broader end-to-end dispatch/strategy acceptance |
 | 35. Sessions | ChatGPT metadata and expire/clear | Other stateful adapter inventories and controls |
 | 36. Browsers | Registry, CDP status, account login | Owned-process launch/stop/open-provider and session capacity view |
-| 37. Login wizard | Separate account/profile/import/login controls | Unified existing/isolated/import/manual path ending in Save account |
+| 37. Login wizard | Batch 27 unifies existing/isolated profile, import/manual credential and login-to-save with synthetic browser tests | All installed-browser account discovery, provider-specific setup and real provider compatibility |
 | 38. Devices | Frontend device settings | Connected-device/ADB/resolution/foreground app/login/test evidence; implement with synthetic tests, no emulator operations |
 | 39. Implementation status | Catalog implementation field | Reference/factory/runtime/verified/broken/research view |
 | 40. Descriptor registry | Shared validation/factory/schema contract | More provider-specific credential/discovery/auth capabilities; eliminate residual setup switches |

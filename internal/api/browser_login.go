@@ -144,3 +144,91 @@ func (p *ControlPlane) browserLoginAdmin(w http.ResponseWriter, r *http.Request)
 	reply(w, map[string]any{"profile_id": profile.ID, "pid": pid, "status": "login_required", "message": "Complete login in the browser. Launching does not verify authentication. The browser remains under your control."})
 	return true
 }
+
+// setupBrowserLogin operates on a selected draft profile without creating an
+// account. Its browser directory is still scoped to the server's profile root.
+func (p *ControlPlane) setupBrowserLogin(w http.ResponseWriter, r *http.Request) bool {
+	if r.URL.Path != "/admin/browser_profiles/setup-login" {
+		return false
+	}
+	if r.Method != "POST" {
+		fail(w, 405, "method not allowed")
+		return true
+	}
+	var input struct {
+		Profile  config.BrowserProfile `json:"profile"`
+		Provider string                `json:"provider"`
+		Action   string                `json:"action"`
+	}
+	if decodeInput(w, r, &input, 4096) != nil || (input.Action != "launch" && input.Action != "check") {
+		fail(w, 400, "invalid browser setup request")
+		return true
+	}
+	c := p.service.Current().Config
+	validation := config.Config{BrowserProfiles: []config.BrowserProfile{input.Profile}}
+	for _, profile := range c.BrowserProfiles {
+		if profile != input.Profile {
+			validation.BrowserProfiles = append(validation.BrowserProfiles, profile)
+		}
+	}
+	if !input.Profile.Enabled || validation.ValidateBrowserProfiles() != nil {
+		fail(w, 400, "choose an enabled valid browser profile")
+		return true
+	}
+	for _, profile := range c.BrowserProfiles {
+		if (profile.ID == input.Profile.ID || profile.CDPURL == input.Profile.CDPURL) && profile != input.Profile {
+			fail(w, 409, "draft profile conflicts with an existing profile")
+			return true
+		}
+	}
+	adapter, destination := "", ""
+	for _, entry := range catalog.All() {
+		if entry.ID == input.Provider {
+			adapter, destination = entry.Adapter, entry.BaseURL
+		}
+	}
+	args, err := loginArguments(input.Profile, p.startup.Browser.StateFile, destination)
+	if err != nil {
+		fail(w, 400, err.Error())
+		return true
+	}
+	if input.Action == "check" {
+		var result browserauth.Evidence
+		if adapter == "chatgpt-web" {
+			browser := p.startup.Browser
+			browser.Enabled = true
+			browser.CDPURL = input.Profile.CDPURL
+			value := chatgptweb.New(browser, "setup-check").CheckAuth(r.Context())
+			result = browserauth.Evidence{Status: value.Status, Method: value.Method, CheckedAt: value.CheckedAt, ComposerReady: value.ComposerReady}
+		} else {
+			result = browserauth.Check(r.Context(), input.Profile.CDPURL, destination, adapter)
+		}
+		reply(w, struct {
+			browserauth.Evidence
+			Profile         string `json:"profile"`
+			HistoryRecorded bool   `json:"history_recorded"`
+		}{result, input.Profile.ID, false})
+		return true
+	}
+	endpoint, _ := url.Parse(input.Profile.CDPURL)
+	probe, err := net.DialTimeout("tcp", endpoint.Host, time.Second)
+	if err == nil {
+		probe.Close()
+		fail(w, 409, "profile port is already in use; explicitly select the running browser to check login")
+		return true
+	}
+	executable, err := browserExecutable(input.Profile.Engine)
+	if err != nil {
+		fail(w, 503, err.Error())
+		return true
+	}
+	cmd := exec.Command(executable, args...)
+	if err = cmd.Start(); err != nil {
+		fail(w, 503, "cannot start login browser")
+		return true
+	}
+	pid := cmd.Process.Pid
+	go cmd.Wait()
+	reply(w, map[string]any{"profile": input.Profile.ID, "pid": pid, "status": "login_required"})
+	return true
+}

@@ -117,12 +117,18 @@ CLI format references: [Codex auth fixture](https://github.com/openai/codex/blob
     editor. Router tests cover shared counting and reductions below active use;
     UI regression covers preview/apply and persisted pool/domain values.
     See [capacity controls](CAPACITY_CONTROLS.md).
+27. Unified account setup draft with protected credential/import selection,
+    existing or isolated browser profiles, explicit running-browser attachment,
+    login checking and transactional account/profile preview. Synthetic browser
+    regression covers login-to-save and token-import-to-binding; draft checks
+    are tested to leave configuration and evidence history unchanged.
+    See [account setup wizard](BROWSER_LOGIN.md#account-setup-wizard).
 
 Discovery protocol references: [Anthropic models](https://platform.claude.com/docs/en/api/models/list),
 [Gemini models](https://ai.google.dev/api/models),
 [OpenAI models](https://platform.openai.com/docs/api-reference/models).
 
-Validation: `go test ./...` passed, 540 tests in 38 packages on Windows.
+Validation: `go test ./...` passed, 541 tests in 38 packages on Windows.
 Windows and Linux-target `govulncheck` reported no vulnerabilities.
 Browser regression: credential creation/redaction, account binding, source
 creation, group membership, preview/apply, every navigation destination and

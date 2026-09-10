@@ -78,3 +78,36 @@ func TestLoginArgumentsUseDedicatedDirectory(t *testing.T) {
 		t.Fatal("unsafe destination accepted")
 	}
 }
+
+func TestDraftBrowserCheckDoesNotSaveAccount(t *testing.T) {
+	dir := t.TempDir()
+	vault, err := credentials.Open(filepath.Join(dir, "vault"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, err := NewControlPlane(filepath.Join(dir, "config.json"), config.Default(), testKey, adminKey, vault)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer p.Close()
+	body := `{"profile":{"id":"draft","enabled":true,"engine":"chrome","cdp_url":"http://127.0.0.1:19999"},"provider":"openai","action":"check"}`
+	r := httptest.NewRequest("POST", "/admin/browser_profiles/setup-login", strings.NewReader(body))
+	r.Header.Set("Authorization", "Bearer "+adminKey)
+	w := httptest.NewRecorder()
+	p.ServeHTTP(w, r)
+	if w.Code != 200 || !strings.Contains(w.Body.String(), `"status":"unsupported"`) {
+		t.Fatal(w.Code, w.Body.String())
+	}
+	c := p.service.Current()
+	if c.Revision != 1 || len(c.Config.Accounts) != 0 || len(c.Config.BrowserProfiles) != 0 || len(p.evidence.List()) != 0 {
+		t.Fatal("draft check persisted configuration/evidence")
+	}
+	bad := strings.Replace(body, "127.0.0.1", "192.0.2.1", 1)
+	r = httptest.NewRequest("POST", "/admin/browser_profiles/setup-login", strings.NewReader(bad))
+	r.Header.Set("Authorization", "Bearer "+adminKey)
+	w = httptest.NewRecorder()
+	p.ServeHTTP(w, r)
+	if w.Code != 400 {
+		t.Fatal("nonlocal profile accepted", w.Code)
+	}
+}

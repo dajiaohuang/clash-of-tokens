@@ -156,6 +156,9 @@ func (p *ControlPlane) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if managedResource(r.URL.Path) {
+			if p.setupBrowserLogin(w, r) {
+				return
+			}
 			if p.browserMetadataAdmin(w, r) {
 				return
 			}

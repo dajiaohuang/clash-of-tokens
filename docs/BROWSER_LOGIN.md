@@ -47,3 +47,27 @@ history persistence, revision labeling and stopping polling on dialog close.
 It makes no requests to the live providers. Real account compatibility must
 still be checked using the user's selected browser profile; provider page and
 private endpoint behavior may change.
+
+## Account setup wizard
+
+**Accounts → Add account** combines provider selection, a protected credential
+reference, an existing or new isolated browser profile, and login checking.
+Manual credential entry, password-manager import, token import and selected
+browser-cookie import return to the draft with its fields preserved. A single
+imported credential is selected automatically; multiple results require a
+selection. Provider-specific supplementary fields still use their existing
+configuration controls.
+
+Login can launch the selected profile before saving the account. If its port is
+occupied, **Use running browser** explicitly selects that connection for the
+check. Draft checks do not save configuration or authentication history.
+After a successful draft check, applying the account configuration performs a
+new check against the saved account and records that result. The account starts
+disabled and is not approved for Auto routing. Authentication alone does not
+validate generation or configure a source.
+
+New profiles and the account are applied together through configuration preview.
+Canceling setup leaves any launched browser open and any already imported
+credential in the protected store, potentially unbound. It does not erase either
+resource. This wizard does not yet discover accounts automatically from all
+installed browser profiles or provide login detection for every provider.
