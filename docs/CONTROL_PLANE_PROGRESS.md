@@ -511,3 +511,7 @@ cover remote, non-loopback and valid local declarations.
 Batch 93 aligns billing metadata with that boundary. A `local_model` must use
 `billing_mode: local`, and a non-local source cannot claim local billing; focused
 configuration regressions cover both invalid combinations.
+
+Batch 94 makes the local billing declaration mandatory for `local_model` sources.
+An omitted billing mode no longer becomes an ambiguous `unknown` value; the
+metadata regression keeps the valid local tuple explicit.

@@ -45,6 +45,7 @@ func TestLocalModelRequiresExplicitLocalInference(t *testing.T) {
 		t.Fatalf("non-loopback local_model was accepted: %v", err)
 	}
 	source.Local = true
+	source.BillingMode = "local"
 	if err := source.ValidateMetadata(); err != nil {
 		t.Fatalf("explicit local_model was rejected: %v", err)
 	}

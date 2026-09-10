@@ -53,7 +53,7 @@ func (s Source) ValidateMetadata() error {
 	if s.SourceKind == "local_model" && (s.InferenceLocation != "local" || !s.Local) {
 		return fmt.Errorf("local_model requires local inference and loopback transport")
 	}
-	if s.SourceKind == "local_model" && s.BillingMode != "" && s.BillingMode != "local" {
+	if s.SourceKind == "local_model" && s.BillingMode != "local" {
 		return fmt.Errorf("local_model requires local billing mode")
 	}
 	if s.BillingMode == "local" && (s.SourceKind != "local_model" || s.InferenceLocation != "local" || !s.Local) {
