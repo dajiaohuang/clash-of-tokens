@@ -239,3 +239,7 @@ and the System > Implementation page. Catalog implementation, descriptor
 factory, configured resource counts, catalog live metadata, and explicit
 runtime evidence are displayed as separate fields. See
 [implementation status](IMPLEMENTATION_STATUS.md).
+
+Batch 45 extends provider matching with an explicit, host-exact alias allowlist
+for official product and API consoles. Case and trailing-dot normalization are
+safe; suffix lookalikes remain unmatched. See [provider matching](PROVIDER_MATCHING.md).

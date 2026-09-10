@@ -39,11 +39,38 @@ func All() []Entry {
 		d, _ := providerdef.Lookup(out[i].Adapter)
 		out[i].Credentials.Accepted = d.CredentialModes
 		if u, err := url.Parse(out[i].BaseURL); err == nil && u.Hostname() != "" && u.Scheme == "https" {
-			out[i].Credentials.Domains = []string{strings.ToLower(u.Hostname())}
+			out[i].Credentials.Domains = append([]string{strings.ToLower(u.Hostname())}, domainAliases[out[i].ID]...)
 		}
 	}
 	return out
 }
+
+// These are exact product hosts used by official web consoles and API
+// documentation. Matching remains host-exact; a lookalike domain never gains
+// a provider suggestion.
+var domainAliases = map[string][]string{
+	"openai":          {"chat.openai.com", "platform.openai.com"},
+	"anthropic":       {"claude.ai", "console.anthropic.com"},
+	"gemini":          {"gemini.google.com", "aistudio.google.com", "ai.google.dev"},
+	"deepseek":        {"chat.deepseek.com", "platform.deepseek.com"},
+	"moonshot":        {"platform.moonshot.cn", "kimi.moonshot.cn"},
+	"moonshot-cn":     {"platform.moonshot.cn", "kimi.moonshot.cn"},
+	"minimax":         {"platform.minimaxi.com"},
+	"bigmodel":        {"open.bigmodel.cn", "www.bigmodel.cn"},
+	"zai":             {"z.ai", "chat.z.ai"},
+	"qwen-code":       {"chat.qwen.ai", "dashscope.aliyuncs.com"},
+	"dashscope":       {"dashscope.aliyuncs.com", "bailian.console.aliyun.com"},
+	"siliconflow":     {"siliconflow.cn"},
+	"huggingface":     {"huggingface.co"},
+	"groq":            {"console.groq.com"},
+	"mistral":         {"chat.mistral.ai", "console.mistral.ai"},
+	"xai":             {"console.x.ai", "grok.com"},
+	"perplexity-api":  {"perplexity.ai"},
+	"volcengine-ark":  {"console.volcengine.com", "ark.cn-beijing.volces.com"},
+	"tencent-hunyuan": {"console.cloud.tencent.com", "hunyuan.cloud.tencent.com"},
+	"baidu-qianfan":   {"console.bce.baidu.com", "qianfan.baidubce.com"},
+}
+
 func Preset(id, model string, baseOverride ...string) (config.Source, error) {
 	for _, p := range All() {
 		if p.ID != id {

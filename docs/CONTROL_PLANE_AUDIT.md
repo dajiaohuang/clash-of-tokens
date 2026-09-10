@@ -16,7 +16,7 @@ must be checked again before final acceptance.
 | 5. Add any account | Batch 27 account wizard combines credential/import selection and profile login | Complete provider-specific forms, organization/project setup and broader login checks |
 | 6. Browser import | Standard profile metadata and selected CDP Cookie import | Selected existing-profile account candidates and all named browser import paths |
 | 7. Manager import | All named CSV formats, Bitwarden JSON, redacted selection | End-to-end account binding from import; verify all format fixtures |
-| 8. Provider matching | Exact catalog-domain/type suggestions | Complete domain aliases and direct binding workflow |
+| 8. Provider matching | Exact catalog-domain/type suggestions plus official product/API aliases with lookalike rejection | Broader alias coverage and direct binding workflow |
 | 9. Launch login | Dedicated browser launch and bounded UI watcher | Broader provider detection and complete account creation flow |
 | 10. Profile registry | Profile CRUD, per-account CDP/session isolation | Existing-profile onboarding and lifecycle status |
 | 11. Full management pages | Provider Detail; global workload/queue, buffer and Go-memory metrics; account health/capacity rows in Accounts | Process/session inventory; credential last use/status; full end-to-end page acceptance |

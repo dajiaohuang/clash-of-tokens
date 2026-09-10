@@ -48,3 +48,13 @@ func TestCatalogPresetsAreExecutableConfigurations(t *testing.T) {
 		}
 	}
 }
+
+func TestCredentialMatchingUsesExactOfficialAliases(t *testing.T) {
+	matched := MatchCredentials("chat.openai.com", "api_key")
+	if len(matched) == 0 || matched[0].Provider != "openai" || !matched[0].Compatible {
+		t.Fatalf("expected OpenAI alias match, got %#v", matched)
+	}
+	if got := MatchCredentials("chat.openai.com.evil.test", "api_key"); len(got) != 0 {
+		t.Fatalf("lookalike domain matched: %#v", got)
+	}
+}
