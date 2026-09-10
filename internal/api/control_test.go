@@ -144,6 +144,32 @@ func TestConfigRollbackRejectsStaleRevision(t *testing.T) {
 	}
 }
 
+func TestAccountProviderChangeRequiresSourceMigration(t *testing.T) {
+	dir := t.TempDir()
+	vault, _ := credentials.Open(filepath.Join(dir, "vault"))
+	c := config.Default()
+	c.Providers = []config.Provider{{ID: "openai"}, {ID: "anthropic"}}
+	c.Accounts = []config.Account{{ID: "acct", ProviderID: "openai", QuotaDomain: "acct", MaxInflight: 1, Weight: 1}}
+	c.Sources = []config.Source{{ID: "source", Provider: "openai", Adapter: "openai", BaseURL: "http://127.0.0.1:1", Local: true, Enabled: true, AutoApproved: true, BillingMode: "free_allowance", AccountID: "acct", QuotaDomain: "acct", MaxInflight: 1, QuotaMaxInflight: 1, Models: []config.Model{{ID: "model", Upstream: "model", Protocols: []string{"chat"}, Tier: "silver", RatingBasis: "fixture", Tools: "none", MaxInputBytes: 1024}}}}
+	c.Groups[0].Sources = []string{"source"}
+	p, err := NewControlPlane(filepath.Join(dir, "config.json"), c, testKey, adminKey, vault)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer p.Close()
+	req := httptest.NewRequest("PATCH", "/admin/accounts/acct", strings.NewReader(`{"provider_id":"anthropic"}`))
+	req.Header.Set("Authorization", "Bearer "+adminKey)
+	req.Header.Set("If-Match", "1")
+	w := httptest.NewRecorder()
+	p.ServeHTTP(w, req)
+	if w.Code != http.StatusConflict || !strings.Contains(w.Body.String(), "migrate sources first") {
+		t.Fatalf("provider migration status=%d body=%s", w.Code, w.Body.String())
+	}
+	if got := p.service.Current().Revision; got != 1 {
+		t.Fatalf("rejected provider change advanced revision to %d", got)
+	}
+}
+
 func TestConfigPreviewReportsRoutingImpact(t *testing.T) {
 	dir := t.TempDir()
 	vault, _ := credentials.Open(filepath.Join(dir, "vault"))

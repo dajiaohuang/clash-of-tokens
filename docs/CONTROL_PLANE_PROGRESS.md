@@ -410,6 +410,11 @@ The API regression in the same batch performs two durable edits and submits a
 rollback with the first revision after the second is current. It verifies the
 endpoint returns `409` and leaves the active revision unchanged.
 
+Batch 139 makes account-provider changes explicit migrations. The admin API
+returns a conflict explaining that bound sources must be migrated first, and
+the regression verifies no configuration revision is advanced by the rejected
+edit.
+
 Batch 65 adds explicit OpenAI organization and project metadata to source
 configuration. The schema-driven source editor exposes both fields, validates
 control characters and length, and the native OpenAI client forwards them as

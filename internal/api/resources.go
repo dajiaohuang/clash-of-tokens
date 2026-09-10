@@ -163,6 +163,13 @@ func (p *ControlPlane) resourceAdmin(w http.ResponseWriter, r *http.Request, ser
 		}
 		c.Providers, err = editResource(c.Providers, id, method, raw)
 	case "accounts":
+		priorProvider := ""
+		for _, account := range c.Accounts {
+			if account.ID == id {
+				priorProvider = account.ProviderID
+				break
+			}
+		}
 		if method == "DELETE" {
 			for _, source := range c.Sources {
 				if source.AccountID == id {
@@ -175,6 +182,14 @@ func (p *ControlPlane) resourceAdmin(w http.ResponseWriter, r *http.Request, ser
 		if err == nil && method != "DELETE" {
 			for _, account := range c.Accounts {
 				if account.ID == id {
+					if priorProvider != "" && account.ProviderID != priorProvider {
+						for _, source := range c.Sources {
+							if source.AccountID == id {
+								fail(w, 409, "account provider cannot change while sources are bound; migrate sources first")
+								return
+							}
+						}
+					}
 					cascadeAccountQuotaDomain(&c, account.ID, account.QuotaDomain)
 					break
 				}
