@@ -308,6 +308,9 @@ the bounded routing eligibility impact.
 Batch 136 makes the Credentials page include sources that inherit an account's
 protected reference in its safe “Used by” view, with browser regression coverage.
 
+Batch 137 extends global search to credential references and account/source
+Base URL, organization, project and quota metadata without indexing secrets.
+
 Batch 52 adds a direct **Use in account** action for stored credentials and
 configured browser profiles discovered by the Accounts page. It pre-fills the
 existing transactional account wizard without enabling the account or source.
