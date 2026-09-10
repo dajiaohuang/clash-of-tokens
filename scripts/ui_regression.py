@@ -605,21 +605,21 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     expect(members.nth(0)).to_contain_text("bulk-source")
     page.get_by_role("button", name="Review changes", exact=True).click()
     page.get_by_role("button", name="Apply changes", exact=True).click()
-    expect(page.get_by_role("row").filter(has=page.get_by_text("auto", exact=True))).to_contain_text("bulk-source → openai")
+    expect(page.get_by_role("row").filter(has=page.get_by_text("auto", exact=True)).first).to_contain_text("bulk-source → openai")
     page.get_by_role("button", name="Add group", exact=True).click()
     group_dialog = page.get_by_role("dialog")
     group_dialog.get_by_label("ID", exact=True).fill("secondary-group")
     group_dialog.get_by_label("Type", exact=True).select_option("fallback")
     group_dialog.get_by_role("button", name="Review changes", exact=True).click()
     group_dialog.get_by_role("button", name="Apply changes", exact=True).click()
-    secondary_row = page.get_by_role("row").filter(has=page.get_by_text("secondary-group", exact=True))
+    secondary_row = page.get_by_role("row").filter(has=page.get_by_text("secondary-group", exact=True)).first
     secondary_row.get_by_role("button", name="Edit", exact=True).click()
     membership_dialog = page.get_by_role("dialog")
     membership_dialog.get_by_role("checkbox", name="openai", exact=True).check()
     membership_dialog.get_by_role("checkbox", name="bulk-source", exact=True).check()
     membership_dialog.get_by_role("button", name="Review changes", exact=True).click()
     membership_dialog.get_by_role("button", name="Apply changes", exact=True).click()
-    expect(page.get_by_role("row").filter(has=page.get_by_text("secondary-group", exact=True))).to_contain_text("bulk-source")
+    expect(page.get_by_role("row").filter(has=page.get_by_text("secondary-group", exact=True)).first).to_contain_text("bulk-source")
     page.get_by_role("link", name="Models", exact=True).click()
     page.get_by_role("button", name="Select filtered models", exact=True).click()
     expect(page.get_by_text("2 models selected, including selections outside the current filter.", exact=True)).to_be_visible()
@@ -707,6 +707,23 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     expect(page.get_by_text("Restart required: runtime", exact=False)).to_be_visible()
     page.get_by_role("button", name="Version history", exact=True).click()
     expect(page.get_by_role("heading", name="Configuration history", exact=True)).to_be_visible()
+    # Advance the durable revision outside the tab, then prove the restore
+    # action refuses the stale optimistic revision instead of overwriting it.
+    page.evaluate("""async () => {
+        const current = await (await fetch('/admin/config', {headers: {Authorization: 'Bearer ui-test-admin-key-123456789'}})).json();
+        const next = JSON.parse(JSON.stringify(current.config));
+        next.runtime.max_queued += 1;
+        const response = await fetch('/admin/config', {method: 'PATCH', headers: {Authorization: 'Bearer ui-test-admin-key-123456789', 'Content-Type': 'application/json'}, body: JSON.stringify({revision: current.revision, config: next, summary: 'External revision'})});
+        if (!response.ok) throw new Error('external revision failed: ' + response.status);
+    }""")
+    page.get_by_role("button", name="Compare / restore", exact=True).first.click()
+    expect(page.get_by_text("Restoring creates a new revision.", exact=False)).to_be_visible()
+    page.get_by_role("button", name="Restore", exact=True).click()
+    expect(page.get_by_role("dialog")).to_contain_text("configuration changed; refresh the preview before applying")
+    page.get_by_role("button", name="Close", exact=True).click()
+    page.get_by_role("button", name="Refresh", exact=True).click()
+    expect(page.get_by_text("Configuration revision", exact=False)).to_be_visible()
+    page.get_by_role("button", name="Version history", exact=True).click()
     page.get_by_role("button", name="Compare / restore", exact=True).first.click()
     expect(page.get_by_text("Restoring creates a new revision.", exact=False)).to_be_visible()
     page.get_by_role("button", name="Restore", exact=True).click()

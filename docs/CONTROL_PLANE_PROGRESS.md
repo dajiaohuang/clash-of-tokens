@@ -401,6 +401,11 @@ runtime limit through the schema form, reviews and applies the transaction,
 opens version history, compares the newest revision, and restores it through
 the existing guarded API flow.
 
+Batch 138 also advances the saved revision out of band before selecting a
+restore. The browser regression confirms the stale optimistic rollback is
+rejected with a conflict, refreshes the history, and then completes a restore
+against the current revision.
+
 Batch 65 adds explicit OpenAI organization and project metadata to source
 configuration. The schema-driven source editor exposes both fields, validates
 control characters and length, and the native OpenAI client forwards them as
