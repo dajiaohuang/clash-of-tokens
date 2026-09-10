@@ -207,7 +207,7 @@ Discovery protocol references: [Anthropic models](https://platform.claude.com/do
 [Gemini models](https://ai.google.dev/api/models),
 [OpenAI models](https://platform.openai.com/docs/api-reference/models).
 
-Validation: `go test ./...` passed, 568 tests in 38 packages on Windows.
+Validation: `go test ./...` passed, 571 tests in 38 packages on Windows.
 Windows and Linux-target `govulncheck` reported no vulnerabilities.
 Browser regression: credential creation/redaction, account binding, source
 creation, group membership, preview/apply, every navigation destination and
@@ -218,10 +218,10 @@ Race detection is outstanding: the current Go environment has cgo disabled.
 ## Remaining implementation
 
 The [51-section ledger](CONTROL_PLANE_AUDIT.md) now replaces the previous generic
-A–E checklist. The main gaps include unified account discovery/onboarding,
-complete provider-specific setup and checks, quota/account pool views, richer
-model management, broader session management, runtime log redaction, remaining
-routing policies and native macOS verification.
+A–E checklist. The main gaps include complete provider-specific setup and
+checks, quota/account pool end-to-end views, broader session management, the
+global adapter log-redaction audit, remaining routing policies and native macOS
+verification.
 All explicit subrequirements and the end-to-end install-to-routing workflow must
 be verified before completion.
 
