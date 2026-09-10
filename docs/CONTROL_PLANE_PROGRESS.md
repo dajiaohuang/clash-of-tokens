@@ -812,3 +812,7 @@ language while configuration forms continue to submit their stable enum values.
 Batch 149 adds browser regression assertions for both an Official API row and a
 Browser reverse row, covering descriptor-driven type classification in the
 Provider filter and list.
+
+Batch 150 adds a direct configuration-service rollback lifecycle regression.
+An expected-revision conflict and a missing target revision now prove that no
+runtime preparation, journal write, commit callback or revision advance occurs.

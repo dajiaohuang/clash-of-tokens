@@ -97,3 +97,39 @@ func TestConfigurationPreparationFailureDoesNotPersist(t *testing.T) {
 		t.Fatal("failed prepare wrote history")
 	}
 }
+
+func TestConfigurationRollbackRejectsStaleRevisionAndUnknownTarget(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+	prepared, committed, discarded := 0, 0, 0
+	s, err := OpenService(path, Default(), func(Config) (func(), func(), error) {
+		prepared++
+		return func() { committed++ }, func() { discarded++ }, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	next := Default()
+	next.Runtime.MaxQueued++
+	if _, err = s.Apply(1, next, "first"); err != nil {
+		t.Fatal(err)
+	}
+	next.Runtime.MaxQueued++
+	if _, err = s.Apply(2, next, "second"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = s.Rollback(2, 1); !errors.Is(err, ErrRevisionConflict) {
+		t.Fatalf("stale rollback error = %v", err)
+	}
+	if got := s.Current().Revision; got != 3 {
+		t.Fatalf("stale rollback changed revision to %d", got)
+	}
+	if prepared != 2 || committed != 2 || discarded != 0 {
+		t.Fatalf("stale rollback changed preparation lifecycle: prepared=%d committed=%d discarded=%d", prepared, committed, discarded)
+	}
+	if _, err = s.Rollback(3, 999); err == nil {
+		t.Fatal("unknown rollback target accepted")
+	}
+	if got := s.Current().Revision; got != 3 {
+		t.Fatalf("unknown rollback changed revision to %d", got)
+	}
+}
