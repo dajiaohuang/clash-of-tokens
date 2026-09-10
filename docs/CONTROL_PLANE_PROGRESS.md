@@ -71,8 +71,9 @@ not a completed acceptance audit.
     to the caller and persisted in bounded revision-linked history (f2bd6a6).
 
 18. Local ChatGPT session metadata and lease-protected expire/clear operations
-    (c31a76a). Upstream conversations are not deleted. Other session adapters
-    explicitly report unsupported management.
+(c31a76a). Upstream conversations are not deleted. Batch 109 adds the same
+metadata-only controls to China Web, China Next (Yuanbao), Zed Hosted, Amazon
+Q, and Augment; stateless adapters explicitly report unsupported management.
 19. Configured-source environment import and selected Codex/Gemini/OAuth JSON
     access-token import. Preview never returns tokens; imports allocate new
     references. CLI refresh tokens and account IDs are not imported and there
