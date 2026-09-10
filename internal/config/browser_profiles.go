@@ -16,6 +16,9 @@ type BrowserProfile struct {
 }
 
 func (c Config) ValidateBrowserProfiles() error {
+	if len(c.BrowserProfiles) > 64 {
+		return fmt.Errorf("browser registry exceeds 64 profiles")
+	}
 	ids := map[string]bool{}
 	endpoints := map[string]bool{}
 	for _, p := range c.BrowserProfiles {
