@@ -685,3 +685,8 @@ dialog hides Username for API-key credentials, labels the protected value as
 Password for username/password login material, and suppresses a manual secret
 field when a descriptor declares no credential fields. The UI regression covers
 OpenAI API-key and Claude username/password forms without saving test secrets.
+
+Batch 127 adds `scripts/redaction_audit.py` to the hosted CI checks. It scans
+production `internal/` and `cmd/` Go files for direct logger imports/calls while
+excluding tests, so adapter error details cannot bypass the existing fixed
+category boundary through a newly added logging sink.

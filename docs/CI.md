@@ -5,6 +5,8 @@ cross-platform verification boundary. Every push to `main`, pull request and
 manual dispatch runs:
 
 - the full Go test suite and `go vet` on Ubuntu, Windows and macOS;
+- a dependency-free audit that rejects direct production logger sinks outside
+  the gateway's fixed-category redaction boundary;
 - the full Linux race detector suite;
 - a cgo-enabled macOS test against the native Keychain backend using only a
   synthetic temporary vault entry; and

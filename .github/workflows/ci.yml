@@ -30,6 +30,8 @@ jobs:
         run: go test ./...
       - name: Run vet
         run: go vet ./...
+      - name: Audit production logging boundary
+        run: python scripts/redaction_audit.py
 
   race:
     name: Linux race detector
