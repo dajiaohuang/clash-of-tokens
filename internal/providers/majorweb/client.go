@@ -336,7 +336,7 @@ func readCredential(source config.Source) (credentials, error) {
 	if strings.TrimSpace(source.KeyEnv) == "" {
 		return credentials{}, ErrCredential
 	}
-	raw := strings.TrimSpace(os.Getenv(source.KeyEnv))
+	raw := strings.TrimSpace(source.CredentialValue())
 	if raw == "" {
 		return credentials{}, ErrCredential
 	}

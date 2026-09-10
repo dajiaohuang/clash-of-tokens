@@ -12,7 +12,6 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -134,7 +133,7 @@ func (c *Client) Do(ctx context.Context, p, model string, stream bool, body []by
 	path := ""
 	var payload any
 	headers := http.Header{"Content-Type": []string{"application/json"}, "Accept": []string{"text/event-stream"}, "User-Agent": []string{"clash-tokens/0.1"}}
-	key := strings.TrimSpace(os.Getenv(c.source.KeyEnv))
+	key := strings.TrimSpace(c.source.CredentialValue())
 	if key == "" && !c.source.Anonymous && !c.source.Local {
 		return nil, &Error{401, "provider credential is missing"}
 	}

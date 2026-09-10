@@ -15,7 +15,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -274,7 +273,7 @@ func credential(source config.Source) (map[string]string, error) {
 	if strings.TrimSpace(source.KeyEnv) == "" {
 		return nil, ErrCredential
 	}
-	raw := strings.TrimSpace(os.Getenv(source.KeyEnv))
+	raw := strings.TrimSpace(source.CredentialValue())
 	if raw == "" || len(raw) > maxResponseBytes || strings.ContainsAny(raw, "\r\n\x00") {
 		return nil, ErrCredential
 	}

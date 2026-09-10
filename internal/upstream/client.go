@@ -130,7 +130,7 @@ func (c *Client) Do(ctx context.Context, protocol, model string, stream bool, bo
 	if c.web != nil {
 		return c.web.Do(ctx, protocol, model, body, clientHeaders)
 	}
-	key := os.Getenv(c.source.KeyEnv)
+	key := c.source.CredentialValue()
 	if !c.source.Local && key == "" {
 		return nil, errors.New("source credential environment variable is not set")
 	}

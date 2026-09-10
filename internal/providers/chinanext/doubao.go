@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -141,7 +140,7 @@ func doubaoCookie(source config.Source) (string, bool, error) {
 	if strings.TrimSpace(source.KeyEnv) == "" {
 		return "", false, nil
 	}
-	raw := strings.TrimSpace(os.Getenv(source.KeyEnv))
+	raw := strings.TrimSpace(source.CredentialValue())
 	if raw == "" || len(raw) > maxDoubaoCookie || strings.ContainsAny(raw, "\r\n\x00") {
 		return "", true, ErrCredential
 	}

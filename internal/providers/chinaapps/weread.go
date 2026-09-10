@@ -9,7 +9,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -39,7 +38,7 @@ func (c *Client) doWeRead(ctx context.Context, proto, model string, stream bool,
 		VID         string `json:"vid"`
 		AccessToken string `json:"access_token"`
 	}
-	dec = json.NewDecoder(strings.NewReader(os.Getenv(c.source.KeyEnv)))
+	dec = json.NewDecoder(strings.NewReader(c.source.CredentialValue()))
 	dec.DisallowUnknownFields()
 	if dec.Decode(&cred) != nil || dec.Decode(new(any)) != io.EOF || cred.VID == "" || cred.AccessToken == "" || len(cred.AccessToken) > 64<<10 || len(cred.VID) > 256 || strings.ContainsAny(cred.VID+cred.AccessToken, "\r\n") {
 		return nil, errors.New("weread-ai: source credential requires vid and access_token")

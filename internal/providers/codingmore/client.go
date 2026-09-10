@@ -311,7 +311,7 @@ func (c *Client) credential() (string, error) {
 	if strings.TrimSpace(c.source.KeyEnv) == "" {
 		return "", ErrCredential
 	}
-	value := strings.TrimSpace(os.Getenv(c.source.KeyEnv))
+	value := strings.TrimSpace(c.source.CredentialValue())
 	if value == "" || len(value) > maxHeaderValue || strings.ContainsAny(value, "\r\n") {
 		return "", ErrCredential
 	}

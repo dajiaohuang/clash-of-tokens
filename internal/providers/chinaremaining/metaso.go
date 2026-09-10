@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"regexp"
 	"strings"
 )
@@ -27,7 +26,7 @@ func (c *Client) metasoCredential() (string, error) {
 	if strings.TrimSpace(c.source.KeyEnv) == "" {
 		return "", ErrCredential
 	}
-	raw := strings.TrimSpace(os.Getenv(c.source.KeyEnv))
+	raw := strings.TrimSpace(c.source.CredentialValue())
 	if len(raw) == 0 || len(raw) > maxCredentialBytes || strings.ContainsAny(raw, "\r\n\x00") {
 		return "", ErrCredential
 	}

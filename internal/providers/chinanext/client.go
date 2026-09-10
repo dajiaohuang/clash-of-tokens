@@ -18,7 +18,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -250,7 +249,7 @@ func (c *Client) credential() (string, error) {
 	if strings.TrimSpace(c.source.KeyEnv) == "" {
 		return "", ErrCredential
 	}
-	v := os.Getenv(c.source.KeyEnv)
+	v := c.source.CredentialValue()
 	if strings.TrimSpace(v) == "" {
 		return "", ErrCredential
 	}

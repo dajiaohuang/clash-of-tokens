@@ -17,7 +17,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -168,7 +167,7 @@ func (c *Client) credential() (string, error) {
 	if c.source.KeyEnv == "" {
 		return "", errors.New("embedded provider key_env is required")
 	}
-	value := strings.TrimSpace(os.Getenv(c.source.KeyEnv))
+	value := strings.TrimSpace(c.source.CredentialValue())
 	if value == "" {
 		return "", errors.New("source credential environment variable is not set")
 	}

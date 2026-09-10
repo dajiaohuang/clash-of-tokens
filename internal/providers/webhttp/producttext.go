@@ -10,7 +10,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"regexp"
 	"strings"
 	"unicode/utf8"
@@ -119,7 +118,7 @@ func (c *Client) doWhiteRabbit(ctx context.Context, model string, stream bool, m
 	if err != nil {
 		return nil, err
 	}
-	cookie := strings.TrimSpace(os.Getenv(c.source.KeyEnv))
+	cookie := strings.TrimSpace(c.source.CredentialValue())
 	if cookie == "" || strings.ContainsAny(cookie, "\r\n\x00") {
 		return nil, &Error{401, "WhiteRabbitNeo credential is missing or invalid"}
 	}

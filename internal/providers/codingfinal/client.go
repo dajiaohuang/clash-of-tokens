@@ -22,7 +22,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -403,7 +402,7 @@ func (c *Client) credential() (string, error) {
 	if strings.TrimSpace(c.source.KeyEnv) == "" {
 		return "", ErrCredential
 	}
-	token := strings.TrimSpace(os.Getenv(c.source.KeyEnv))
+	token := strings.TrimSpace(c.source.CredentialValue())
 	if token == "" || len(token) > maxHeaderValue || strings.ContainsAny(token, "\r\n") {
 		return "", ErrCredential
 	}

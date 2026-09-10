@@ -16,7 +16,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 
@@ -91,7 +90,7 @@ func (c *Client) Do(ctx context.Context, protocol, model string, stream bool, bo
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	if strings.TrimSpace(c.source.KeyEnv) == "" || os.Getenv(c.source.KeyEnv) == "" {
+	if c.source.CredentialValue() == "" {
 		return nil, ErrCredential
 	}
 
@@ -131,7 +130,7 @@ func (c *Client) execute(req *http.Request) (*http.Response, error) {
 	return resp, nil
 }
 
-func credential(source config.Source) string { return os.Getenv(source.KeyEnv) }
+func credential(source config.Source) string { return source.CredentialValue() }
 
 func baseURL(source config.Source, suffix string) (string, error) {
 	base := strings.TrimRight(strings.TrimSpace(source.BaseURL), "/")

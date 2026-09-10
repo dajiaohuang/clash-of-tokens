@@ -16,7 +16,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -216,7 +215,7 @@ func (c *Client) credential() (credentialJSON, string, error) {
 	if strings.TrimSpace(c.source.KeyEnv) == "" {
 		return credentialJSON{}, "", ErrCredential
 	}
-	raw := strings.TrimSpace(os.Getenv(c.source.KeyEnv))
+	raw := strings.TrimSpace(c.source.CredentialValue())
 	if raw == "" || len(raw) > maxResponseBytes {
 		return credentialJSON{}, "", ErrCredential
 	}

@@ -14,7 +14,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -83,7 +82,7 @@ func (c *Client) Do(ctx context.Context, proto, model string, stream bool, body 
 	if !utf8.Valid(body) {
 		return nil, ErrUnsupported
 	}
-	cookie := strings.TrimSpace(os.Getenv(c.source.KeyEnv))
+	cookie := strings.TrimSpace(c.source.CredentialValue())
 	if strings.HasPrefix(cookie, "{") {
 		var cred struct {
 			Cookie string `json:"cookie"`

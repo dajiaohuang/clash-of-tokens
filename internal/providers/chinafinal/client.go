@@ -15,7 +15,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -327,7 +326,7 @@ func (c *Client) credential() (string, error) {
 	if strings.TrimSpace(c.source.KeyEnv) == "" {
 		return "", ErrCredential
 	}
-	value := strings.TrimSpace(os.Getenv(c.source.KeyEnv))
+	value := strings.TrimSpace(c.source.CredentialValue())
 	if len(value) >= len("Cookie:") && strings.EqualFold(value[:len("Cookie:")], "Cookie:") {
 		value = strings.TrimSpace(value[len("Cookie:"):])
 	}

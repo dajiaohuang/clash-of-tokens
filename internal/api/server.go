@@ -46,6 +46,15 @@ func New(c config.Config) (*Server, error) {
 	return NewWithKeys(c, os.Getenv(c.APIKeyEnv), os.Getenv(c.AdminKeyEnv))
 }
 func NewWithKeys(c config.Config, key, admin string) (*Server, error) {
+	return NewWithCredentials(c, key, admin, nil)
+}
+
+func NewWithCredentials(c config.Config, key, admin string, resolver func(string) string) (*Server, error) {
+	c.Sources = append([]config.Source(nil), c.Sources...)
+	for i := range c.Sources {
+		c.Sources[i].CredentialRef = c.SourceCredentialRef(c.Sources[i])
+		c.Sources[i].CredentialResolver = resolver
+	}
 	if e := c.Validate(); e != nil {
 		return nil, e
 	}

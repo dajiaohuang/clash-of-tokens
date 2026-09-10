@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strings"
 )
 
@@ -30,7 +29,7 @@ func (c *Client) qwenCredential(model string) (qwenAccount, error) {
 	if strings.TrimSpace(c.source.KeyEnv) == "" {
 		return qwenAccount{}, ErrCredential
 	}
-	raw := os.Getenv(c.source.KeyEnv)
+	raw := c.source.CredentialValue()
 	if len(raw) == 0 || len(raw) > maxCredentialBytes || strings.ContainsAny(raw, "\r\n\x00") {
 		return qwenAccount{}, ErrCredential
 	}

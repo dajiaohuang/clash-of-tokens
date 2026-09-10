@@ -109,7 +109,9 @@ func (c *Client) doDola(ctx context.Context, rawCookie string, req chatRequest, 
 	if strings.Contains(strings.ToLower(model), "think") || strings.Contains(strings.ToLower(model), "reason") || boolField(req.EnableThinking, req.ReasoningEffort) {
 		deepThink = 3
 	}
-	if req.EnableThinking!=nil && !*req.EnableThinking{deepThink=0}
+	if req.EnableThinking != nil && !*req.EnableThinking {
+		deepThink = 0
+	}
 	payload := map[string]any{
 		"client_meta": map[string]any{
 			"local_conversation_id": localConversationID,
@@ -274,7 +276,9 @@ func (c *Client) doDeepSeek(ctx context.Context, rawToken string, req chatReques
 		return nil, e
 	}
 	think := boolField(req.EnableThinking, req.ReasoningEffort) || deepSeekThinking(req.Model)
-	if req.EnableThinking!=nil{think=*req.EnableThinking}
+	if req.EnableThinking != nil {
+		think = *req.EnableThinking
+	}
 	search := req.WebSearch || strings.Contains(strings.ToLower(req.Model), "search")
 	payload := map[string]any{
 		"chat_session_id": sessionID, "parent_message_id": nil, "model_type": deepSeekModelType(req.Model),

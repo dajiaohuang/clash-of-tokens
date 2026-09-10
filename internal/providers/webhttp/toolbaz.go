@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 )
 
@@ -19,7 +18,7 @@ func (c *Client) doToolbaz(ctx context.Context, model string, stream bool, promp
 		SessionID string `json:"session_id"`
 		Token     string `json:"token"`
 	}
-	if json.Unmarshal([]byte(os.Getenv(c.source.KeyEnv)), &cred) != nil || cred.SessionID == "" || cred.Token == "" {
+	if json.Unmarshal([]byte(c.source.CredentialValue()), &cred) != nil || cred.SessionID == "" || cred.Token == "" {
 		return nil, &Error{401, "ToolBaz key_env requires session_id and an existing writing token"}
 	}
 	form := url.Values{"text": {prompt}, "model": {model}, "session_id": {cred.SessionID}, "capcha": {cred.Token}}
