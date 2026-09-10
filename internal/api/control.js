@@ -283,7 +283,7 @@ function accountWizard(draft={}){
  const capture=()=>({...draft,id:id.value.trim(),display_name:name.value.trim(),quota_domain:quota.value.trim(),provider_id:provider.value,credential_ref:credential.value,browser_profile_id:profile.value,newProfile:draft.newProfile?.id===profile.value?draft.newProfile:undefined});
  const hint=()=>{const modes=allowedModes()||[];hints.textContent='Compatible credential types: '+(modes.join(', ')||'any declared type')+'. Incompatible protected references are hidden. Password imports are login material, not API keys. Accounts are saved disabled and excluded from Auto.'};
  const updateCredentialOptions=()=>{const current=credential.value,options=compatibleCredentials();credential.replaceChildren(h('option',{value:''},'Choose…'),...options.map(c=>h('option',{value:c.id},c.id+' · '+c.kind)));credential.value=options.some(c=>c.id===current)?current:''};
- const newCredentialAction=button('New credential',()=>credentialForm(undefined,imported,allowedModes));
+ const newCredentialAction=button('New credential',()=>credentialForm(undefined,imported,allowedModes,providerDescriptor));
  const passwordImportAction=button('Import password manager',()=>importCredentials(imported));
  const tokenImportAction=button('Import token',()=>importToken(imported,allowedModes));
  const browserCookieAction=button('Import browser cookies',()=>importBrowserCookies(imported));
@@ -325,14 +325,15 @@ function addSource(provider=''){
   },'primary')
  ]);
 }
-function credentialForm(existing,onSaved,allowedModes){
+function credentialForm(existing,onSaved,allowedModes,descriptor){
  const id=h('input',{value:existing?.id?.replace('cred://','')||'',disabled:!!existing,placeholder:'credential-id'});
  const allKinds=['api_key','oauth','cookie','browser_session','username_password','cli_session','device_session','browser_profile'];
  const kinds=allowedModes?.()||allKinds;
  const kind=select(kinds,existing?.kind||kinds[0]||'api_key');
  const value=h('input',{type:'password',autocomplete:'new-password',placeholder:'New secret value'});
  const username=h('input',{autocomplete:'off',placeholder:'Username (username/password only)'});
- const formBody=[h('div',{class:'form-grid'},field('Credential ID',id),field('Type',kind),field('Username',username),field('Secret value',value)),h('p',{class:'muted'},'The existing secret is never sent to this page. Saving replaces the protected value.')];
+ const fields=descriptor?.()?.credential_fields||[],secretField=fields.find(f=>f.secret)||fields.find(f=>f.name==='value'),secretLabel=secretField?.label||'Secret value';
+ const formBody=[h('div',{class:'form-grid'},field('Credential ID',id),field('Type',kind),field('Username',username),field(secretLabel,value)),h('p',{class:'muted'},'The existing secret is never sent to this page. Saving replaces the protected value.')];
  let confirmed=false;
  const save=async()=>{
    if(!existing&&S.credentials.some(c=>c.id==='cred://'+id.value))throw new Error('This credential ID exists. Use Replace from Credentials to change it.');

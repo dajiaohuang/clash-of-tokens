@@ -624,3 +624,9 @@ adapter, while an existing incompatible reference remains visible for an
 explicit review or override instead of being silently discarded. The browser
 regression binds an API-key source and confirms a cookie reference is absent
 from the OpenAI source dropdown.
+
+Batch 117 consumes the descriptor's secret-field label in the account wizard's
+manual credential form. OpenAI setup now labels the protected input `API key`,
+while adapters without a specialized field retain the generic label; the
+underlying value remains write-only and the credential kind still follows the
+declared mode list.
