@@ -429,6 +429,22 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     expect(page.get_by_role("row").filter(has=page.get_by_role("checkbox", name="Select model bulk-source/bulk-model", exact=True))).to_contain_text("Approved")
     expect(page.get_by_role("row").filter(has=page.get_by_role("checkbox", name="Select model openai/test-model", exact=True))).to_contain_text("Disabled")
     expect(page.get_by_role("row").filter(has=page.get_by_role("checkbox", name="Select model openai/test-model", exact=True))).to_contain_text("Not approved")
+    for search_term, result_label, expected_heading in [
+        ("tencent-hunyuan", "tencent-hunyuan", "tencent-hunyuan"),
+        ("bulk-source", "bulk-source", "Source / bulk-source"),
+        ("auto", "auto", "Edit Group / auto"),
+        ("ui-account", "UI test account", "Edit Account / ui-account"),
+        ("bulk-model", "bulk-model · bulk-source", "Edit selected models"),
+        ("ui-profile", "ui-profile", "Edit Browser Profile / ui-profile"),
+        ("cred://ui-token", "cred://ui-token", "Replace credential"),
+    ]:
+        page.get_by_role("searchbox", name="Search everything", exact=True).fill(search_term)
+        page.get_by_role("button", name=result_label, exact=True).click()
+        expect(page.get_by_role("heading", name=expected_heading, exact=True)).to_be_visible()
+        page.get_by_role("button", name="Close", exact=True).click()
+    page.get_by_role("searchbox", name="Search everything", exact=True).fill("android")
+    page.get_by_role("button", name="Android device settings", exact=True).click()
+    expect(page.get_by_role("heading", name="Devices", exact=True)).to_be_visible()
     assert not errors, errors
     browser.close()
 print("UI smoke passed: credential redaction, account binding, source creation, group membership, preview/apply, navigation and responsive layout.")

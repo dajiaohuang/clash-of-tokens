@@ -52,7 +52,7 @@ must be checked again before final acceptance.
 | 41. Administration API | Persistent CRUD, config, simulator, source checks | Account validate and complete browser/device lifecycle operations |
 | 42. Embedded frontend | Go-embedded static HTML/CSS/JS, no Node runtime | Packaging/build verification |
 | 43. Navigation | All named destinations; batch 32 adds bounded runtime execution events and source/outcome filters in Activity | Complete content on every destination and broader event coverage |
-| 44. Search | Global search implementation | Each required entity search + navigation browser test |
+| 44. Search | Batch 36 adds explicit model/browser/device matches and tests all eight entity navigation paths | Broader naming/localization and large-catalog usability acceptance |
 | 45. Preview | Config diff and optimistic revision preview | Eligibility/account impact before apply; credential replacement preview |
 | 46. Central validation | Schema validation plus runtime prepare before apply | All special actions must retain the same invariants |
 | 47. Hot reload | Generation pinning and restart-required fields | Full browser confirmation of live vs pending runtime settings |

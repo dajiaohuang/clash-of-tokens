@@ -161,6 +161,11 @@ CLI format references: [Codex auth fixture](https://github.com/openai/codex/blob
     previewed transaction for enable, Auto, rating and capability changes.
     Browser regression covers two-model editing, required rating evidence and
     preservation of an unselected model. See [model bulk edits](MODEL_BULK_EDIT.md).
+36. Global search now matches models, browser profiles and device settings in
+    addition to providers/accounts/sources/groups/credential metadata. Matching
+    uses named identity fields rather than serialized configuration. Browser
+    regression exercises all eight entity navigation paths; opening device
+    settings performs no device discovery or execution.
 
 Discovery protocol references: [Anthropic models](https://platform.claude.com/docs/en/api/models/list),
 [Gemini models](https://ai.google.dev/api/models),
