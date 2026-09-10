@@ -99,10 +99,15 @@ func (s *Server) credentialAdmin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		metadata := s.vault.List()
+		found := false
 		for i := range metadata {
 			if metadata[i].ID == id {
 				metadata[i].Kind = p.Kind
+				found = true
 			}
+		}
+		if !found {
+			metadata = append(metadata, credentials.Metadata{ID: id, Kind: p.Kind})
 		}
 		if err := validateCredentialBindings(s.cfg, metadata); err != nil {
 			fail(w, 409, err.Error())

@@ -556,3 +556,8 @@ Batch 103 enforces the same provider credential-mode contract at the API
 boundary. An account with a protected reference is rejected before any source
 exists when its kind is incompatible with the catalog adapter, unless the
 reviewed account override is explicit.
+
+Batch 104 applies that contract before a new protected credential is written,
+too. The PUT path validates the candidate metadata even when the reference did
+not previously exist, so an incompatible account binding cannot be created by
+ordering credential and account mutations around the wizard.
