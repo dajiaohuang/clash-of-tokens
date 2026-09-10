@@ -816,3 +816,8 @@ Provider filter and list.
 Batch 150 adds a direct configuration-service rollback lifecycle regression.
 An expected-revision conflict and a missing target revision now prove that no
 runtime preparation, journal write, commit callback or revision advance occurs.
+
+Batch 151 adds the missing model-management group action. The bulk model editor
+can add every selected model's source to an existing group in the same reviewed
+configuration transaction, while model enablement, approval and capability
+changes remain atomic.

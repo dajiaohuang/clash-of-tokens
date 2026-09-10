@@ -672,18 +672,22 @@ function bulkModels(entries){
  if(!entries.length)throw Error('Select at least one model.');
  const base=clone(S.config),revision=S.revision;
  const switchOptions=[{value:'keep',label:'Leave unchanged'},{value:'true',label:'Yes'},{value:'false',label:'No'},{value:'inherit',label:'Inherit'}];
- const enabled=select(switchOptions,'keep'),approved=select(switchOptions,'keep'),tier=select(['keep','unrated','bronze','silver','gold','platinum','diamond'],'keep'),basis=h('input',{disabled:true}),tools=select(['keep','unknown','none','native'],'keep'),vision=select(switchOptions.filter(x=>x.value!=='inherit'),'keep');
+ const enabled=select(switchOptions,'keep'),approved=select(switchOptions,'keep'),tier=select(['keep','unrated','bronze','silver','gold','platinum','diamond'],'keep'),basis=h('input',{disabled:true}),tools=select(['keep','unknown','none','native'],'keep'),vision=select(switchOptions.filter(x=>x.value!=='inherit'),'keep'),group=select([{value:'keep',label:'Leave unchanged'},...(S.config.groups||[]).map(g=>({value:g.id,label:g.id}))],'keep');
  tier.onchange=()=>{basis.disabled=['keep','unrated'].includes(tier.value)};
  const show=()=>dialog('Edit selected models',[
   h('p',{class:'muted'},'Changes apply to all listed models in one configuration transaction. Approval is a routing permission, not verification. Provider, account, source and group restrictions still apply; metered sources may incur charges once routed.'),
-  table(['Source','Model'],entries.map(x=>[x.source.id,x.model.id])),field('Models enabled',enabled),field('Models Auto approval',approved),field('Models tier',tier),field('Models rating basis',basis),field('Models tools',tools),field('Models vision',vision)
+  table(['Source','Model'],entries.map(x=>[x.source.id,x.model.id])),field('Models enabled',enabled),field('Models Auto approval',approved),field('Models tier',tier),field('Models rating basis',basis),field('Models tools',tools),field('Models vision',vision),field('Add selected sources to group',group)
  ],[button('Review model changes',async()=>{
   const next=clone(base),changes={};
   for(const [key,input] of [['enabled',enabled],['auto_approved',approved],['vision',vision]])if(input.value!=='keep')changes[key]=input.value==='inherit'?null:input.value==='true';
   if(tier.value!=='keep'){if(tier.value!=='unrated'&&!basis.value.trim())throw Error('A rated tier requires a rating basis.');changes.tier=tier.value;changes.rating_basis=tier.value==='unrated'?'':basis.value.trim()}
   if(tools.value!=='keep')changes.tools=tools.value;
-  if(!Object.keys(changes).length)throw Error('Choose at least one change.');
+  if(!Object.keys(changes).length&&!group.value)throw Error('Choose at least one change.');
   for(const entry of entries){const model=next.sources.find(s=>s.id===entry.source.id)?.models.find(m=>m.id===entry.model.id);if(!model)throw Error('A selected model no longer exists. Refresh and select again.');Object.assign(model,changes)}
+  if(group.value&&group.value!=='keep'){
+   const target=next.groups.find(g=>g.id===group.value);if(!target)throw Error('Selected group no longer exists. Refresh and select again.');
+   for(const id of new Set(entries.map(x=>x.source.id)))if(!target.sources.includes(id))target.sources.push(id);
+  }
   await preview(next,'Update '+entries.length+' selected models',show,base,revision);
  },'primary')]);show();
 }

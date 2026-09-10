@@ -676,6 +676,7 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     page.get_by_role("button", name="Select filtered models", exact=True).click()
     expect(page.get_by_text("2 models selected, including selections outside the current filter.", exact=True)).to_be_visible()
     page.get_by_role("button", name="Edit selected models", exact=True).click()
+    page.get_by_label("Add selected sources to group", exact=True).select_option("secondary-group")
     page.get_by_label("Models enabled", exact=True).select_option("false")
     page.get_by_label("Models Auto approval", exact=True).select_option("false")
     page.get_by_label("Models tier", exact=True).select_option("silver")
