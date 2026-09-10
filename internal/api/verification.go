@@ -49,18 +49,19 @@ type accountHealth struct {
 }
 
 type providerHealth struct {
-	ID          string     `json:"id"`
-	Enabled     bool       `json:"enabled"`
-	Health      string     `json:"health"`
-	AuthStatus  string     `json:"auth_status"`
-	Active      int        `json:"active"`
-	Limit       int        `json:"limit"`
-	Accounts    []string   `json:"accounts"`
-	Sources     []string   `json:"sources"`
-	Completed   uint64     `json:"completed"`
-	Failures    uint64     `json:"failures"`
-	LastSuccess *time.Time `json:"last_success,omitempty"`
-	LastFailure *time.Time `json:"last_failure,omitempty"`
+	ID              string     `json:"id"`
+	Enabled         bool       `json:"enabled"`
+	Health          string     `json:"health"`
+	AuthStatus      string     `json:"auth_status"`
+	Active          int        `json:"active"`
+	Limit           int        `json:"limit"`
+	Accounts        []string   `json:"accounts"`
+	Sources         []string   `json:"sources"`
+	Completed       uint64     `json:"completed"`
+	Failures        uint64     `json:"failures"`
+	LastSuccess     *time.Time `json:"last_success,omitempty"`
+	LastFailure     *time.Time `json:"last_failure,omitempty"`
+	LastValidatedAt *time.Time `json:"last_validated_at,omitempty"`
 }
 
 func (p *ControlPlane) credentialMetadata(ref string) credentials.Metadata {
@@ -181,12 +182,12 @@ func (p *ControlPlane) controlStatus(s *Server) map[string]any {
 	out["live_verified_sources"] = verifiedSources
 	accounts := p.accountHealth(s, entries)
 	out["account_health"] = accounts
-	out["provider_health"] = p.providerHealth(s, accounts)
+	out["provider_health"] = p.providerHealth(s, accounts, entries)
 	out["revision"] = p.service.Current().Revision
 	return out
 }
 
-func (p *ControlPlane) providerHealth(s *Server, accounts []accountHealth) []providerHealth {
+func (p *ControlPlane) providerHealth(s *Server, accounts []accountHealth, entries []audit.Entry) []providerHealth {
 	type aggregate struct {
 		providerHealth
 		hasHealthy, hasDegraded, hasBlocked, hasCooldown, hasExhausted, hasBroken, hasDisabled bool
@@ -240,12 +241,25 @@ func (p *ControlPlane) providerHealth(s *Server, accounts []accountHealth) []pro
 		}
 	}
 	runtimeByID := map[string]runtimeAggregate{}
+	latestValidation := map[string]time.Time{}
+	for _, entry := range entries {
+		if entry.Kind != "validation" {
+			continue
+		}
+		if current, ok := latestValidation[entry.Resource]; !ok || entry.CheckedAt.After(current) {
+			latestValidation[entry.Resource] = entry.CheckedAt
+		}
+	}
 	for _, status := range s.Router.Status() {
 		runtimeByID[status.ID] = runtimeAggregate{health: status.Health, active: status.Active, completed: status.Completed, failures: status.Failures, lastSuccess: status.LastSuccess, lastFailure: status.LastFailure}
 	}
 	for _, source := range s.cfg.Sources {
 		row := ensure(source.Provider)
 		row.Sources = append(row.Sources, source.ID)
+		if checked, ok := latestValidation[source.ID]; ok && checked.After(valueTime(row.LastValidatedAt)) {
+			value := checked
+			row.LastValidatedAt = &value
+		}
 		status, ok := runtimeByID[source.ID]
 		if !ok {
 			continue

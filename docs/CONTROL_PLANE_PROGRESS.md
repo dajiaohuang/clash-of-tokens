@@ -211,6 +211,10 @@ CLI format references: [Codex auth fixture](https://github.com/openai/codex/blob
     evidence, leaves all routing switches unchanged, and is available from both
     Providers and Provider Detail. Synthetic API and browser regression tests
     cover source and browser fallback paths. See [provider detail](PROVIDER_DETAIL.md).
+44. Provider health now includes the latest source generation-validation time,
+    alongside account and source validation timestamps. Health renders the field
+    as a freshness indicator without treating historical evidence as current
+    availability.
 
 Discovery protocol references: [Anthropic models](https://platform.claude.com/docs/en/api/models/list),
 [Gemini models](https://ai.google.dev/api/models),
@@ -428,3 +432,8 @@ Batch 75 adds provider-level health aggregation to the control-plane status and
 Health page. Provider rows now expose enabled state, bounded health and auth
 status, account/source membership, capacity and runtime counters without
 duplicating account-bound capacity.
+
+Batch 77 adds the latest source generation-validation timestamp to provider
+health. The Health page now surfaces provider freshness beside the existing
+account and source timestamps; the value describes recorded evidence and does
+not claim current upstream availability.
