@@ -24,15 +24,18 @@ import (
 )
 
 type Server struct {
-	vault                                         *credentials.Store
-	cfg                                           config.Config
-	Router                                        *routing.Router
-	clients                                       []clientSlot
-	apiKey, adminKey                              [32]byte
-	ingress                                       chan struct{}
+	*metrics
+	vault            *credentials.Store
+	cfg              config.Config
+	Router           *routing.Router
+	clients          []clientSlot
+	apiKey, adminKey [32]byte
+	ingress          chan struct{}
+	buffers          sync.Pool
+}
+type metrics struct {
 	buffered                                      atomic.Int64
 	requests, rejected, outputBytes, streamErrors atomic.Uint64
-	buffers                                       sync.Pool
 }
 type clientSlot struct {
 	once   sync.Once
@@ -63,7 +66,7 @@ func NewWithCredentials(c config.Config, key, admin string, resolver func(string
 	if len(key) < 16 || len(admin) < 16 || key == admin {
 		return nil, errors.New("distinct API and admin secrets of at least 16 characters must be set")
 	}
-	s := &Server{cfg: c, Router: routing.New(c), apiKey: sha256.Sum256([]byte(key)), adminKey: sha256.Sum256([]byte(admin)), ingress: make(chan struct{}, c.Runtime.MaxInflight+c.Runtime.MaxQueued), clients: make([]clientSlot, len(c.Sources))}
+	s := &Server{metrics: &metrics{}, cfg: c, Router: routing.New(c), apiKey: sha256.Sum256([]byte(key)), adminKey: sha256.Sum256([]byte(admin)), ingress: make(chan struct{}, c.Runtime.MaxInflight+c.Runtime.MaxQueued), clients: make([]clientSlot, len(c.Sources))}
 	s.buffers.New = func() any { b := make([]byte, 32<<10); return &b }
 	return s, nil
 }

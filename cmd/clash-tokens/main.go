@@ -127,7 +127,7 @@ func run() error {
 	if e != nil {
 		return e
 	}
-	handler, e := api.NewWithVault(c, keys.API, keys.Admin, vault)
+	handler, e := api.NewControlPlane(*path, c, keys.API, keys.Admin, vault)
 	if e != nil {
 		return e
 	}

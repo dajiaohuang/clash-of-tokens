@@ -42,19 +42,31 @@ type waiter struct {
 	ready chan struct{}
 }
 type Router struct {
-	mu              sync.Mutex
-	cfg             config.Config
-	targets         []Target
-	groups          map[string]compiledGroup
-	candidates      map[string][]int
-	state           []state
-	quotas          []*quota
-	accounts        []*quota
-	parentEnabled   []bool
-	parentApproved  []bool
-	active, waiting int
-	cursor          uint64
-	head, tail      *waiter
+	*capacity
+	cfg            config.Config
+	targets        []Target
+	groups         map[string]compiledGroup
+	candidates     map[string][]int
+	state          []*state
+	quotas         []*quota
+	accounts       []*quota
+	parentEnabled  []bool
+	parentApproved []bool
+	waiting        int
+	retired        bool
+	cursor         uint64
+	head, tail     *waiter
+}
+
+// Capacity survives configuration generations, including leases held by
+// retired routers. A hot update never doubles an account's available slots.
+type capacity struct {
+	mu            sync.Mutex
+	active        int
+	sourceStates  map[string]*state
+	quotaStates   map[string]*quota
+	accountStates map[string]*quota
+	current       *Router
 }
 type Query struct {
 	Model, Protocol string
@@ -68,10 +80,14 @@ type Lease struct {
 	Target  Target
 	once    sync.Once
 	started time.Time
+	state   *state
+	quota   *quota
+	account *quota
 }
 
 func New(c config.Config) *Router {
-	r := &Router{cfg: c, groups: make(map[string]compiledGroup), candidates: make(map[string][]int), state: make([]state, len(c.Sources))}
+	r := &Router{capacity: &capacity{sourceStates: map[string]*state{}, quotaStates: map[string]*quota{}, accountStates: map[string]*quota{}}, cfg: c, groups: make(map[string]compiledGroup), candidates: make(map[string][]int), state: make([]*state, len(c.Sources))}
+	r.current = r
 	qs := map[string]*quota{}
 	accountLimits := map[string]*quota{}
 	accountConfig := map[string]config.Account{}
@@ -82,6 +98,7 @@ func New(c config.Config) *Router {
 	for _, a := range c.Accounts {
 		accountConfig[a.ID] = a
 		accountLimits[a.ID] = &quota{limit: a.MaxInflight}
+		r.accountStates[a.ID] = accountLimits[a.ID]
 	}
 	for i, s := range c.Sources {
 		enabled, approved := true, true
@@ -95,11 +112,13 @@ func New(c config.Config) *Router {
 		r.parentEnabled = append(r.parentEnabled, enabled)
 		r.parentApproved = append(r.parentApproved, approved)
 		r.accounts = append(r.accounts, accountLimits[s.AccountID])
-		r.state[i].enabled = s.Enabled
+		r.state[i] = &state{enabled: s.Enabled}
+		r.sourceStates[s.ID] = r.state[i]
 		if qs[s.QuotaDomain] == nil {
 			qs[s.QuotaDomain] = &quota{limit: s.QuotaMaxInflight}
 		}
 		r.quotas = append(r.quotas, qs[s.QuotaDomain])
+		r.quotaStates[s.QuotaDomain] = qs[s.QuotaDomain]
 		for _, m := range s.Models {
 			r.targets = append(r.targets, Target{i, m})
 		}
@@ -221,6 +240,9 @@ func (r *Router) eligible(t Target, q Query) (bool, string) {
 	return false, "model"
 }
 func (r *Router) choose(q Query, now time.Time) (int, bool) {
+	if r.retired {
+		return -1, false
+	}
 	best := -1
 	score := math.Inf(1)
 	eligible := false
@@ -306,7 +328,7 @@ func (r *Router) Acquire(ctx context.Context, q Query) (*Lease, error) {
 				a.active++
 			}
 			r.cursor++
-			return &Lease{router: r, Target: t, started: time.Now()}, nil
+			return &Lease{router: r, Target: t, started: time.Now(), state: r.state[t.Source], quota: r.quotas[t.Source], account: r.accounts[t.Source]}, nil
 		}
 		if !eligible {
 			return nil, ErrUnavailable
@@ -376,14 +398,13 @@ func (l *Lease) Release(status int, retryAfter time.Duration) {
 		r := l.router
 		r.mu.Lock()
 		defer r.mu.Unlock()
-		i := l.Target.Source
 		r.active--
-		r.state[i].active--
-		r.quotas[i].active--
-		if a := r.accounts[i]; a != nil {
+		l.state.active--
+		l.quota.active--
+		if a := l.account; a != nil {
 			a.active--
 		}
-		st := &r.state[i]
+		st := l.state
 		if status == 401 || status == 403 {
 			st.blocked = true
 		}
@@ -391,7 +412,7 @@ func (l *Lease) Release(status int, retryAfter time.Duration) {
 			if retryAfter <= 0 {
 				retryAfter = 30 * time.Second
 			}
-			r.quotas[i].cooldown = time.Now().Add(min(retryAfter, 24*time.Hour))
+			l.quota.cooldown = time.Now().Add(min(retryAfter, 24*time.Hour))
 		}
 		if status >= 200 && status < 300 {
 			st.completed++
@@ -407,7 +428,7 @@ func (l *Lease) Release(status int, retryAfter time.Duration) {
 				st.cooldown = time.Now().Add(5 * time.Second)
 			}
 		}
-		r.signal()
+		r.current.signal()
 	})
 }
 func (r *Router) SetEnabled(id string, on bool) bool {
