@@ -384,3 +384,9 @@ selects the first eligible member in the group's declared order and advances
 to the next member after a retryable rejection. The browser regression checks
 the selected-member drag affordance and persists a reordered two-source group
 through the normal review/apply flow.
+
+Batch 69 aligns account health with browser authentication evidence. Login
+required, expired, rejected and challenge/access-denied results now classify an
+enabled account as `auth_required` instead of leaving it untested or healthy;
+the status regression covers a login-required account alongside an otherwise
+untested account.

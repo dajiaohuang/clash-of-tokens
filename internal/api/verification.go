@@ -232,7 +232,7 @@ func (p *ControlPlane) accountHealth(s *Server, entries []audit.Entry) []account
 		switch {
 		case !account.Enabled:
 			health.Health = "disabled"
-		case health.AuthStatus == "unauthenticated" || health.AuthStatus == "expired" || health.AuthStatus == "rejected":
+		case authRequiresLogin(health.AuthStatus):
 			health.Health = "auth_required"
 		case health.Active >= health.Limit && health.Limit > 0:
 			health.Health = "exhausted"
@@ -259,6 +259,15 @@ func (p *ControlPlane) accountHealth(s *Server, entries []audit.Entry) []account
 		out = append(out, health)
 	}
 	return out
+}
+
+func authRequiresLogin(status string) bool {
+	switch status {
+	case "unauthenticated", "expired", "rejected", "login_required", "challenge_or_access_denied":
+		return true
+	default:
+		return false
+	}
 }
 
 type routingCapacity struct{ active, limit int }

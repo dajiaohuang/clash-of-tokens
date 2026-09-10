@@ -47,6 +47,7 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 	c := config.Default()
 	c.Providers = []config.Provider{{ID: "p"}}
 	c.Accounts = []config.Account{{ID: "a", ProviderID: "p", DisplayName: "Account", Enabled: true, MaxInflight: 1, Weight: 1, QuotaDomain: "q"}}
+	c.Accounts = append(c.Accounts, config.Account{ID: "b", ProviderID: "p", DisplayName: "Needs login", Enabled: true, MaxInflight: 1, Weight: 1, QuotaDomain: "q-b"})
 	c.Sources = []config.Source{{ID: "s", Provider: "p", Adapter: "openai", BaseURL: upstream.URL, Local: true, Enabled: true, MaxInflight: 1, AccountID: "a", QuotaDomain: "q", QuotaMaxInflight: 1, Models: []config.Model{{ID: "m", Upstream: "m", Protocols: []string{"chat"}, Tier: "unrated", Tools: "none", MaxInputBytes: 1024}}}}
 	dir := t.TempDir()
 	vault, err := credentials.Open(filepath.Join(dir, "vault"))
@@ -63,6 +64,9 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := p.evidence.Append(audit.Entry{Kind: "authentication", Resource: "a", Status: "authenticated", CheckedAt: checked}); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.evidence.Append(audit.Entry{Kind: "authentication", Resource: "b", Status: "login_required", CheckedAt: checked}); err != nil {
 		t.Fatal(err)
 	}
 	r := httptest.NewRequest("GET", "/admin/status", strings.NewReader(""))
@@ -86,11 +90,15 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 	if err := json.Unmarshal(w.Body.Bytes(), &out); err != nil {
 		t.Fatal(err)
 	}
-	if len(out.Accounts) != 1 {
+	if len(out.Accounts) != 2 {
 		t.Fatalf("account health rows = %+v", out.Accounts)
 	}
 	a := out.Accounts[0]
 	if a.ID != "a" || a.Health != "untested" || a.AuthStatus != "authenticated" || a.Active != 0 || a.Limit != 1 || len(a.Sources) != 1 || a.Sources[0] != "s" || a.LastValidated == nil {
 		t.Fatalf("unexpected account health: %+v", a)
+	}
+	b := out.Accounts[1]
+	if b.ID != "b" || b.Health != "auth_required" || b.AuthStatus != "login_required" || b.Limit != 1 || len(b.Sources) != 0 {
+		t.Fatalf("login-required account was not classified: %+v", b)
 	}
 }
