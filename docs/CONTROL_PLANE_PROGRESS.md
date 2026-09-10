@@ -220,7 +220,7 @@ Discovery protocol references: [Anthropic models](https://platform.claude.com/do
 [Gemini models](https://ai.google.dev/api/models),
 [OpenAI models](https://platform.openai.com/docs/api-reference/models).
 
-Validation: `go test ./...` passed, 598 tests in 38 packages on Windows.
+Validation: `go test ./...` passed, 599 tests in 38 packages on Windows.
 Windows and Linux-target `govulncheck` reported no vulnerabilities.
 Browser regression: credential creation/redaction, account binding, source
 creation, group membership, preview/apply, every navigation destination and
@@ -450,3 +450,7 @@ without exposing the secret.
 Batch 80 adds catalog implementation/live flags and the count of currently
 verified sources to provider health. Health keeps catalog declarations beside
 runtime evidence and capacity instead of collapsing them into one status.
+
+Batch 81 adds provider pool strategy and account weight to the Health snapshot.
+The pool editor and runtime health view now expose the same selection metadata
+alongside active limits and observed counters.

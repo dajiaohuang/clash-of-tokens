@@ -45,8 +45,8 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNotImplemented) }))
 	defer upstream.Close()
 	c := config.Default()
-	c.Providers = []config.Provider{{ID: "p", Enabled: true}, {ID: "disabled-provider", Enabled: false}}
-	c.Accounts = []config.Account{{ID: "a", ProviderID: "p", DisplayName: "Account", Enabled: true, CredentialRef: "cred://account-key", MaxInflight: 1, Weight: 1, QuotaDomain: "q"}}
+	c.Providers = []config.Provider{{ID: "p", Enabled: true, PoolStrategy: "least-load"}, {ID: "disabled-provider", Enabled: false}}
+	c.Accounts = []config.Account{{ID: "a", ProviderID: "p", DisplayName: "Account", Enabled: true, CredentialRef: "cred://account-key", MaxInflight: 1, Weight: 3, QuotaDomain: "q"}}
 	c.Accounts = append(c.Accounts, config.Account{ID: "b", ProviderID: "p", DisplayName: "Needs login", Enabled: true, MaxInflight: 1, Weight: 1, QuotaDomain: "q-b"})
 	c.Accounts = append(c.Accounts, config.Account{ID: "c", ProviderID: "disabled-provider", DisplayName: "Provider disabled", Enabled: true, MaxInflight: 1, Weight: 1, QuotaDomain: "q-c"})
 	c.Sources = []config.Source{{ID: "s", Provider: "p", Adapter: "openai", BaseURL: upstream.URL, Local: true, Enabled: true, MaxInflight: 1, AccountID: "a", QuotaDomain: "q", QuotaMaxInflight: 1, Models: []config.Model{{ID: "m", Upstream: "m", Protocols: []string{"chat"}, Tier: "unrated", Tools: "none", MaxInputBytes: 1024}}}}
@@ -83,6 +83,7 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 	var out struct {
 		Providers []struct {
 			ID                  string     `json:"id"`
+			PoolStrategy        string     `json:"pool_strategy"`
 			CatalogImplemented  bool       `json:"catalog_implemented"`
 			CatalogLiveVerified bool       `json:"catalog_live_verified"`
 			VerifiedSources     int        `json:"verified_sources"`
@@ -95,6 +96,8 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 		} `json:"provider_health"`
 		Accounts []struct {
 			ID              string     `json:"id"`
+			PoolStrategy    string     `json:"pool_strategy"`
+			Weight          int        `json:"weight"`
 			Health          string     `json:"health"`
 			AuthStatus      string     `json:"auth_status"`
 			Active          int        `json:"active"`
@@ -124,6 +127,9 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 	if out.Providers[0].ID != "p" || out.Providers[0].Health != "auth_required" || out.Providers[0].AuthStatus != "auth_required" || len(out.Providers[0].Accounts) != 2 || len(out.Providers[0].Sources) != 1 {
 		t.Fatalf("unexpected provider health: %+v", out.Providers[0])
 	}
+	if out.Providers[0].PoolStrategy != "least-load" {
+		t.Fatalf("provider pool strategy missing: %+v", out.Providers[0])
+	}
 	if out.Providers[0].LastValidated == nil || !out.Providers[0].LastValidated.Equal(checked) {
 		t.Fatalf("provider validation timestamp missing: %+v", out.Providers[0].LastValidated)
 	}
@@ -139,6 +145,9 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 	}
 	if a.LastAuthChecked == nil || !a.LastAuthChecked.Equal(checked) {
 		t.Fatalf("account auth timestamp missing: %+v", a.LastAuthChecked)
+	}
+	if a.PoolStrategy != "least-load" || a.Weight != 3 {
+		t.Fatalf("account pool metadata missing: %+v", a)
 	}
 	b := out.Accounts[1]
 	if b.ID != "b" || b.Health != "auth_required" || b.AuthStatus != "login_required" || b.Limit != 1 || len(b.Sources) != 0 {
