@@ -3,6 +3,7 @@
 package providerdef
 
 import (
+	"slices"
 	"sort"
 	"strings"
 )
@@ -75,6 +76,17 @@ func build() map[string]Descriptor {
 		d := out[id]
 		d.BrowserRequired = true
 		d.CredentialModes = []string{"browser_profile", "browser_session", "cookie"}
+		out[id] = d
+	}
+	// These adapters expose a bounded browser authentication check, so a
+	// password-manager login record is valid account login material. The
+	// adapter still requires an explicit browser profile for the actual check;
+	// the protected username/password is never sent to an upstream request.
+	for _, id := range []string{"chatgpt-web", "claude-web", "blackbox"} {
+		d := out[id]
+		if !slices.Contains(d.CredentialModes, "username_password") {
+			d.CredentialModes = append(d.CredentialModes, "username_password")
+		}
 		out[id] = d
 	}
 	for _, id := range []string{"openai", "anthropic", "gemini"} {

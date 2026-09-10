@@ -649,3 +649,9 @@ inventory (including Zed Hosted and the China Web clients) can now be changed
 from the admin API; stateless adapters still return an explicit unsupported
 capability. A synthetic Zed Hosted API test seeds one local session through a
 loopback upstream and verifies the lease-protected clear operation.
+
+Batch 121 marks username/password records as supported login material for the
+browser-auth-check descriptors (ChatGPT Web, Claude Web and Blackbox). The
+browser regression now launches a password-manager CSV import from the Claude
+Web account wizard, returns the protected reference into the draft, saves the
+account and confirms that the imported secret never reaches the DOM.
