@@ -675,3 +675,7 @@ identity probe. These are clearly labeled configuration metadata: they do not
 claim authentication or upstream capacity. The API regression covers a
 connected synthetic CDP endpoint and ignores sources that are not bound to the
 profile.
+
+Batch 125 adds the same connection-capacity assertions to the isolated browser
+regression, including the configured profile's bound-count and session-limit
+columns before the login wizard starts.
