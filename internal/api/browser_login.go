@@ -116,7 +116,7 @@ func (p *ControlPlane) browserLoginAdmin(w http.ResponseWriter, r *http.Request)
 			destination = entry.BaseURL
 		}
 	}
-	args, err := loginArguments(profile, c.Browser.StateFile, destination)
+	args, err := loginArguments(profile, p.startup.Browser.StateFile, destination)
 	if err != nil {
 		fail(w, 400, err.Error())
 		return true
@@ -135,13 +135,12 @@ func (p *ControlPlane) browserLoginAdmin(w http.ResponseWriter, r *http.Request)
 		return true
 	}
 	cmd := exec.Command(executable, args...)
-	if err = cmd.Start(); err != nil {
-		fail(w, 503, "cannot start login browser")
+	process, err := p.browsers.start(profile.ID, cmd)
+	if err != nil {
+		fail(w, 503, err.Error())
 		return true
 	}
-	pid := cmd.Process.Pid
-	go cmd.Wait()
-	reply(w, map[string]any{"profile_id": profile.ID, "pid": pid, "status": "login_required", "message": "Complete login in the browser. Launching does not verify authentication. The browser remains under your control."})
+	reply(w, map[string]any{"profile_id": profile.ID, "pid": process.PID, "launch_id": process.ID, "status": "login_required", "message": "Complete login in the browser. Launching does not verify authentication. View owned processes from Browsers."})
 	return true
 }
 
@@ -223,12 +222,11 @@ func (p *ControlPlane) setupBrowserLogin(w http.ResponseWriter, r *http.Request)
 		return true
 	}
 	cmd := exec.Command(executable, args...)
-	if err = cmd.Start(); err != nil {
-		fail(w, 503, "cannot start login browser")
+	process, err := p.browsers.start(input.Profile.ID, cmd)
+	if err != nil {
+		fail(w, 503, err.Error())
 		return true
 	}
-	pid := cmd.Process.Pid
-	go cmd.Wait()
-	reply(w, map[string]any{"profile": input.Profile.ID, "pid": pid, "status": "login_required"})
+	reply(w, map[string]any{"profile": input.Profile.ID, "pid": process.PID, "launch_id": process.ID, "status": "login_required"})
 	return true
 }

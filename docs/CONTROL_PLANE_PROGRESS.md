@@ -166,12 +166,17 @@ CLI format references: [Codex auth fixture](https://github.com/openai/codex/blob
     uses named identity fields rather than serialized configuration. Browser
     regression exercises all eight entity navigation paths; opening device
     settings performs no device discovery or execution.
+37. Browser launches retain process ownership with per-launch IDs, bounded
+    history and explicit confirmed stop. Browsers adds owned-process and
+    launch-provider controls. Tests use dedicated child processes and synthetic
+    UI records; external and untracked child processes are not terminated.
+    See [browser processes](BROWSER_PROCESSES.md).
 
 Discovery protocol references: [Anthropic models](https://platform.claude.com/docs/en/api/models/list),
 [Gemini models](https://ai.google.dev/api/models),
 [OpenAI models](https://platform.openai.com/docs/api-reference/models).
 
-Validation: `go test ./...` passed, 559 tests in 38 packages on Windows.
+Validation: `go test ./...` passed, 563 tests in 38 packages on Windows.
 Windows and Linux-target `govulncheck` reported no vulnerabilities.
 Browser regression: credential creation/redaction, account binding, source
 creation, group membership, preview/apply, every navigation destination and

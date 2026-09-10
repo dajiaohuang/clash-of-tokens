@@ -44,7 +44,7 @@ must be checked again before final acceptance.
 | 33. Quota domain view | Batch 26 adds domain members/shared counters, retiring leases and atomic all-member limit editing | Account/domain moves and rename behavior still need complete UX/runtime audit |
 | 34. Account pools | Four router strategies; batch 26 adds pool editor, account switches/capacity/weights and UI persistence tests | Broader end-to-end dispatch/strategy acceptance |
 | 35. Sessions | ChatGPT metadata and expire/clear | Other stateful adapter inventories and controls |
-| 36. Browsers | Registry, CDP status, account login | Owned-process launch/stop/open-provider and session capacity view |
+| 36. Browsers | Batch 37 retains launch handles/identities, lists owned processes, opens provider origins and confirms exact-launch stops; synthetic process/UI tests | Browser child-process lifecycle across platforms and session capacity view |
 | 37. Login wizard | Batch 27 unifies existing/isolated profile, import/manual credential and login-to-save with synthetic browser tests | All installed-browser account discovery, provider-specific setup and real provider compatibility |
 | 38. Devices | Frontend device settings | Connected-device/ADB/resolution/foreground app/login/test evidence; implement with synthetic tests, no emulator operations |
 | 39. Implementation status | Catalog implementation field | Reference/factory/runtime/verified/broken/research view |

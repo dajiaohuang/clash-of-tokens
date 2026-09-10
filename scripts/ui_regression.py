@@ -445,6 +445,36 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     page.get_by_role("searchbox", name="Search everything", exact=True).fill("android")
     page.get_by_role("button", name="Android device settings", exact=True).click()
     expect(page.get_by_role("heading", name="Devices", exact=True)).to_be_visible()
+    page.get_by_role("link", name="Browsers", exact=True).click()
+    page.get_by_role("button", name="Owned processes", exact=True).click()
+    expect(page.get_by_text("No browser processes launched by this gateway.", exact=True)).to_be_visible()
+    page.get_by_role("button", name="Close", exact=True).click()
+    owned_state = {"state":"running", "stops":0}
+    def synthetic_owned_processes(route):
+        if route.request.url.endswith("/synthetic-launch/stop"):
+            assert route.request.method == "POST"
+            assert route.request.post_data_json == {"confirm": True}
+            owned_state["stops"] += 1
+            owned_state["state"] = "stopped"
+            route.fulfill(status=200, content_type="application/json", body='{"status":"stop_requested"}')
+        else:
+            assert route.request.method == "GET"
+            route.fulfill(status=200, content_type="application/json", body=json.dumps([{"id":"synthetic-launch","profile":"ui-profile","pid":12345,"started_at":"2026-09-10T00:00:00Z","state":owned_state["state"]}]))
+    page.route("**/admin/browser_profiles/processes**", synthetic_owned_processes)
+    page.get_by_role("button", name="Owned processes", exact=True).click()
+    page.get_by_role("button", name="Stop", exact=True).click()
+    expect(page.get_by_role("heading", name="Stop owned browser", exact=True)).to_be_visible()
+    assert owned_state["stops"] == 0
+    page.get_by_role("button", name="Cancel", exact=True).click()
+    page.get_by_role("button", name="Stop", exact=True).click()
+    page.get_by_role("button", name="Stop owned process", exact=True).click()
+    expect(page.get_by_role("cell", name="stopped", exact=True)).to_be_visible()
+    assert owned_state["stops"] == 1
+    page.get_by_role("button", name="Close", exact=True).click()
+    page.unroute("**/admin/browser_profiles/processes**", synthetic_owned_processes)
+    page.get_by_role("button", name="Launch provider", exact=True).click()
+    expect(page.get_by_label("Provider to open", exact=True)).to_have_value("openai")
+    page.get_by_role("button", name="Close", exact=True).click()
     assert not errors, errors
     browser.close()
 print("UI smoke passed: credential redaction, account binding, source creation, group membership, preview/apply, navigation and responsive layout.")

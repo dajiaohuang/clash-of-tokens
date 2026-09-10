@@ -23,6 +23,7 @@ type generation struct {
 
 // ControlPlane owns durable configuration and request-pinned runtime snapshots.
 type ControlPlane struct {
+	browsers   browserProcesses
 	runtimeID  string
 	evidence   *evidence.Store
 	mu         sync.Mutex
@@ -156,6 +157,9 @@ func (p *ControlPlane) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if managedResource(r.URL.Path) {
+			if p.browserProcessesAdmin(w, r) {
+				return
+			}
 			if p.setupBrowserLogin(w, r) {
 				return
 			}
