@@ -9,6 +9,7 @@ const pages = [
 ];
 const labels = {overview:'Overview',providers:'Providers',accounts:'Accounts',credentials:'Credentials',sources:'Sources',models:'Models',groups:'Groups',routing:'Routing',health:'Health',metrics:'Metrics',browsers:'Browsers',devices:'Devices',sessions:'Sessions',config:'Configuration',logs:'Activity',implementation:'Implementation',about:'About'};
 const names = {id:'ID',provider_id:'Provider',account_id:'Account',credential_ref:'Credential',credential_type_override:'Reviewed credential type override',base_url:'Base URL',key_env:'Legacy credential environment variable',account_id_env:'Legacy account ID environment variable',organization:'Organization',auto_approved:'Allow Auto routing',allow_paid:'Legacy paid-source policy',allow_unknown_cost:'Allow unknown costs',max_inflight:'Concurrent requests',quota_max_inflight:'Shared quota concurrency',quota_domain:'Quota domain',max_input_bytes:'Maximum input bytes',cdp_url:'Browser connection URL',source_kind:'Source type',tools:'Tool capability',local:'Loopback / local transport',paid:'Legacy paid flag'};
+const browserEngines = ['chrome','edge','brave','firefox','opera','vivaldi','chromium','arc'];
 const title = text => names[text] || text.replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase());
 const clone = value => JSON.parse(JSON.stringify(value));
 function h(tag,attrs,...children) {
@@ -309,7 +310,7 @@ function accountWizard(draft={}){
  },'primary')]);
 }
 function newWizardProfile(draft){
- const id=h('input',{value:draft.id?draft.id+'-browser':''}),engine=select(['chrome','edge','chromium'],'chrome');
+ const id=h('input',{value:draft.id?draft.id+'-browser':''}),engine=select(browserEngines,'chrome');
  const used=new Set((S.config.browser_profiles||[]).map(p=>new URL(p.cdp_url).port));let port=9223;while(used.has(String(port)))port++;
  const endpoint=h('input',{value:'http://127.0.0.1:'+port});
  dialog('New isolated profile',[field('Profile ID',id),field('Browser engine',engine),field('Browser connection URL',endpoint),h('p',{class:'muted'},'A dedicated data directory is used. The profile and account are saved together after review. A launched browser stays open if you cancel setup.')],[button('Use profile',()=>accountWizard({...draft,newProfile:{id:id.value.trim(),engine:engine.value,cdp_url:endpoint.value,enabled:true},browser_profile_id:id.value.trim(),authenticated:false}),'primary')]);
@@ -495,11 +496,11 @@ async function discoverAccounts(){
  dialog('Discover accounts',[field('Scan installed browser profile metadata',scan),h('p',{class:'muted'},'Stored credential references and configured environment names are included without exposing their values. Enable the scan only when you want to inspect local browser profile metadata.'),button('Discover',run,'primary')]);
 }
 function configureDiscoveredProfile(candidate){
- const engineName=['chrome','edge','chromium'].includes(candidate.browser)?candidate.browser:'chrome';
+ const engineName=browserEngines.includes(candidate.browser)?candidate.browser:'chrome';
  const existing=new Set((S.config.browser_profiles||[]).map(p=>p.id));
  let id=(candidate.browser+'-'+candidate.id.slice(0,10)).replace(/[^a-zA-Z0-9_-]/g,'-');
  if(existing.has(id))id+='-profile';
- const profileID=h('input',{value:id}),engine=select(['chrome','edge','chromium'],engineName),endpoint=h('input',{value:S.config.browser?.cdp_url||'http://127.0.0.1:9222'});
+ const profileID=h('input',{value:id}),engine=select(browserEngines,engineName),endpoint=h('input',{value:S.config.browser?.cdp_url||'http://127.0.0.1:9222'});
  dialog('Configure discovered browser profile',[h('p',{class:'muted'},'Discovery found '+candidate.label+' at '+candidate.origin+'. It read profile metadata only. Enter the loopback CDP endpoint of a browser already running with this profile; no cookies are copied and this action does not launch a browser.'),h('div',{class:'form-grid'},field('Profile ID',profileID),field('Browser engine',engine),field('Browser connection URL',endpoint))],[button('Use in account',()=>{const value=profileID.value.trim();if(!value)throw Error('Profile ID is required.');$('dialog').close();accountWizard({provider_id:candidate.providers?.[0]||'',browser_profile_id:value,newProfile:{id:value,engine:engine.value,cdp_url:endpoint.value.trim(),enabled:true}})},'primary')]);
 }
 function importBrowserCookies(onSaved){

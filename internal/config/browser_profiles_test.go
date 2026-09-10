@@ -1,6 +1,10 @@
 package config
 
-import "testing"
+import (
+	"fmt"
+	"reflect"
+	"testing"
+)
 
 func TestBrowserProfilesIsolateAccounts(t *testing.T) {
 	c := Default()
@@ -21,4 +25,33 @@ func TestBrowserProfilesIsolateAccounts(t *testing.T) {
 	if c.ValidateBrowserProfiles() == nil {
 		t.Fatal("non-loopback endpoint accepted")
 	}
+}
+
+func TestBrowserProfilesAcceptDiscoveredBrowserFamilies(t *testing.T) {
+	c := Default()
+	for i, engine := range BrowserEngines {
+		c.BrowserProfiles = append(c.BrowserProfiles, BrowserProfile{ID: engine, Enabled: true, Engine: engine, CDPURL: "http://127.0.0.1:" + fmt.Sprint(9300+i)})
+	}
+	if err := c.ValidateBrowserProfiles(); err != nil {
+		t.Fatal(err)
+	}
+	var schema FieldSchema
+	for _, field := range Schema() {
+		if field.Name == "browser_profiles" {
+			schema = field
+			break
+		}
+	}
+	if schema.Item == nil {
+		t.Fatal("browser profile schema missing")
+	}
+	for _, field := range schema.Item.Fields {
+		if field.Name == "engine" {
+			if !reflect.DeepEqual(field.Enum, BrowserEngines) {
+				t.Fatalf("engine enum=%v want=%v", field.Enum, BrowserEngines)
+			}
+			return
+		}
+	}
+	t.Fatal("engine field missing from schema")
 }

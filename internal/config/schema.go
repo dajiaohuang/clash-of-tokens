@@ -36,7 +36,7 @@ func schemaFields(t reflect.Type) []FieldSchema {
 		s := schemaType(f.Type)
 		s.Name = name
 		enums := map[string][]string{
-			"engine":             {"chrome", "edge", "chromium"},
+			"engine":             append([]string(nil), BrowserEngines...),
 			"source_kind":        {"vendor_api", "cloud_api", "aggregator_api", "product_reverse", "browser_reverse", "app_reverse", "cli_reverse", "local_model", "custom_api"},
 			"execution_location": {"local", "remote"}, "inference_location": {"local", "remote", "unknown"},
 			"billing_mode":    {"metered", "subscription", "free_allowance", "local", "unknown"},

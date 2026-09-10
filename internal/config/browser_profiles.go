@@ -15,6 +15,11 @@ type BrowserProfile struct {
 	CDPURL  string `json:"cdp_url"`
 }
 
+// BrowserEngines is the set of browser families supported by profile
+// discovery and the dedicated login launcher. Selecting an engine does not
+// claim that it is installed or that its provider session is authenticated.
+var BrowserEngines = []string{"chrome", "edge", "brave", "firefox", "opera", "vivaldi", "chromium", "arc"}
+
 func (c Config) ValidateBrowserProfiles() error {
 	if len(c.BrowserProfiles) > 64 {
 		return fmt.Errorf("browser registry exceeds 64 profiles")
@@ -26,7 +31,7 @@ func (c Config) ValidateBrowserProfiles() error {
 			return fmt.Errorf("invalid or duplicate browser profile id")
 		}
 		ids[p.ID] = true
-		if p.Engine != "chrome" && p.Engine != "edge" && p.Engine != "chromium" {
+		if !containsBrowserEngine(p.Engine) {
 			return fmt.Errorf("profile %s: unsupported browser engine", p.ID)
 		}
 		u, err := url.Parse(p.CDPURL)
@@ -50,6 +55,15 @@ func (c Config) ValidateBrowserProfiles() error {
 		}
 	}
 	return nil
+}
+
+func containsBrowserEngine(engine string) bool {
+	for _, supported := range BrowserEngines {
+		if engine == supported {
+			return true
+		}
+	}
+	return false
 }
 
 func (c Config) SourceBrowser(s Source) Browser {

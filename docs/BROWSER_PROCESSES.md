@@ -56,5 +56,6 @@ Tests start and reap dedicated Go test child processes, verifying process identi
 confirmation/auth/origin gates, duplicate-profile and capacity limits, failed
 start behavior, historical eviction and copied timestamps. The browser regression
 uses intercepted synthetic process records to test cancel/confirm behavior and
-does not terminate its browser. Real Chrome/Edge/Chromium child-process behavior
-across all operating systems remains a separate compatibility verification.
+does not terminate its browser. Real Chrome, Edge, Brave, Firefox, Opera,
+Vivaldi, Chromium and Arc child-process behavior across all operating systems
+remains a separate compatibility verification.

@@ -20,9 +20,27 @@ import (
 )
 
 func browserExecutable(engine string) (string, error) {
-	paths := map[string][]string{"chrome": {"google-chrome", "google-chrome-stable"}, "edge": {"microsoft-edge"}, "chromium": {"chromium", "chromium-browser"}}[engine]
+	paths := map[string][]string{
+		"chrome":   {"google-chrome", "google-chrome-stable"},
+		"edge":     {"microsoft-edge"},
+		"brave":    {"brave-browser", "brave"},
+		"firefox":  {"firefox"},
+		"opera":    {"opera"},
+		"vivaldi":  {"vivaldi"},
+		"chromium": {"chromium", "chromium-browser"},
+		"arc":      {"arc"},
+	}[engine]
 	if runtime.GOOS == "windows" {
-		rel := map[string]string{"chrome": `Google\Chrome\Application\chrome.exe`, "edge": `Microsoft\Edge\Application\msedge.exe`, "chromium": `Chromium\Application\chrome.exe`}[engine]
+		rel := map[string]string{
+			"chrome":   `Google\Chrome\Application\chrome.exe`,
+			"edge":     `Microsoft\Edge\Application\msedge.exe`,
+			"brave":    `BraveSoftware\Brave-Browser\Application\brave.exe`,
+			"firefox":  `Mozilla Firefox\firefox.exe`,
+			"opera":    `Programs\Opera\opera.exe`,
+			"vivaldi":  `Vivaldi\Application\vivaldi.exe`,
+			"chromium": `Chromium\Application\chrome.exe`,
+			"arc":      `Microsoft\WindowsApps\Arc.exe`,
+		}[engine]
 		paths = nil
 		for _, root := range []string{os.Getenv("ProgramFiles"), os.Getenv("ProgramFiles(x86)"), os.Getenv("LOCALAPPDATA")} {
 			if root != "" {
@@ -30,7 +48,16 @@ func browserExecutable(engine string) (string, error) {
 			}
 		}
 	} else if runtime.GOOS == "darwin" {
-		paths = map[string][]string{"chrome": {"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"}, "edge": {"/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"}, "chromium": {"/Applications/Chromium.app/Contents/MacOS/Chromium"}}[engine]
+		paths = map[string][]string{
+			"chrome":   {"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"},
+			"edge":     {"/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"},
+			"brave":    {"/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"},
+			"firefox":  {"/Applications/Firefox.app/Contents/MacOS/firefox"},
+			"opera":    {"/Applications/Opera.app/Contents/MacOS/Opera"},
+			"vivaldi":  {"/Applications/Vivaldi.app/Contents/MacOS/Vivaldi"},
+			"chromium": {"/Applications/Chromium.app/Contents/MacOS/Chromium"},
+			"arc":      {"/Applications/Arc.app/Contents/MacOS/Arc"},
+		}[engine]
 	}
 	for _, path := range paths {
 		if resolved, err := exec.LookPath(path); err == nil {
@@ -49,6 +76,12 @@ func loginArguments(p config.BrowserProfile, stateFile, destination string) ([]s
 	profile, err := filepath.Abs(filepath.Join(filepath.Dir(stateFile), "profiles", p.ID, "browser-data"))
 	if err != nil {
 		return nil, err
+	}
+	if p.Engine == "firefox" {
+		// Firefox uses a profile directory rather than Chromium's
+		// --user-data-dir. Its remote debugging endpoint is still loopback and
+		// must be checked before provider-specific login inspection.
+		return []string{"--remote-debugging-port=" + endpoint.Port(), "--profile", profile, "--new-instance", u.Scheme + "://" + u.Host + "/"}, nil
 	}
 	return []string{"--remote-debugging-address=127.0.0.1", "--remote-debugging-port=" + endpoint.Port(), "--user-data-dir=" + profile, "--no-first-run", "--no-default-browser-check", u.Scheme + "://" + u.Host + "/"}, nil
 }

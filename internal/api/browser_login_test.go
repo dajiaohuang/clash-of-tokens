@@ -79,6 +79,21 @@ func TestLoginArgumentsUseDedicatedDirectory(t *testing.T) {
 	}
 }
 
+func TestFirefoxLoginArgumentsUseFirefoxProfileFlag(t *testing.T) {
+	root := t.TempDir()
+	args, err := loginArguments(config.BrowserProfile{ID: "firefox", Engine: "firefox", CDPURL: "http://127.0.0.1:9231"}, filepath.Join(root, "sessions.json"), "https://claude.ai/")
+	if err != nil {
+		t.Fatal(err)
+	}
+	joined := strings.Join(args, "\n")
+	if !strings.Contains(joined, "--profile") || strings.Contains(joined, "--user-data-dir") || strings.Contains(joined, "--remote-debugging-address") {
+		t.Fatalf("unexpected Firefox arguments: %v", args)
+	}
+	if !strings.Contains(joined, filepath.Join(root, "profiles", "firefox", "browser-data")) {
+		t.Fatalf("Firefox profile directory missing: %v", args)
+	}
+}
+
 func TestDraftBrowserCheckDoesNotSaveAccount(t *testing.T) {
 	dir := t.TempDir()
 	vault, err := credentials.Open(filepath.Join(dir, "vault"))

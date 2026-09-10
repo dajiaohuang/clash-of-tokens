@@ -696,3 +696,10 @@ Manual API writes now require one bounded JSON object with non-empty username
 and password fields, while password-manager imports already produce that same
 representation. Invalid strings, incomplete objects and unknown fields are
 rejected before an encrypted vault transaction.
+
+Batch 129 expands the browser profile contract to every browser family listed
+by metadata discovery: Chrome, Edge, Brave, Firefox, Opera, Vivaldi, Chromium
+and Arc. The schema-driven editor and discovered-profile flow expose the same
+engine list. Dedicated launches use Chromium's isolated user-data directory or
+Firefox's isolated profile flag; all require an explicit loopback CDP endpoint
+and remain separate from authentication evidence.

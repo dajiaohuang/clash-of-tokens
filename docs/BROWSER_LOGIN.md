@@ -1,7 +1,8 @@
 # Browser login and authentication evidence
 
 Create an enabled profile under **Browsers**, then bind it to an account.
-**Accounts → Login** launches a dedicated Chrome, Edge or Chromium data
+**Accounts → Login** launches a dedicated Chrome, Edge, Brave, Firefox, Opera,
+Vivaldi, Chromium or Arc data
 directory for that profile. Complete sign-in and any verification challenge
 yourself. An occupied debugging port prevents launching another process on
 that port; use the already-running profile and **Check login** instead.
@@ -12,6 +13,12 @@ minutes. Checks are sequential, with five seconds between results. Each browser
 check is limited to twenty seconds. **Stop checks**, closing the dialog, or
 replacing it with another dialog cancels its request and stops polling. The
 browser remains open under the user's control.
+
+The registry accepts all eight discovered browser families. Chromium-family
+launches use an isolated `--user-data-dir`; Firefox uses an isolated
+`--profile` directory. The gateway still requires an explicit loopback CDP
+endpoint, and selecting a family does not verify installation, CDP
+compatibility, or provider authentication.
 
 | Adapter | Authentication evidence |
 | --- | --- |
