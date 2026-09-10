@@ -817,6 +817,11 @@ Batch 152 applies the normalized Provider type to Provider Detail, keeping the
 catalog list, detail dialog, Sources table and Source Detail consistent while
 retaining the machine-readable enum values in configuration forms.
 
+Batch 153 adds a reviewed Credentials -> Unbind action. It removes a protected
+reference from every matching account and source through the normal preview and
+configuration transaction, keeps the vault value intact for optional deletion,
+and the browser regression confirms the resulting entry is shown as Unbound.
+
 Batch 150 adds a direct configuration-service rollback lifecycle regression.
 An expected-revision conflict and a missing target revision now prove that no
 runtime preparation, journal write, commit callback or revision advance occurs.

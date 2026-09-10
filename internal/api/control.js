@@ -564,9 +564,19 @@ function editQuota(domain){
   return preview(next,'Update shared quota '+domain.id,()=>editQuota(domain),base,revision);
  },'primary')]);
 }
+function unbindCredential(credential){
+ const base=clone(S.config),revision=S.revision;
+ const accounts=(base.accounts||[]).filter(a=>a.credential_ref===credential.id);
+ const sources=(base.sources||[]).filter(s=>s.credential_ref===credential.id);
+ if(!accounts.length&&!sources.length)throw Error('This credential is already unbound.');
+ const next=clone(base);
+ for(const account of next.accounts||[])if(account.credential_ref===credential.id)account.credential_ref='';
+ for(const source of next.sources||[])if(source.credential_ref===credential.id)source.credential_ref='';
+ dialog('Unbind credential',[h('p',{class:'warning'},'Remove '+credential.id+' from all accounts and sources? The protected value remains in the vault until you delete it.'),table(['Affected configuration','Entries'],[['Accounts',accounts.map(a=>a.display_name||a.id).join(', ')||'None'],['Sources',sources.map(s=>s.id).join(', ')||'None']])],[button('Cancel',()=>$('dialog').close()),button('Review unbind',()=>preview(next,'Unbind credential '+credential.id,()=>unbindCredential(credential),base,revision),'primary')]);
+}
 function credentials(){
  return [pageHead('Credentials','Protected values are stored separately from configuration.',h('div',{},button('Import export',importCredentials),button('Import token',importToken),button('Import browser cookies',importBrowserCookies),button('Add credential',()=>credentialForm(),'primary'))),table(['Credential','Type','Used by','Imported from','Updated','Last used','Actions'],S.credentials.map(c=>[
-  c.id,badge(c.kind),(()=>{const accounts=(S.config.accounts||[]).filter(a=>a.credential_ref===c.id),ids=accounts.map(a=>a.id);return [...ids,...S.config.sources.filter(s=>s.credential_ref===c.id||(!s.credential_ref&&accounts.some(a=>a.id===s.account_id))).map(s=>s.id)].join(', ')||'Unbound'})(),c.source,new Date(c.updated_at).toLocaleString(),c.last_used_at?new Date(c.last_used_at).toLocaleString():'Not used', [button('Replace',()=>credentialForm(c)),button('Delete',()=>deleteCredential(c),'danger')]
+ c.id,badge(c.kind),(()=>{const accounts=(S.config.accounts||[]).filter(a=>a.credential_ref===c.id),ids=accounts.map(a=>a.id);return [...ids,...S.config.sources.filter(s=>s.credential_ref===c.id||(!s.credential_ref&&accounts.some(a=>a.id===s.account_id))).map(s=>s.id)].join(', ')||'Unbound'})(),c.source,new Date(c.updated_at).toLocaleString(),c.last_used_at?new Date(c.last_used_at).toLocaleString():'Not used', [button('Replace',()=>credentialForm(c)),button('Unbind',()=>unbindCredential(c)),button('Delete',()=>deleteCredential(c),'danger')]
  ]),'No credentials. Add a key or session, then bind its reference to an account.')];
 }
 function importCredentials(onSaved){
