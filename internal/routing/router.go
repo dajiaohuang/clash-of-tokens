@@ -536,6 +536,7 @@ func (r *Router) SetEnabled(id string, on bool) bool {
 }
 
 type Status struct {
+	Health           string                    `json:"health"`
 	InputTokens      uint64                    `json:"input_tokens"`
 	OutputTokens     uint64                    `json:"output_tokens"`
 	TotalTokens      uint64                    `json:"total_tokens"`
@@ -560,6 +561,7 @@ func (r *Router) Status() []Status {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	out := make([]Status, 0, len(r.state))
+	now := time.Now()
 	for i, s := range r.state {
 		var execution *protocol.ExecutionResult
 		if s.lastExecution != nil {
@@ -570,7 +572,26 @@ func (r *Router) Status() []Status {
 		if !s.costKnown {
 			estimatedCost = 0
 		}
-		out = append(out, Status{ID: r.cfg.Sources[i].ID, Enabled: s.enabled && r.parentEnabled[i], Active: s.active, Completed: s.completed, Failures: s.failures, Blocked: s.blocked, Cooldown: maxTime(s.cooldown, r.quotas[i].cooldown), LatencyMS: s.latency, TTFTMS: s.ttftMS, LastSuccess: s.lastSuccess, LastFailure: s.lastFailure, LastHTTPStatus: s.lastHTTPStatus, LastExecution: execution, InputTokens: s.inputTokens, OutputTokens: s.outputTokens, TotalTokens: s.totalTokens, EstimatedCostUSD: estimatedCost, CostKnown: s.costKnown})
+		enabled := s.enabled && r.parentEnabled[i]
+		cooldown := maxTime(s.cooldown, r.quotas[i].cooldown)
+		health := "untested"
+		switch {
+		case !enabled:
+			health = "disabled"
+		case s.blocked:
+			health = "blocked"
+		case now.Before(cooldown):
+			health = "cooldown"
+		case s.active >= r.cfg.Sources[i].MaxInflight:
+			health = "exhausted"
+		case s.failures > 0 && s.completed == 0:
+			health = "broken"
+		case s.failures > 0:
+			health = "degraded"
+		case s.completed > 0:
+			health = "healthy"
+		}
+		out = append(out, Status{Health: health, ID: r.cfg.Sources[i].ID, Enabled: enabled, Active: s.active, Completed: s.completed, Failures: s.failures, Blocked: s.blocked, Cooldown: cooldown, LatencyMS: s.latency, TTFTMS: s.ttftMS, LastSuccess: s.lastSuccess, LastFailure: s.lastFailure, LastHTTPStatus: s.lastHTTPStatus, LastExecution: execution, InputTokens: s.inputTokens, OutputTokens: s.outputTokens, TotalTokens: s.totalTokens, EstimatedCostUSD: estimatedCost, CostKnown: s.costKnown})
 	}
 	return out
 }

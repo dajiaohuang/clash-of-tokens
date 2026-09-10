@@ -83,6 +83,10 @@ function table(headers,rows,empty='No entries yet.'){
 }
 function state(source){
  const status=S.status.sources.find(x=>x.id===source.id);
+ const health=status?.health;
+ const labels={healthy:'Healthy',disabled:'Disabled',blocked:'Blocked',cooldown:'Cooldown',exhausted:'Exhausted',broken:'Broken',degraded:'Degraded',untested:'Not tested'};
+ const kinds={healthy:'good',blocked:'bad',broken:'bad',cooldown:'warn',exhausted:'warn',degraded:'warn'};
+ if(health)return badge(labels[health]||health,kinds[health]||'');
  if(!status?.enabled)return badge('Disabled');
  if(status.blocked)return badge('Auth / policy block','bad');
  if(Date.parse(status.cooldown)>Date.now())return badge('Cooldown','warn');

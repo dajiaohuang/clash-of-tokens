@@ -83,6 +83,37 @@ func TestCooldownAndAuthentication(t *testing.T) {
 		t.Fatal(e)
 	}
 }
+
+func TestStatusHealthDistinguishesRuntimeStates(t *testing.T) {
+	r := New(fixture(1))
+	if got := r.Status()[0].Health; got != "untested" {
+		t.Fatalf("initial health = %q", got)
+	}
+	l, err := r.Acquire(context.Background(), query())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := r.Status()[0].Health; got != "exhausted" {
+		t.Fatalf("active source health = %q", got)
+	}
+	l.Release(200, 0)
+	if got := r.Status()[0].Health; got != "healthy" {
+		t.Fatalf("successful source health = %q", got)
+	}
+	l, err = r.Acquire(context.Background(), query())
+	if err != nil {
+		t.Fatal(err)
+	}
+	l.Release(400, 0)
+	if got := r.Status()[0].Health; got != "degraded" {
+		t.Fatalf("mixed result source health = %q", got)
+	}
+	r.SetEnabled("s0", false)
+	if got := r.Status()[0].Health; got != "disabled" {
+		t.Fatalf("disabled source health = %q", got)
+	}
+}
+
 func TestStatefulRequiresExplicitSource(t *testing.T) {
 	r := New(fixture(1))
 	q := query()

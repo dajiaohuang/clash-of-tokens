@@ -390,3 +390,10 @@ required, expired, rejected and challenge/access-denied results now classify an
 enabled account as `auth_required` instead of leaving it untested or healthy;
 the status regression covers a login-required account alongside an otherwise
 untested account.
+
+Batch 70 gives each runtime source an explicit bounded health state in the
+router status snapshot: `disabled`, `blocked`, `cooldown`, `exhausted`,
+`broken`, `degraded`, `healthy` or `untested`. The Health, Sources and Source
+Detail views consume that state instead of re-deriving it from partial counters;
+router coverage exercises capacity exhaustion, successful recovery, mixed
+results and disablement.
