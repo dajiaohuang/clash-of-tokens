@@ -235,6 +235,23 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     expect(source_dialog.get_by_label("Credential", exact=True).locator("option[value='cred://ui-token']")).to_have_count(1)
     expect(source_dialog.get_by_label("Credential", exact=True).locator("option[value='cred://ui-cookie']")).to_have_count(0)
     source_dialog.get_by_role("button", name="Close", exact=True).click()
+    # Source enabled state is independent from Auto approval; exercise both
+    # directions through the same preview/apply transaction and restore the
+    # preset's initial state.
+    if source_row.get_by_role("button", name="Disable", exact=True).count():
+        source_row.get_by_role("button", name="Disable", exact=True).click()
+        page.get_by_role("button", name="Apply changes", exact=True).click()
+        expect(source_row.get_by_role("button", name="Enable", exact=True)).to_be_visible()
+        source_row.get_by_role("button", name="Enable", exact=True).click()
+        page.get_by_role("button", name="Apply changes", exact=True).click()
+        expect(source_row.get_by_role("button", name="Disable", exact=True)).to_be_visible()
+    else:
+        source_row.get_by_role("button", name="Enable", exact=True).click()
+        page.get_by_role("button", name="Apply changes", exact=True).click()
+        expect(source_row.get_by_role("button", name="Disable", exact=True)).to_be_visible()
+        source_row.get_by_role("button", name="Disable", exact=True).click()
+        page.get_by_role("button", name="Apply changes", exact=True).click()
+        expect(source_row.get_by_role("button", name="Enable", exact=True)).to_be_visible()
     source_row.get_by_role("button", name="Allow Auto", exact=True).click()
     expect(page.get_by_text("may incur additional charges", exact=False)).to_be_visible()
     page.get_by_role("button", name="Apply changes", exact=True).click()

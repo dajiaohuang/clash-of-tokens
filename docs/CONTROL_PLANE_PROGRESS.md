@@ -419,6 +419,10 @@ The shared account validator now emits the same migration guidance during a
 full configuration preview, so the schema-driven account editor does not hide
 the cause behind a generic provider mismatch.
 
+Batch 140 extends the browser regression to toggle a source off and back on.
+Both changes pass through preview/apply and the final row state confirms the
+enabled switch remains independent from the source's Auto approval.
+
 Batch 65 adds explicit OpenAI organization and project metadata to source
 configuration. The schema-driven source editor exposes both fields, validates
 control characters and length, and the native OpenAI client forwards them as
