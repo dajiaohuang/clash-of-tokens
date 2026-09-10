@@ -609,3 +609,11 @@ session list.
 Batch 113 extends the isolated browser regression to the Sessions page,
 covering redacted metadata rendering, capability boundaries, and the
 lease-protected Clear confirmation flow.
+
+Batch 115 makes account setup actions follow the selected provider descriptor.
+Manual credential types are limited to declared modes; password-manager and
+token imports are hidden when their resulting credential kinds are not
+supported; browser-cookie import, isolated-profile creation and login checks
+appear only for browser-capable providers. The regression keeps OpenAI's
+environment API-key import path and checks the contrasting browser-only Doubao
+toolbar without exposing protected values.

@@ -267,23 +267,33 @@ function accountWizard(draft={}){
  const provider=select([...new Set([...S.catalog.map(p=>p.id),...(S.config.providers||[]).map(p=>p.id)])],draft.provider_id||'',true);
  const id=h('input',{value:draft.id||''}),name=h('input',{value:draft.display_name||''}),quota=h('input',{value:draft.quota_domain||''});
  const providerDescriptor=()=>{const p=S.catalog.find(p=>p.id===provider.value),d=S.descriptors.find(d=>d.id===p?.adapter);return d};
- const compatibleCredentials=()=>{const d=providerDescriptor();return S.credentials.filter(c=>!d||!d.credential_modes?.length||d.credential_modes.includes(c.kind))};
+ const allowedModes=()=>{const d=providerDescriptor();return d?.credential_modes?.length?d.credential_modes:null};
+ const supports=(...modes)=>{const allowed=allowedModes();return !allowed||modes.some(mode=>allowed.includes(mode))};
+ const compatibleCredentials=()=>{const allowed=allowedModes();return S.credentials.filter(c=>!allowed||allowed.includes(c.kind))};
  const credential=select(compatibleCredentials().map(c=>({value:c.id,label:c.id+' · '+c.kind})),draft.credential_ref||'',true);
  const available=[...(S.config.browser_profiles||[]),...(draft.newProfile?[draft.newProfile]:[])];
  const profile=select(available.map(p=>({value:p.id,label:p.id+(p===draft.newProfile?' (new isolated profile)':'')})),draft.browser_profile_id||'',true);
  const hints=h('p',{class:'muted'});
  const authNotice=h('p',{},draft.authenticated?'Login detected for this selected profile. Review and save the account.':'Choose a protected credential or a browser profile. Import actions return here with the new reference.');
  const capture=()=>({...draft,id:id.value.trim(),display_name:name.value.trim(),quota_domain:quota.value.trim(),provider_id:provider.value,credential_ref:credential.value,browser_profile_id:profile.value,newProfile:draft.newProfile?.id===profile.value?draft.newProfile:undefined});
- const hint=()=>{const d=providerDescriptor(),modes=d?.credential_modes||[];hints.textContent='Compatible credential types: '+(modes.join(', ')||'any declared type')+'. Incompatible protected references are hidden. Password imports are login material, not API keys. Accounts are saved disabled and excluded from Auto.'};
+ const hint=()=>{const modes=allowedModes()||[];hints.textContent='Compatible credential types: '+(modes.join(', ')||'any declared type')+'. Incompatible protected references are hidden. Password imports are login material, not API keys. Accounts are saved disabled and excluded from Auto.'};
  const updateCredentialOptions=()=>{const current=credential.value,options=compatibleCredentials();credential.replaceChildren(h('option',{value:''},'Choose…'),...options.map(c=>h('option',{value:c.id},c.id+' · '+c.kind)));credential.value=options.some(c=>c.id===current)?current:''};
- provider.onchange=()=>{draft.authenticated=false;updateCredentialOptions();authNotice.textContent='Selection changed. Check login again for this selection.';hint()};profile.onchange=()=>{draft.authenticated=false;authNotice.textContent='Selection changed. Check login again for this selection.'};hint();
- const imported=saved=>{const next=capture(),items=Array.isArray(saved)?saved:[saved];if(items.length===1)next.credential_ref=items[0].id;accountWizard(next)};
- dialog('Set up account',[h('div',{class:'form-grid'},field('Provider',provider),field('ID',id),field('Display Name',name),field('Quota domain',quota),field('Credential',credential),field('Browser Profile Id',profile)),hints,authNotice,h('div',{class:'toolbar'},button('New credential',()=>credentialForm(undefined,imported)),button('Import password manager',()=>importCredentials(imported)),button('Import token',()=>importToken(imported)),button('Import browser cookies',()=>importBrowserCookies(imported)),button('New isolated profile',()=>newWizardProfile(capture())),button('Login with selected profile',async()=>{
+ const newCredentialAction=button('New credential',()=>credentialForm(undefined,imported,allowedModes));
+ const passwordImportAction=button('Import password manager',()=>importCredentials(imported));
+ const tokenImportAction=button('Import token',()=>importToken(imported,allowedModes));
+ const browserCookieAction=button('Import browser cookies',()=>importBrowserCookies(imported));
+ const newProfileAction=button('New isolated profile',()=>newWizardProfile(capture()));
+ const loginAction=button('Login with selected profile',async()=>{
   const next=capture(),selected=available.find(p=>p.id===next.browser_profile_id);if(!selected||!next.provider_id)throw new Error('Choose a provider and browser profile first.');
   const payload={profile:selected,provider:next.provider_id,action:'launch'};
   const check=()=>loginEvidence({id:next.id},true,'Finish signing in to the selected provider. The account has not been saved yet.',{path:'/admin/browser_profiles/setup-login',payload:{...payload,action:'check'},authenticated:()=>accountWizard({...next,authenticated:true}),back:()=>accountWizard(next)});
   try{await api('/admin/browser_profiles/setup-login',{method:'POST',body:JSON.stringify(payload)});check()}catch(e){if(!e.message.includes('port is already in use'))throw e;dialog('Browser port occupied',h('p',{},'Confirm that the selected connection belongs to the intended browser profile before checking login.'),[button('Back',()=>accountWizard(next)),button('Use running browser',check)])}
- }))],[button('Review changes',async()=>{
+ });
+ const setupActions=[newCredentialAction,passwordImportAction,tokenImportAction,browserCookieAction,newProfileAction,loginAction];
+ const updateSetupActions=()=>{const d=providerDescriptor(),browser=!!(d?.browser_required||d?.browser_auth_check||allowedModes()?.includes('browser_profile'));passwordImportAction.hidden=!supports('username_password');tokenImportAction.hidden=!supports('api_key','oauth');browserCookieAction.hidden=!(browser&&supports('cookie'));newProfileAction.hidden=!browser;loginAction.hidden=!browser;newCredentialAction.hidden=!!allowedModes()&&!allowedModes().length};
+ provider.onchange=()=>{draft.authenticated=false;updateCredentialOptions();authNotice.textContent='Selection changed. Check login again for this selection.';hint();updateSetupActions()};profile.onchange=()=>{draft.authenticated=false;authNotice.textContent='Selection changed. Check login again for this selection.'};hint();updateSetupActions();
+ const imported=saved=>{const next=capture(),items=Array.isArray(saved)?saved:[saved];if(items.length===1)next.credential_ref=items[0].id;accountWizard(next)};
+ dialog('Set up account',[h('div',{class:'form-grid'},field('Provider',provider),field('ID',id),field('Display Name',name),field('Quota domain',quota),field('Credential',credential),field('Browser Profile Id',profile)),hints,authNotice,h('div',{class:'toolbar'},setupActions)],[button('Review changes',async()=>{
   const next=clone(S.config),value=capture();
   if(!value.id||!value.provider_id||!value.quota_domain)throw new Error('Enter account ID, provider and quota domain.');
   if((next.accounts||[]).some(a=>a.id===value.id))throw new Error('This account ID already exists.');
@@ -310,9 +320,11 @@ function addSource(provider=''){
   },'primary')
  ]);
 }
-function credentialForm(existing,onSaved){
+function credentialForm(existing,onSaved,allowedModes){
  const id=h('input',{value:existing?.id?.replace('cred://','')||'',disabled:!!existing,placeholder:'credential-id'});
- const kind=select(['api_key','oauth','cookie','browser_session','username_password','cli_session','device_session','browser_profile'],existing?.kind||'api_key');
+ const allKinds=['api_key','oauth','cookie','browser_session','username_password','cli_session','device_session','browser_profile'];
+ const kinds=allowedModes?.()||allKinds;
+ const kind=select(kinds,existing?.kind||kinds[0]||'api_key');
  const value=h('input',{type:'password',autocomplete:'new-password',placeholder:'New secret value'});
  const username=h('input',{autocomplete:'off',placeholder:'Username (username/password only)'});
  const formBody=[h('div',{class:'form-grid'},field('Credential ID',id),field('Type',kind),field('Username',username),field('Secret value',value)),h('p',{class:'muted'},'The existing secret is never sent to this page. Saving replaces the protected value.')];
@@ -718,10 +730,16 @@ function browsers(){
   p.id,p.engine,p.cdp_url,(S.config.accounts||[]).filter(a=>a.browser_profile_id===p.id).map(a=>a.display_name||a.id).join(', ')||'Unbound',[button(p.enabled?'Disable':'Enable',()=>toggle('browser_profiles',p)),button('Edit',()=>edit('browser_profiles',p)),button('Launch provider',()=>launchBrowserProfile(p)),button('Delete',()=>remove('browser_profiles',p),'danger')]
  ]),'No profiles. Add a profile, bind it from Accounts, then use Login.'),...environment('browsers').slice(1)];
 }
-function importToken(onSaved){
- const mode=select(['environment','codex','gemini-cli','oauth'],'environment');
+function importToken(onSaved,allowedModes){
+ const allowed=allowedModes?.()||null;
+ const modeOptions=allowed?[
+  ...((allowed.some(m=>['api_key','oauth','cookie'].includes(m)))?['environment']:[]),
+  ...(allowed.includes('oauth')?['codex','gemini-cli','oauth']:[])
+ ]:['environment','codex','gemini-cli','oauth'];
+ const mode=select(modeOptions,modeOptions[0]||'environment');
  const source=select(S.config.sources.filter(s=>s.key_env).map(s=>s.id),'',true);
- const kind=select(['api_key','oauth','cookie'],'api_key');
+ const kindOptions=allowed?['api_key','oauth','cookie'].filter(k=>allowed.includes(k)):['api_key','oauth','cookie'];
+ const kind=select(kindOptions,kindOptions[0]||'api_key');
  const file=h('input',{type:'file',accept:'.json'});
  dialog('Import token',[field('Import from',mode),field('Configured source for environment import',source),field('Environment credential type',kind),field('CLI session JSON file',file),h('p',{class:'muted'},'Environment import reads only the selected source’s configured variable. CLI import copies the current access token only; refresh tokens and account IDs are not imported. Source account-ID configuration may still be required.')],[button('Preview token',async()=>{
   let payload,path;

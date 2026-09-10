@@ -58,6 +58,12 @@ imported credential is selected automatically; multiple results require a
 selection. Provider-specific supplementary fields still use their existing
 configuration controls.
 
+The setup toolbar follows the selected provider descriptor. Manual credential
+types and token imports are offered only when their resulting modes are
+declared; browser-cookie import, isolated-profile creation and login checking
+are shown for browser-capable providers. Changing providers refreshes both the
+credential references and these actions.
+
 Login can launch the selected profile before saving the account. If its port is
 occupied, **Use running browser** explicitly selects that connection for the
 check. Draft checks do not save configuration or authentication history.
