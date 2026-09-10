@@ -43,7 +43,7 @@ func (s *Server) credentialAdmin(w http.ResponseWriter, r *http.Request) {
 			fail(w, 400, "invalid import request")
 			return
 		}
-		entries, err := credentials.ParseImport(p.Format, []byte(p.Data))
+		entries, skipped, err := credentials.ParseExport(p.Format, []byte(p.Data))
 		if err != nil {
 			fail(w, 400, err.Error())
 			return
@@ -57,7 +57,7 @@ func (s *Server) credentialAdmin(w http.ResponseWriter, r *http.Request) {
 			for _, item := range credentials.PreviewImport(entries) {
 				out = append(out, preview{item, catalog.MatchCredentials(item.Domain, item.Kind)})
 			}
-			reply(w, out)
+			reply(w, map[string]any{"items": out, "skipped": skipped})
 			return
 		}
 		items, err := s.vault.ImportSelected(entries, p.Selected)

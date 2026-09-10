@@ -302,14 +302,15 @@ function credentials(){
 }
 function importCredentials(){
  const file=h('input',{type:'file',accept:'.csv,.json'});
- dialog('Import selected export',[field('CSV or JSON file',file),h('p',{class:'muted'},'CSV columns: name (optional), url, username, password. JSON: an array with these same fields. Up to 4 MiB and 1,000 entries. Login details are stored as username/password credentials; they are not API tokens.')],[button('Preview entries',async()=>{
+ const formatChoice=select(['auto','bitwarden-json','bitwarden-csv','1password-csv','keepassxc-csv'],'auto');
+ dialog('Import selected export',[field('Export format',formatChoice),field('CSV or JSON file',file),h('p',{class:'muted'},'Auto accepts CSV columns name (optional), url, username, password, or a JSON array with those fields. Choose the matching manager format for its native export. Up to 4 MiB and 1,000 login candidates. Notes, TOTP, cards and password history are not imported.')],[button('Preview entries',async()=>{
   const chosen=file.files[0];if(!chosen)throw new Error('Choose an export file.');
   if(chosen.size>4*1024*1024)throw new Error('Export exceeds 4 MiB.');
-  const format=chosen.name.toLowerCase().endsWith('.json')?'json':'csv';
+  const format=formatChoice.value==='auto'?(chosen.name.toLowerCase().endsWith('.json')?'json':'csv'):formatChoice.value;
   let data=await chosen.text();
-  const rows=await api('/admin/credentials/import',{method:'POST',body:JSON.stringify({format,data})});
+  const report=await api('/admin/credentials/import',{method:'POST',body:JSON.stringify({format,data})}),rows=report.items;
   const selected=new Set();
-  dialog('Select credentials to import',[h('p',{class:'muted'},'Only checked entries will be saved. Existing credentials will not be replaced. Bind the new references from Accounts after importing.'),table(['Select','Name','Domain','Type','Provider match'],rows.map(row=>[h('input',{type:'checkbox','aria-label':'Import entry '+(row.index+1),onchange:e=>{if(e.target.checked)selected.add(row.index);else selected.delete(row.index)}}),row.name,row.domain,row.kind,(row.matches||[]).map(m=>m.provider+(m.compatible?' (compatible)':' (login or different credential required)')).join(', ')||'No exact domain match']))],[button('Cancel',()=>{data='';$('dialog').close()}),button('Import selected',async()=>{
+  dialog('Select credentials to import',[h('p',{class:'muted'},'Skipped '+report.skipped+' non-web or non-password records. Only checked entries will be saved. Existing credentials will not be replaced. Bind the new references from Accounts after importing.'),table(['Select','Name','Domain','Type','Provider match'],rows.map(row=>[h('input',{type:'checkbox','aria-label':'Import entry '+(row.index+1),onchange:e=>{if(e.target.checked)selected.add(row.index);else selected.delete(row.index)}}),row.name,row.domain,row.kind,(row.matches||[]).map(m=>m.provider+(m.compatible?' (compatible)':' (login or different credential required)')).join(', ')||'No exact domain match']))],[button('Cancel',()=>{data='';$('dialog').close()}),button('Import selected',async()=>{
    if(!selected.size)throw new Error('Select at least one entry.');
    const saved=await api('/admin/credentials/import',{method:'POST',body:JSON.stringify({format,data,selected:[...selected],apply:true})});
    data='';$('dialog').close();await refresh();message('Imported '+saved.length+' credentials. Bind their references from Accounts.');
