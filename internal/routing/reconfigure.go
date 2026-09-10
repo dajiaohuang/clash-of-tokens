@@ -6,7 +6,11 @@ func (r *Router) Adopt(next *Router) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	next.capacity = r.capacity
+	sources, quotas, accounts := map[string]bool{}, map[string]bool{}, map[string]bool{}
 	for i, source := range next.cfg.Sources {
+		sources[source.ID] = true
+		quotas[source.QuotaDomain] = true
+		accounts[source.AccountID] = true
 		st := r.sourceStates[source.ID]
 		if st == nil {
 			st = next.state[i]
@@ -34,6 +38,21 @@ func (r *Router) Adopt(next *Router) {
 				a.limit = next.accounts[i].limit
 			}
 			next.accounts[i] = a
+		}
+	}
+	for id, st := range r.sourceStates {
+		if !sources[id] && st.active == 0 {
+			delete(r.sourceStates, id)
+		}
+	}
+	for id, q := range r.quotaStates {
+		if !quotas[id] && q.active == 0 {
+			delete(r.quotaStates, id)
+		}
+	}
+	for id, a := range r.accountStates {
+		if !accounts[id] && a.active == 0 {
+			delete(r.accountStates, id)
 		}
 	}
 	r.retired = true

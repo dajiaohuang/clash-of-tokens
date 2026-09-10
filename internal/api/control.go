@@ -127,7 +127,7 @@ func (p *ControlPlane) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer p.release(g)
-	if strings.HasPrefix(r.URL.Path, "/admin/config") {
+	if strings.HasPrefix(r.URL.Path, "/admin/config") || managedResource(r.URL.Path) {
 		w.Header().Set("Cache-Control", "no-store")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		if !authorized(r, g.server.adminKey) {
@@ -136,6 +136,10 @@ func (p *ControlPlane) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		if mutation && !sameOrigin(r) {
 			fail(w, 403, "cross-origin mutation rejected")
+			return
+		}
+		if managedResource(r.URL.Path) {
+			p.resourceAdmin(w, r, g.server)
 			return
 		}
 		p.configAdmin(w, r)
@@ -200,6 +204,14 @@ func (p *ControlPlane) configAdmin(w http.ResponseWriter, r *http.Request) {
 	switch r.URL.Path {
 	case "/admin/config/preview":
 		v, err = p.service.Preview(input.Revision, input.Config)
+		if err == nil {
+			_, discard, compileErr := p.prepare(v.Config)
+			if compileErr != nil {
+				err = compileErr
+			} else {
+				discard()
+			}
+		}
 	case "/admin/config":
 		v, err = p.service.Apply(input.Revision, input.Config, input.Summary)
 	case "/admin/config/rollback":

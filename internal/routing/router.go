@@ -69,11 +69,12 @@ type capacity struct {
 	current       *Router
 }
 type Query struct {
-	Model, Protocol string
-	Tools           bool
-	Bytes           int64
-	Stateful        bool
-	Vision          bool
+	Model    string `json:"model"`
+	Protocol string `json:"protocol"`
+	Tools    bool   `json:"tools"`
+	Bytes    int64  `json:"bytes"`
+	Stateful bool   `json:"stateful"`
+	Vision   bool   `json:"vision"`
 }
 type Lease struct {
 	router  *Router
