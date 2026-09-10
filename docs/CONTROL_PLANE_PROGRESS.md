@@ -227,3 +227,9 @@ be verified before completion.
 
 The current application is not yet the completed control plane. Credentials
 and upstream availability must never be inferred from catalog implementation.
+Batch 43 adds `POST /admin/discovery/accounts` and the Accounts-page discovery
+dialog. It returns bounded, secret-free candidates from stored credential
+metadata and configured environment names, with optional read-only standard
+browser profile metadata scanning. Suggestions are catalog matches only;
+binding, login, and source validation remain explicit actions. See
+[account discovery](ACCOUNT_DISCOVERY.md).

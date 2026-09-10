@@ -398,10 +398,19 @@ function accounts(){
   dialog('Account validation',[h('p',{class:'muted'},'One explicit check was performed using the first configured source/model, or browser authentication for a browser-only account. This does not approve Auto routing or prove every model capability.'),table(['Field','Value'],[['Account',a.display_name||a.id],['Status',status],['Source',result.source||'Browser profile'],['Model',result.model||'Not applicable'],['Protocol',result.protocol||'Not applicable'],['Output observed',result.output_observed===undefined?'Not reported':result.output_observed?'Yes':'No'],['History saved',result.history_recorded?'Yes':'No']])]);
   await refresh();
  };
- return [pageHead('Accounts','Account switches and capacity apply across their sources.',button('Account pools',accountPools),button('Refresh capacity',refresh),button('Add account',()=>addAccount(),'primary')),table(['Account','Provider','Health','Auth status','Browser authentication','Credential','Quota / in flight','Auto','Actions'],(S.config.accounts||[]).map(a=>[
+ return [pageHead('Accounts','Account switches and capacity apply across their sources.',button('Discover candidates',discoverAccounts),button('Account pools',accountPools),button('Refresh capacity',refresh),button('Add account',()=>addAccount(),'primary')),table(['Account','Provider','Health','Auth status','Browser authentication','Credential','Quota / in flight','Auto','Actions'],(S.config.accounts||[]).map(a=>[
   a.display_name||a.id,a.provider_id,badge(healthFor(a).health||'untested',healthFor(a).health==='healthy'?'good':healthFor(a).health==='disabled'?'':'warn'),healthFor(a).auth_status||'not_checked',accountAuth(a),a.credential_ref||'Not bound',a.quota_domain+' · '+((S.status.accounts||[]).find(x=>x.id===a.id)?.active||0)+' / '+a.max_inflight,badge(a.auto_approved?'Approved':'Manual',a.auto_approved?'accent':''),
   [button(a.enabled?'Disable':'Enable',()=>toggle('accounts',a)),button('Edit',()=>edit('accounts',a)),button('Validate account',()=>validateAccount(a)),a.browser_profile_id?button('Login',async()=>{const result=await api('/admin/accounts/'+encodeURIComponent(a.id)+'/login',{method:'POST'});loginEvidence(a,true,result.message)}):null,a.browser_profile_id?button('Check login',()=>loginEvidence(a)):null,button('Delete',()=>remove('accounts',a),'danger')]
  ]),'No accounts. Add an account and bind a credential before enabling its sources.')];
+}
+async function discoverAccounts(){
+ const scan=h('input',{type:'checkbox','aria-label':'Scan installed browser profile metadata'});
+ const run=async()=>{
+  const result=await api('/admin/discovery/accounts',{method:'POST',body:JSON.stringify({scan_browsers:scan.checked})});
+  const rows=(result.items||[]).map(x=>[x.label,badge(x.kind),x.origin,(x.providers||[]).join(', ')||'No exact catalog match',x.confidence,x.available?'Available':'Not available',x.action]);
+  dialog('Account discovery',[h('p',{class:'muted'},'Candidates are metadata only. Secret values, cookies and passwords never leave the protected store. Browser scanning reads standard profile metadata only and does not launch a browser or test login.'),table(['Candidate','Type','Origin','Provider suggestions','Evidence','Availability','Next action'],rows,'No candidates found. Import a credential or configure a browser profile first.')],[button('Run again',run),button('Open credentials',()=>{$('dialog').close();location.hash='credentials'}),button('Open accounts',()=>{$('dialog').close();location.hash='accounts'})]);
+ };
+ dialog('Discover accounts',[field('Scan installed browser profile metadata',scan),h('p',{class:'muted'},'Stored credential references and configured environment names are included without exposing their values. Enable the scan only when you want to inspect local browser profile metadata.'),button('Discover',run,'primary')]);
 }
 function importBrowserCookies(onSaved){
  const profile=select((S.config.browser_profiles||[]).filter(p=>p.enabled).map(p=>p.id),'',true);

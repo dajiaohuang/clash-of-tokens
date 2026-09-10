@@ -38,7 +38,7 @@ must be checked again before final acceptance.
 | 27. Health | Runtime outcome, TTFT, last status/timestamps and account health/auth aggregation exist | Surface all source/account fields and distinguish degraded/exhausted/broken states consistently |
 | 28. Test Provider | Explicit one-request stream validation | Separate connection/auth/request/stream/completion/latency presentation |
 | 29. Live verification | Batch 25 derives status/counts from model/protocol evidence and source/credential-version bindings; rotation invalidation tested | Real configured-provider checks and complete account/capability evidence still require verification |
-| 30. Discovery hub | Batch 27 returns import results to account setup with single-result binding | Unified automatic Discover Accounts candidates and broader matching |
+| 30. Discovery hub | Batch 27 returns import results to account setup with single-result binding; batch 43 adds bounded metadata-only account candidates from vault, configured environments and optional standard-browser profile scan | End-to-end candidate binding and broader provider matching |
 | 31. Shared credential | Account reference shared by multiple sources and quota domain | End-to-end reference reuse/capacity display |
 | 32. Manual binding override | Descriptor matching rejects incompatible kinds by default; account/source `credential_type_override` is persisted, warned in the editor, and covered by binding tests | Provider-specific contract review and end-to-end UI acceptance for every credential kind |
 | 33. Quota domain view | Batch 26 adds domain members/shared counters, retiring leases and atomic all-member limit editing | Account/domain moves and rename behavior still need complete UX/runtime audit |

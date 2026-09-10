@@ -16,7 +16,7 @@ import (
 )
 
 func managedResource(path string) bool {
-	for _, prefix := range []string{"/admin/providers", "/admin/accounts", "/admin/sources", "/admin/groups", "/admin/browser_profiles", "/admin/sessions"} {
+	for _, prefix := range []string{"/admin/providers", "/admin/accounts", "/admin/sources", "/admin/groups", "/admin/browser_profiles", "/admin/sessions", "/admin/discovery"} {
 		if path == prefix || strings.HasPrefix(path, prefix+"/") {
 			return true
 		}
