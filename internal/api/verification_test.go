@@ -64,7 +64,11 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 	}
 	defer p.Close()
 	checked := time.Now().UTC().Add(-time.Minute)
-	if err := p.evidence.Append(audit.Entry{Kind: "validation", Resource: "s", Status: "verified", CheckedAt: checked}); err != nil {
+	binding := p.sourceBinding(p.current.server.cfg, p.current.server.cfg.Sources[0])
+	if err := p.evidence.Append(audit.Entry{Binding: binding, Kind: "validation", Resource: "s", Model: "m", Protocol: "chat", Status: "verified", CheckedAt: checked, Method: "explicit_stream_generation", UpstreamStatus: 200, ProtocolComplete: true, OutputObserved: true}); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.evidence.Append(audit.Entry{Binding: binding, Kind: "validation", Resource: "s", Model: "m", Protocol: "chat", Status: "failed", CheckedAt: checked.Add(-time.Minute), Method: "explicit_stream_generation", UpstreamStatus: 502}); err != nil {
 		t.Fatal(err)
 	}
 	if err := p.evidence.Append(audit.Entry{Kind: "authentication", Resource: "a", Status: "authenticated", CheckedAt: checked}); err != nil {
@@ -110,6 +114,9 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 			Source            string `json:"source"`
 			CredentialState   string `json:"credential_state"`
 			CredentialVersion uint64 `json:"credential_version"`
+			Models            []struct {
+				Status string `json:"status"`
+			} `json:"models"`
 		} `json:"verification"`
 	}
 	if err := json.Unmarshal(w.Body.Bytes(), &out); err != nil {
@@ -121,8 +128,8 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 	if len(out.Providers) != 2 {
 		t.Fatalf("provider health rows = %+v", out.Providers)
 	}
-	if len(out.Verification) != 1 || out.Verification[0].CredentialState != "protected_reference" || out.Verification[0].CredentialVersion != 1 {
-		t.Fatalf("inherited credential provenance missing: %+v", out.Verification)
+	if len(out.Verification) != 1 || out.Verification[0].CredentialState != "protected_reference" || out.Verification[0].CredentialVersion != 1 || len(out.Verification[0].Models) != 1 || out.Verification[0].Models[0].Status != "verified" {
+		t.Fatalf("inherited credential provenance missing: %+v binding=%s entries=%+v", out.Verification, binding, p.evidence.List())
 	}
 	if out.Providers[0].ID != "p" || out.Providers[0].Health != "auth_required" || out.Providers[0].AuthStatus != "auth_required" || len(out.Providers[0].Accounts) != 2 || len(out.Providers[0].Sources) != 1 {
 		t.Fatalf("unexpected provider health: %+v", out.Providers[0])

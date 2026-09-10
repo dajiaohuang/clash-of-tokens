@@ -129,7 +129,10 @@ func (p *ControlPlane) controlStatus(s *Server) map[string]any {
 	latest := map[checkKey]audit.Entry{}
 	for _, entry := range entries {
 		if entry.Kind == "validation" {
-			latest[checkKey{entry.Resource, entry.Model, entry.Protocol}] = entry
+			key := checkKey{entry.Resource, entry.Model, entry.Protocol}
+			if current, ok := latest[key]; !ok || entry.CheckedAt.After(current.CheckedAt) {
+				latest[key] = entry
+			}
 		}
 	}
 	metadata := map[string]credentials.Metadata{}
