@@ -271,6 +271,14 @@ async function toggle(kind,item,key='enabled'){
  }
  await apply();
 }
+function removeProvider(provider){
+ const base=clone(S.config),revision=S.revision;
+ const accounts=(base.accounts||[]).filter(a=>a.provider_id===provider.id);
+ const sources=(base.sources||[]).filter(s=>s.provider===provider.id);
+ const next=clone(base);next.providers=(next.providers||[]).filter(p=>p.id!==provider.id);
+ const review=()=>{if(accounts.length||sources.length)throw Error('Provider '+provider.id+' still has bound accounts or sources; migrate those references before deleting it.');return preview(next,'Delete providers/'+provider.id,()=>removeProvider(provider),base,revision)};
+ dialog('Delete provider',[h('p',{class:'warning'},'Delete '+provider.id+' from the configured provider registry? Bound accounts and sources must be migrated first; existing requests can finish under their retained configuration.'),table(['Affected configuration','Entries'],[['Accounts',accounts.map(a=>a.display_name||a.id).join(', ')||'None'],['Sources',sources.map(s=>s.id).join(', ')||'None']])],[button('Cancel',()=>$('dialog').close()),button('Review deletion',review,'danger')]);
+}
 async function toggleAuto(kind,item){
  const next=clone(S.config),entry=next[kind].find(x=>x.id===item.id);
  if(!entry)throw Error('Resource is no longer configured. Refresh and try again.');
@@ -418,9 +426,10 @@ async function providerDetail(provider){
   h('h3',{},'Sources'),table(['Source','Account','Routing state','Models','Matching generation evidence','Actions'],sources.map(s=>[s.id,s.account_id||'No account',state(s),s.models.length,verified.has(s.id)?'At least one model/protocol':'Not established',[button('Source details',()=>sourceDetail(s)),button('Validate source',()=>validateSource(s)),button('Discover models',()=>discoverModels(s))]]),'No sources configured.'),
   h('h3',{},'Provider routing eligibility'),h('p',{class:'muted'},'Read-only simulation for a 100-byte text request. Results explain eligibility, not final candidate selection.'),field('Provider group',group),field('Provider protocol',protocol),explain,explanations
  ],[
-  configured?button('Validate provider',()=>validateProvider(provider),'primary'):null,
-  button('Provider settings',()=>edit('providers',configured||{id:provider.id,enabled:true,auto_approved:false,pool_strategy:'round-robin'},!configured)),
-  button('Add account',()=>addAccount(provider.id)),button('Add source',()=>addSource(provider.id),'primary')
+   configured?button('Validate provider',()=>validateProvider(provider),'primary'):null,
+   button('Provider settings',()=>edit('providers',configured||{id:provider.id,enabled:true,auto_approved:false,pool_strategy:'round-robin'},!configured)),
+   configured?button('Delete provider',()=>removeProvider(configured),'danger'):null,
+   button('Add account',()=>addAccount(provider.id)),button('Add source',()=>addSource(provider.id),'primary')
  ]);
 }
 function providerTypeLabel(provider){

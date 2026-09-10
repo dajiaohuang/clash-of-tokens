@@ -864,3 +864,10 @@ shared launch helper opens the existing `/admin/accounts/{id}/login` endpoint
 and continues into the metadata-only login evidence watcher; the browser
 regression covers the synthetic launch and check without opening a real
 provider browser.
+
+Batch 159 adds Provider Detail deletion to the same reviewed control-plane
+workflow. The confirmation dialog inventories bound accounts and sources and
+keeps the provider configuration intact on Cancel; Review deletion submits the
+optimistic revision through the shared preview when no references are bound;
+bound references are rejected before preview with an actionable migration
+message, matching the service deletion conflict.
