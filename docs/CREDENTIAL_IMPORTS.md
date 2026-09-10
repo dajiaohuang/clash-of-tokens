@@ -36,6 +36,16 @@ variable and selected Codex, Gemini CLI or generic OAuth JSON. Only the current
 access token is imported. Refresh tokens and CLI account IDs are not copied;
 automatic refresh remains unimplemented. The UI reports this before saving.
 
+**Credentials → Import browser cookies** reads cookies applicable to one
+selected catalog provider URL from an enabled configured CDP browser profile.
+Only providers declaring cookie credentials are selectable. Preview exposes
+the domain and count; saving re-reads current cookies into a new protected
+reference. It opens and closes a blank tab without navigating to the provider.
+Limits are 256 cookies, 64 KiB and ten seconds. Cookie presence does not prove
+authentication. Bind the reference separately; adapters that use browser
+profiles may require the original profile instead of imported cookie values.
+Discovered OS profiles are not automatically opened or decrypted.
+
 ## Format references
 
 - [Bitwarden export-compatible formats](https://bitwarden.com/help/condition-bitwarden-import/)

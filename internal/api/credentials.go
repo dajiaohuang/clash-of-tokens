@@ -30,6 +30,9 @@ func (s *Server) credentialAdmin(w http.ResponseWriter, r *http.Request) {
 	if s.tokenImport(w, r) {
 		return
 	}
+	if s.browserCookieImport(w, r) {
+		return
+	}
 	if r.URL.Path == "/admin/credentials/import" && r.Method == "POST" {
 		var p struct {
 			Format   string `json:"format"`

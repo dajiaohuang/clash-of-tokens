@@ -295,8 +295,20 @@ function accounts(){
   [button(a.enabled?'Disable':'Enable',()=>toggle('accounts',a)),button('Edit',()=>edit('accounts',a)),a.browser_profile_id?button('Login',async()=>{const result=await api('/admin/accounts/'+encodeURIComponent(a.id)+'/login',{method:'POST'});message(result.message)}):null,a.browser_profile_id?button('Check login',async()=>{const result=await api('/admin/accounts/'+encodeURIComponent(a.id)+'/check-login',{method:'POST'});dialog('Login evidence',table(['Check','Result'],[['Status',result.status],['Checked at',result.checked_at||'Not checked'],['Method',result.method||'Not supported'],['Composer ready',result.composer_ready?'Yes':'Not established'],['Generation verified','No']]))}):null,button('Delete',()=>remove('accounts',a),'danger')]
  ]),'No accounts. Add an account and bind a credential before enabling its sources.')];
 }
+function importBrowserCookies(){
+ const profile=select((S.config.browser_profiles||[]).filter(p=>p.enabled).map(p=>p.id),'',true);
+ const provider=select(S.catalog.filter(p=>(p.credentials?.accepted||[]).includes('cookie')&&p.base_url.startsWith('https://')).map(p=>p.id),'',true);
+ dialog('Import browser cookies',[field('Configured browser profile',profile),field('Provider',provider),h('p',{class:'muted'},'Reads cookies only for the selected provider URL through the configured debugging connection. It does not scan other sites or verify login. Some browser adapters use their bound profile instead of a cookie credential.')],[button('Preview cookies',async()=>{
+  const payload={profile:profile.value,provider:provider.value},path='/admin/credentials/import-browser';
+  const preview=await api(path,{method:'POST',body:JSON.stringify(payload)});
+  dialog('Browser cookie preview',[h('p',{},preview.domain+': '+preview.count+' cookies'),h('p',{class:'muted'},preview.message)],[button('Save cookies',async()=>{
+   if(!preview.count)throw new Error('No cookies available.');
+   await api(path,{method:'POST',body:JSON.stringify({...payload,apply:true})});$('dialog').close();await refresh();message('Cookies saved. Bind the new reference from Accounts and check login separately.');
+  },'primary')]);
+ },'primary')]);
+}
 function credentials(){
- return [pageHead('Credentials','Protected values are stored separately from configuration.',h('div',{},button('Import export',importCredentials),button('Import token',importToken),button('Add credential',()=>credentialForm(),'primary'))),table(['Credential','Type','Used by','Imported from','Updated','Actions'],S.credentials.map(c=>[
+ return [pageHead('Credentials','Protected values are stored separately from configuration.',h('div',{},button('Import export',importCredentials),button('Import token',importToken),button('Import browser cookies',importBrowserCookies),button('Add credential',()=>credentialForm(),'primary'))),table(['Credential','Type','Used by','Imported from','Updated','Actions'],S.credentials.map(c=>[
   c.id,badge(c.kind),[...(S.config.accounts||[]).filter(a=>a.credential_ref===c.id).map(a=>a.id),...S.config.sources.filter(s=>s.credential_ref===c.id).map(s=>s.id)].join(', ')||'Unbound',c.source,new Date(c.updated_at).toLocaleString(),[button('Replace',()=>credentialForm(c)),button('Delete',()=>deleteCredential(c),'danger')]
  ]),'No credentials. Add a key or session, then bind its reference to an account.')];
 }

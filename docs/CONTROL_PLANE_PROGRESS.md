@@ -85,13 +85,18 @@ CLI format references: [Codex auth fixture](https://github.com/openai/codex/blob
     Vivaldi/Opera/Firefox/Arc locations where available, plus configured CDP
     status with four workers and a ten-second deadline. Metadata discovery
     does not inspect cookies or establish authentication. Existing browser
-    session import is still outstanding. Registry limit: 64 profiles.
+    session import requires a configured CDP connection. Registry limit: 64 profiles.
+22. Selected-provider browser Cookie import with redacted domain/count preview,
+    new protected references and a bounded CDP read. Only catalog providers
+    declaring Cookie support are selectable. Authentication remains unchecked.
+    Isolated browser regression uses synthetic selected and unrelated-domain
+    cookies and verifies only the selected domain contributes to the preview.
 
 Discovery protocol references: [Anthropic models](https://platform.claude.com/docs/en/api/models/list),
 [Gemini models](https://ai.google.dev/api/models),
 [OpenAI models](https://platform.openai.com/docs/api-reference/models).
 
-Validation: `go test ./...` passed, 531 tests in 37 packages on Windows.
+Validation: `go test ./...` passed, 533 tests in 37 packages on Windows.
 Browser regression: credential creation/redaction, account binding, source
 creation, group membership, preview/apply, every navigation destination and
 390px viewport passed via `scripts/ui_fixture.py --test` after building

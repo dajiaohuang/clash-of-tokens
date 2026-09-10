@@ -1,13 +1,19 @@
 """Browser smoke test against scripts/ui_fixture.py on port 18317."""
 from pathlib import Path
 import os
+import socket
+import tempfile
 from playwright.sync_api import sync_playwright, expect
 
 output = Path(__file__).resolve().parents[1] / ".clash-tokens" / "ui-artifacts"
 output.mkdir(parents=True, exist_ok=True)
-with sync_playwright() as playwright:
-    browser = playwright.chromium.launch(headless=True)
-    page = browser.new_page(viewport={"width": 1440, "height": 1000})
+with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, sync_playwright() as playwright:
+    with socket.socket() as listener:
+        listener.bind(("127.0.0.1", 0))
+        browser_port = listener.getsockname()[1]
+    browser = playwright.chromium.launch_persistent_context(profile_dir, headless=True, args=[f"--remote-debugging-port={browser_port}"], viewport={"width": 1440, "height": 1000})
+    browser.add_cookies([{"name":"session", "value":"synthetic-browser-secret", "url":"https://www.doubao.com/"}, {"name":"unrelated", "value":"unrelated-secret", "url":"https://example.org/"}])
+    page = browser.new_page()
     errors = []
     page.on("pageerror", lambda error: (errors.append(str(error)), print("Browser error:", error)))
     page.goto("http://127.0.0.1:18317")
@@ -35,12 +41,23 @@ with sync_playwright() as playwright:
     page.get_by_role("link", name="Browsers", exact=True).click()
     page.get_by_role("button", name="Add profile", exact=True).click()
     page.get_by_label("ID", exact=True).fill("ui-profile")
+    page.get_by_role("dialog").get_by_label("Browser connection URL", exact=True).fill(f"http://127.0.0.1:{browser_port}")
     page.get_by_role("button", name="Review changes", exact=True).click()
     page.get_by_role("button", name="Apply changes", exact=True).click()
     expect(page.get_by_role("dialog")).not_to_be_visible()
     expect(page.get_by_text("ui-profile", exact=True)).to_be_visible()
     page.get_by_role("link", name="Credentials", exact=True).click()
     expect(page.get_by_role("heading", name="Credentials", exact=True)).to_be_visible()
+    page.get_by_role("button", name="Import browser cookies", exact=True).click()
+    page.get_by_label("Configured browser profile", exact=True).select_option("ui-profile")
+    page.get_by_label("Provider", exact=True).select_option("doubao")
+    page.get_by_role("button", name="Preview cookies", exact=True).click()
+    expect(page.get_by_text("www.doubao.com: 1 cookies", exact=True)).to_be_visible()
+    assert "synthetic-browser-secret" not in page.content()
+    assert "unrelated-secret" not in page.content()
+    page.get_by_role("button", name="Save cookies", exact=True).click()
+    expect(page.get_by_role("dialog")).not_to_be_visible()
+    expect(page.get_by_text("browser:ui-profile:doubao", exact=True)).to_be_visible()
     page.get_by_role("button", name="Add credential", exact=True).click()
     page.get_by_label("Credential ID", exact=True).fill("ui-token")
     page.get_by_label("Secret value", exact=True).fill("synthetic-secret-not-for-display")
