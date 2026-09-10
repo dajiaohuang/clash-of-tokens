@@ -92,7 +92,10 @@ func (s *Store) Resolve(id string) string {
 	if s.lastUsed == nil {
 		s.lastUsed = make(map[string]time.Time)
 	}
-	s.lastUsed[id] = time.Now().UTC()
+	used := time.Now().UTC()
+	s.lastUsed[id] = used
+	r.Metadata.LastUsedAt = &used
+	s.records[id] = r
 	return r.Value
 }
 func (s *Store) Put(id, kind, source, value string) error {

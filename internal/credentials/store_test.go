@@ -44,6 +44,14 @@ func TestEncryptedPersistenceRedactionAndFailedTransaction(t *testing.T) {
 	if loaded.List()[0].LastUsedAt == nil {
 		t.Fatal("credential use was not recorded")
 	}
+	used := loaded.List()[0].LastUsedAt
+	if err := loaded.Put("cred://two", "api_key", "manual", "second-secret"); err != nil {
+		t.Fatal("metadata update write failed", err)
+	}
+	reopened, err := open(path, seal, unseal)
+	if err != nil || reopened.List()[0].LastUsedAt == nil || !reopened.List()[0].LastUsedAt.Equal(*used) {
+		t.Fatalf("last-use metadata was not persisted with the next write: err=%v metadata=%+v", err, reopened.List())
+	}
 	s.protect = func([]byte) ([]byte, error) { return nil, errors.New("locked") }
 	_ = s.Resolve("cred://one")
 	if s.Put("cred://one", "api_key", "manual", "replacement") == nil {

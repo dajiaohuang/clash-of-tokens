@@ -519,3 +519,7 @@ metadata regression keeps the valid local tuple explicit.
 Batch 95 carries evidence sequence through provider and account health
 aggregation. When two sources validate at the same instant, the newest stored
 entry now controls the exposed timestamp and state deterministically.
+
+Batch 96 keeps credential `last_used_at` on the protected record whenever a
+credential is resolved. A later encrypted vault write now preserves that
+metadata across reopen, covered by the credential store regression.
