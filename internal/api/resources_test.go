@@ -172,3 +172,25 @@ func TestBrowserProfileDeletionGuard(t *testing.T) {
 		t.Fatalf("bound profile deletion was not blocked: status=%d body=%s", w.Code, w.Body.String())
 	}
 }
+
+func TestSourceDeletionGuard(t *testing.T) {
+	dir := t.TempDir()
+	vault, _ := credentials.Open(filepath.Join(dir, "vault"))
+	c := config.Default()
+	c.Providers = []config.Provider{{ID: "p", Enabled: true}}
+	c.Sources = []config.Source{{ID: "s", Provider: "p", Adapter: "openai", BaseURL: "http://127.0.0.1:1", Local: true, Enabled: true, AutoApproved: true, MaxInflight: 1, QuotaDomain: "q", QuotaMaxInflight: 1, Models: []config.Model{{ID: "m", Upstream: "m", Protocols: []string{"chat"}, Tier: "unrated", Tools: "none", MaxInputBytes: 1024}}}}
+	c.Groups = []config.Group{{ID: "g", Type: "auto", Sources: []string{"s"}, MinTier: "bronze", AllowUnrated: true}}
+	p, err := NewControlPlane(filepath.Join(dir, "config.json"), c, testKey, adminKey, vault)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer p.Close()
+	req := httptest.NewRequest("DELETE", "/admin/sources/s", nil)
+	req.Header.Set("Authorization", "Bearer "+adminKey)
+	req.Header.Set("If-Match", "1")
+	w := httptest.NewRecorder()
+	p.ServeHTTP(w, req)
+	if w.Code != 409 || !strings.Contains(w.Body.String(), "source still belongs to groups") {
+		t.Fatalf("group-bound source deletion was not blocked: status=%d body=%s", w.Code, w.Body.String())
+	}
+}

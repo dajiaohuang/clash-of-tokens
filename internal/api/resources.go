@@ -171,6 +171,14 @@ func (p *ControlPlane) resourceAdmin(w http.ResponseWriter, r *http.Request, ser
 			}
 		}
 	case "sources":
+		if method == "DELETE" {
+			for _, group := range c.Groups {
+				if containsString(group.Sources, id) {
+					fail(w, 409, "source still belongs to groups")
+					return
+				}
+			}
+		}
 		c.Sources, err = editResource(c.Sources, id, method, raw)
 		if err == nil && method != "DELETE" {
 			normalizeSourceQuotaDomain(&c, id, originalSource)
@@ -192,6 +200,15 @@ func (p *ControlPlane) resourceAdmin(w http.ResponseWriter, r *http.Request, ser
 		return
 	}
 	reply(w, map[string]any{"revision": updated.Revision, "status": "saved", "persistence": "durable", "restart_required": restartFields(p.startup, updated.Config)})
+}
+
+func containsString(values []string, want string) bool {
+	for _, value := range values {
+		if value == want {
+			return true
+		}
+	}
+	return false
 }
 
 // Account and source quota domains are one capacity boundary. Moving an
