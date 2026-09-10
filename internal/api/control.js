@@ -292,7 +292,7 @@ function providers(){
 function accounts(){
  return [pageHead('Accounts','Account switches and capacity apply across their sources.',button('Add account',()=>addAccount(),'primary')),table(['Account','Provider','Credential','Quota / concurrency','Auto','Actions'],(S.config.accounts||[]).map(a=>[
   a.display_name||a.id,a.provider_id,a.credential_ref||'Not bound',a.quota_domain+' / '+a.max_inflight,badge(a.auto_approved?'Approved':'Manual',a.auto_approved?'accent':''),
-  [button(a.enabled?'Disable':'Enable',()=>toggle('accounts',a)),button('Edit',()=>edit('accounts',a)),a.browser_profile_id?button('Login',async()=>{const result=await api('/admin/accounts/'+encodeURIComponent(a.id)+'/login',{method:'POST'});message(result.message)}):null,button('Delete',()=>remove('accounts',a),'danger')]
+  [button(a.enabled?'Disable':'Enable',()=>toggle('accounts',a)),button('Edit',()=>edit('accounts',a)),a.browser_profile_id?button('Login',async()=>{const result=await api('/admin/accounts/'+encodeURIComponent(a.id)+'/login',{method:'POST'});message(result.message)}):null,a.browser_profile_id?button('Check login',async()=>{const result=await api('/admin/accounts/'+encodeURIComponent(a.id)+'/check-login',{method:'POST'});dialog('Login evidence',table(['Check','Result'],[['Status',result.status],['Checked at',result.checked_at||'Not checked'],['Method',result.method||'Not supported'],['Composer ready',result.composer_ready?'Yes':'Not established'],['Generation verified','No']]),[button('Close',()=>$('dialog').close())])}):null,button('Delete',()=>remove('accounts',a),'danger')]
  ]),'No accounts. Add an account and bind a credential before enabling its sources.')];
 }
 function credentials(){

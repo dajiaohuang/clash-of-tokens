@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"clash-of-tokens/catalog"
+	"clash-of-tokens/internal/chatgptweb"
 	"clash-of-tokens/internal/config"
 )
 
@@ -52,7 +53,7 @@ func loginArguments(p config.BrowserProfile, stateFile, destination string) ([]s
 
 func (p *ControlPlane) browserLoginAdmin(w http.ResponseWriter, r *http.Request) bool {
 	parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/admin/accounts/"), "/")
-	if !strings.HasPrefix(r.URL.Path, "/admin/accounts/") || len(parts) != 2 || parts[1] != "login" {
+	if !strings.HasPrefix(r.URL.Path, "/admin/accounts/") || len(parts) != 2 || (parts[1] != "login" && parts[1] != "check-login") {
 		return false
 	}
 	if r.Method != "POST" {
@@ -78,6 +79,21 @@ func (p *ControlPlane) browserLoginAdmin(w http.ResponseWriter, r *http.Request)
 	}
 	if profile.ID == "" || !profile.Enabled {
 		fail(w, 400, "bind an enabled browser profile first")
+		return true
+	}
+	if parts[1] == "check-login" {
+		adapter := ""
+		for _, entry := range catalog.All() {
+			if entry.ID == account.ProviderID {
+				adapter = entry.Adapter
+			}
+		}
+		if adapter != "chatgpt-web" {
+			reply(w, map[string]any{"status": "unsupported", "generation_verified": false, "message": "This provider does not yet implement a login check."})
+			return true
+		}
+		driver := chatgptweb.New(c.SourceBrowser(config.Source{AccountID: account.ID}), "login-check")
+		reply(w, driver.CheckAuth(r.Context()))
 		return true
 	}
 	destination := ""
