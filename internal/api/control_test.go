@@ -113,6 +113,37 @@ func TestControlPlaneReportsPendingRestartAndRejectsStaleApply(t *testing.T) {
 	}
 }
 
+func TestConfigRollbackRejectsStaleRevision(t *testing.T) {
+	dir := t.TempDir()
+	vault, _ := credentials.Open(filepath.Join(dir, "vault"))
+	p, err := NewControlPlane(filepath.Join(dir, "config.json"), config.Default(), testKey, adminKey, vault)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer p.Close()
+	first := p.service.Current().Config
+	first.Runtime.MaxQueued++
+	if _, err = p.service.Apply(1, first, "first change"); err != nil {
+		t.Fatal(err)
+	}
+	second := p.service.Current().Config
+	second.Runtime.MaxQueued++
+	if _, err = p.service.Apply(2, second, "second change"); err != nil {
+		t.Fatal(err)
+	}
+	body, _ := json.Marshal(map[string]any{"revision": 2, "target_revision": 1})
+	req := httptest.NewRequest("POST", "/admin/config/rollback", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+adminKey)
+	w := httptest.NewRecorder()
+	p.ServeHTTP(w, req)
+	if w.Code != http.StatusConflict {
+		t.Fatalf("stale rollback status=%d body=%s", w.Code, w.Body.String())
+	}
+	if got := p.service.Current().Revision; got != 3 {
+		t.Fatalf("stale rollback changed revision to %d", got)
+	}
+}
+
 func TestConfigPreviewReportsRoutingImpact(t *testing.T) {
 	dir := t.TempDir()
 	vault, _ := credentials.Open(filepath.Join(dir, "vault"))
