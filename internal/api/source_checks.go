@@ -140,6 +140,7 @@ func (p *ControlPlane) sourceCheckAdmin(w http.ResponseWriter, r *http.Request, 
 		}
 	}
 	evidence.Result.ClientCanceled = ctx.Err() != nil
+	evidence.Result = evidence.Result.Redacted()
 	evidence.Verified = evidence.Result.Successful() && evidence.OutputObserved
 	if evidence.Verified {
 		status = 200

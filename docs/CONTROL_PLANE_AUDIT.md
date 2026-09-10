@@ -57,7 +57,7 @@ must be checked again before final acceptance.
 | 46. Central validation | Schema validation plus runtime prepare before apply | All special actions must retain the same invariants |
 | 47. Hot reload | Generation pinning and restart-required fields | Full browser confirmation of live vs pending runtime settings |
 | 48. Sensitive confirmation | Config preview, credential-delete confirmation, billing notices | All specified sensitive actions and cost warnings acceptance test |
-| 49. Secret-safe logs | Redacted vault/import/session/evidence responses | Global Secret representation and all adapter/runtime error/log paths audit |
+| 49. Secret-safe logs | Redacted vault/import/session/evidence responses; batch 31 allowlists execution error categories at runtime-status and validation boundaries | Global Secret representation, runtime event log and all adapter/error/log paths audit |
 | 50. Five epics | Work split into committed batches | A–E remain incomplete until their component rows are accepted |
 | 51. End-to-end workflow | Most core pieces exist separately | Install → discover → import/login → accounts → sources → Auto/groups → successful local API call without hand-editing JSON |
 

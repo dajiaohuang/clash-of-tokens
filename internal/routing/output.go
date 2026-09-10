@@ -6,6 +6,9 @@ import (
 )
 
 func (l *Lease) RecordExecution(result protocol.ExecutionResult) {
+	// Runtime status is an administration response. Never retain an arbitrary
+	// adapter error string, which may contain a URL, credential or response body.
+	result = result.Redacted()
 	l.router.mu.Lock()
 	defer l.router.mu.Unlock()
 	l.state.lastExecution = &result

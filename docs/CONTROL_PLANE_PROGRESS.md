@@ -138,12 +138,17 @@ CLI format references: [Codex auth fixture](https://github.com/openai/codex/blob
     eligibility explanations. Browser regression covers count provenance,
     credential-rotation invalidation and navigation to Source Detail.
     See [provider detail](PROVIDER_DETAIL.md).
+31. Runtime execution status and validation responses now retain only fixed
+    gateway error categories. Unknown adapter error text becomes `upstream_error`
+    while preserving failure status. A synthetic URL/key/body regression verifies
+    serialized status redaction and snapshot isolation. This is one boundary of
+    the broader secret/log audit; runtime event logging remains outstanding.
 
 Discovery protocol references: [Anthropic models](https://platform.claude.com/docs/en/api/models/list),
 [Gemini models](https://ai.google.dev/api/models),
 [OpenAI models](https://platform.openai.com/docs/api-reference/models).
 
-Validation: `go test ./...` passed, 548 tests in 38 packages on Windows.
+Validation: `go test ./...` passed, 549 tests in 38 packages on Windows.
 Windows and Linux-target `govulncheck` reported no vulnerabilities.
 Browser regression: credential creation/redaction, account binding, source
 creation, group membership, preview/apply, every navigation destination and
