@@ -504,9 +504,9 @@ async function sourceVerification(source){
 }
 async function discoverModels(source){
  const result=await api('/admin/sources/'+encodeURIComponent(source.id)+'/discover',{method:'POST'});
- dialog('Discovered models',[h('p',{class:'muted'},(result.complete?'Complete list':'Partial list: limit reached')+' · '+result.pages+' pages · '+result.checked_at+'. Listing does not verify generation, tools or quality.'+(result.history_recorded?' History saved.':' History could not be saved.')),table(['Upstream model','Action'],result.models.map(m=>[m.id,button('Configure model',()=>{
+ dialog('Discovered models',[h('p',{class:'muted'},(result.complete?'Complete list':'Partial list: limit reached')+' · '+result.pages+' pages · '+result.checked_at+'. Metadata is provider-reported; discovery does not verify generation, tools, vision or quality.'+(result.history_recorded?' History saved.':' History could not be saved.')),table(['Model','Owner','Token limits','Generation methods','Created','Action'],result.models.map(m=>[m.display_name&&m.display_name!==m.id?m.display_name+' ('+m.id+')':m.id,m.owned_by||'Not reported',m.input_token_limit||m.output_token_limit?(m.input_token_limit||'—')+' / '+(m.output_token_limit||'—'):'Not reported',(m.supported_methods||[]).join(', ')||'Not reported',m.created_unix?new Date(m.created_unix*1000).toLocaleString():'Not reported',button('Configure model',()=>{
   const next=clone(source);if(next.models.some(x=>x.id===m.id||x.upstream===m.id))throw new Error('This model is already configured.');
-  next.models.push({id:m.id,upstream:m.id,protocols:[],tier:'unrated',tools:'unknown',vision:false,max_input_bytes:65536,enabled:false,auto_approved:false});
+  next.models.push({id:m.id,upstream:m.id,declared_model:m.id,canonical_model:m.id,protocols:[],tier:'unrated',tools:'unknown',vision:false,max_input_bytes:65536,enabled:false,auto_approved:false});
   edit('sources',next);
  })]))]);
 }

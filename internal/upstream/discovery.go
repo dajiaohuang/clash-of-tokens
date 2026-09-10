@@ -12,7 +12,14 @@ import (
 )
 
 type DiscoveredModel struct {
-	ID string `json:"id"`
+	ID               string   `json:"id"`
+	DisplayName      string   `json:"display_name,omitempty"`
+	OwnedBy          string   `json:"owned_by,omitempty"`
+	Description      string   `json:"description,omitempty"`
+	CreatedUnix      int64    `json:"created_unix,omitempty"`
+	InputTokenLimit  int64    `json:"input_token_limit,omitempty"`
+	OutputTokenLimit int64    `json:"output_token_limit,omitempty"`
+	SupportedMethods []string `json:"supported_methods,omitempty"`
 }
 type Discovery struct {
 	Models    []DiscoveredModel `json:"models"`
@@ -87,10 +94,19 @@ func (c *Client) Discover(ctx context.Context) (Discovery, error) {
 		}
 		var wire struct {
 			Data []struct {
-				ID string `json:"id"`
+				ID          string `json:"id"`
+				DisplayName string `json:"display_name"`
+				OwnedBy     string `json:"owned_by"`
+				Created     int64  `json:"created"`
+				CreatedAt   string `json:"created_at"`
 			} `json:"data"`
 			Models []struct {
-				Name string `json:"name"`
+				Name                       string   `json:"name"`
+				DisplayName                string   `json:"displayName"`
+				Description                string   `json:"description"`
+				InputTokenLimit            int64    `json:"inputTokenLimit"`
+				OutputTokenLimit           int64    `json:"outputTokenLimit"`
+				SupportedGenerationMethods []string `json:"supportedGenerationMethods"`
 			} `json:"models"`
 			HasMore       bool   `json:"has_more"`
 			LastID        string `json:"last_id"`
@@ -102,17 +118,24 @@ func (c *Client) Discover(ctx context.Context) (Discovery, error) {
 		if (adapter == "gemini" && wire.Models == nil) || (adapter != "gemini" && wire.Data == nil) {
 			return out, errors.New("model discovery response lacks model list")
 		}
-		ids := []string{}
+		models := []DiscoveredModel{}
 		if adapter == "gemini" {
 			for _, m := range wire.Models {
-				ids = append(ids, strings.TrimPrefix(m.Name, "models/"))
+				models = append(models, DiscoveredModel{ID: strings.TrimPrefix(m.Name, "models/"), DisplayName: boundedMetadata(m.DisplayName, 256), Description: boundedMetadata(m.Description, 2048), InputTokenLimit: boundedTokenLimit(m.InputTokenLimit), OutputTokenLimit: boundedTokenLimit(m.OutputTokenLimit), SupportedMethods: boundedMethods(m.SupportedGenerationMethods)})
 			}
 		} else {
 			for _, m := range wire.Data {
-				ids = append(ids, m.ID)
+				created := m.Created
+				if created == 0 && m.CreatedAt != "" {
+					if parsed, err := time.Parse(time.RFC3339, m.CreatedAt); err == nil {
+						created = parsed.Unix()
+					}
+				}
+				models = append(models, DiscoveredModel{ID: m.ID, DisplayName: boundedMetadata(m.DisplayName, 256), OwnedBy: boundedMetadata(m.OwnedBy, 256), CreatedUnix: created})
 			}
 		}
-		for _, id := range ids {
+		for _, model := range models {
+			id := model.ID
 			if id == "" || len(id) > 512 || strings.ContainsAny(id, "\r\n\x00") {
 				return out, errors.New("invalid discovered model identifier")
 			}
@@ -121,7 +144,7 @@ func (c *Client) Discover(ctx context.Context) (Discovery, error) {
 					return out, nil
 				}
 				seen[id] = true
-				out.Models = append(out.Models, DiscoveredModel{ID: id})
+				out.Models = append(out.Models, model)
 			}
 		}
 		out.Pages++
@@ -144,4 +167,36 @@ func (c *Client) Discover(ctx context.Context) (Discovery, error) {
 		cursors[cursor] = true
 	}
 	return out, nil
+}
+
+func boundedMetadata(value string, limit int) string {
+	value = strings.TrimSpace(value)
+	if len(value) > limit || strings.ContainsAny(value, "\r\n\x00") {
+		return ""
+	}
+	return value
+}
+
+func boundedTokenLimit(value int64) int64 {
+	if value < 0 || value > 1<<31 {
+		return 0
+	}
+	return value
+}
+
+func boundedMethods(values []string) []string {
+	if len(values) > 32 {
+		return nil
+	}
+	out := make([]string, 0, len(values))
+	seen := map[string]bool{}
+	for _, value := range values {
+		value = boundedMetadata(value, 128)
+		if value == "" || seen[value] {
+			continue
+		}
+		seen[value] = true
+		out = append(out, value)
+	}
+	return out
 }

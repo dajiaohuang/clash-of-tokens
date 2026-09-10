@@ -27,18 +27,18 @@ func TestDiscoveryPaginationAndCredentialHeaders(t *testing.T) {
 				switch adapter {
 				case "gemini":
 					if calls == 1 {
-						fmt.Fprint(w, `{"models":[{"name":"models/first"}],"nextPageToken":"next"}`)
+						fmt.Fprint(w, `{"models":[{"name":"models/first","displayName":"First model","description":"bounded description","inputTokenLimit":1234,"outputTokenLimit":567,"supportedGenerationMethods":["generateContent"]}],"nextPageToken":"next"}`)
 					} else {
 						fmt.Fprint(w, `{"models":[{"name":"models/second"}]}`)
 					}
 				case "anthropic":
 					if calls == 1 {
-						fmt.Fprint(w, `{"data":[{"id":"first"}],"has_more":true,"last_id":"first"}`)
+						fmt.Fprint(w, `{"data":[{"id":"first","display_name":"First model","created_at":"2026-01-02T03:04:05Z"}],"has_more":true,"last_id":"first"}`)
 					} else {
 						fmt.Fprint(w, `{"data":[{"id":"second"}],"has_more":false}`)
 					}
 				default:
-					fmt.Fprint(w, `{"data":[{"id":"first"},{"id":"second"}]}`)
+					fmt.Fprint(w, `{"data":[{"id":"first","owned_by":"owner","created":1700000000},{"id":"second"}]}`)
 				}
 			}))
 			defer server.Close()
@@ -48,6 +48,20 @@ func TestDiscoveryPaginationAndCredentialHeaders(t *testing.T) {
 			result, err := c.Discover(context.Background())
 			if err != nil || !result.Complete || len(result.Models) != 2 {
 				t.Fatal(result, err)
+			}
+			switch adapter {
+			case "gemini":
+				if result.Models[0].DisplayName != "First model" || result.Models[0].InputTokenLimit != 1234 || result.Models[0].OutputTokenLimit != 567 || len(result.Models[0].SupportedMethods) != 1 {
+					t.Fatalf("gemini metadata missing: %+v", result.Models[0])
+				}
+			case "anthropic":
+				if result.Models[0].DisplayName != "First model" || result.Models[0].CreatedUnix == 0 {
+					t.Fatalf("anthropic metadata missing: %+v", result.Models[0])
+				}
+			default:
+				if result.Models[0].OwnedBy != "owner" || result.Models[0].CreatedUnix != 1700000000 {
+					t.Fatalf("openai metadata missing: %+v", result.Models[0])
+				}
 			}
 		})
 	}

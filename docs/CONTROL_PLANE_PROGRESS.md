@@ -196,6 +196,12 @@ CLI format references: [Codex auth fixture](https://github.com/openai/codex/blob
     vault still requires an existing reference and never returns the secret;
     the UI shows a risk warning and descriptor validation tests cover both the
     rejected default and reviewed account/source overrides. See [credential binding](CREDENTIAL_BINDING.md).
+42. Native model discovery now preserves bounded provider metadata: display name,
+    owner, creation time, description, token limits and declared generation
+    methods for OpenAI/Anthropic/Gemini responses where available. Configure
+    model records these IDs as disabled, unrated, not Auto-approved declared /
+    canonical values; no capability or quality is inferred. Parser tests cover
+    metadata and pagination. See [model discovery](MODEL_DISCOVERY.md).
 
 Discovery protocol references: [Anthropic models](https://platform.claude.com/docs/en/api/models/list),
 [Gemini models](https://ai.google.dev/api/models),

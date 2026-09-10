@@ -29,8 +29,8 @@ must be checked again before final acceptance.
 | 18. All frontend configuration | Schema-driven forms and config transactions | Missing requested settings must first exist in schema/runtime |
 | 19. Configuration service | Journal, compile/prepare, atomic runtime publication tests | Fault and rollback lifecycle audit across all managed resources |
 | 20. Versions/rollback | Version history and Compare/restore | Browser rollback/conflict acceptance test |
-| 21. Model management | Native API ID discovery; batch 35 adds filtered multi-selection and atomic enable/Auto/rating/capability edits | Rich discovery metadata where available and reverse-provider discovery |
-| 22. Discovery approval | New models disabled, unrated and not Auto-approved | Verify persisted discovery selections through routing |
+| 21. Model management | Native API discovery with bounded pagination and provider metadata (display/owner/created/token limits/methods); batch 35 adds filtered multi-selection and atomic enable/Auto/rating/capability edits | Reverse-provider discovery and live compatibility |
+| 22. Discovery approval | Configure-model action persists discovered/canonical IDs as disabled, unrated and not Auto-approved; routing ignores them until explicit policy edits | Verify persisted discovery selections through routing and richer reverse-provider approval |
 | 23. Official sources | Generic drivers; batch 34 adds Ark, legacy Hunyuan, Qianfan v2 and two TokenHub region presets with official references and path/auth tests | Live account/model compatibility, other named provider/custom-profile acceptance and optional service-specific parameters |
 | 24. Visible source types | Source-kind badge and provider-kind filter | Consistent complete official/cloud/browser/app/CLI/local/custom taxonomy |
 | 25. Explain exclusions | Router Explain in simulator; batches 29/30 add filtered Source/Provider Detail explanations | Full policy-reason acceptance across configured adapters |
