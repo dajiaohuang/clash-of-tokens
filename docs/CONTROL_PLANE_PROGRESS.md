@@ -397,3 +397,7 @@ router status snapshot: `disabled`, `blocked`, `cooldown`, `exhausted`,
 Detail views consume that state instead of re-deriving it from partial counters;
 router coverage exercises capacity exhaustion, successful recovery, mixed
 results and disablement.
+
+Batch 71 propagates the Provider enabled gate into account health aggregation.
+An enabled account whose parent Provider is disabled now reports `disabled`,
+alongside the existing account switch and authentication classifications.

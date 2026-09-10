@@ -171,6 +171,10 @@ func (p *ControlPlane) controlStatus(s *Server) map[string]any {
 
 func (p *ControlPlane) accountHealth(s *Server, entries []audit.Entry) []accountHealth {
 	capacities, _ := s.Router.CapacityStatus()
+	providerEnabled := map[string]bool{}
+	for _, provider := range s.cfg.Providers {
+		providerEnabled[provider.ID] = provider.Enabled
+	}
 	capacityByID := map[string]routingCapacity{}
 	for _, value := range capacities {
 		capacityByID[value.ID] = routingCapacity{active: value.Active, limit: value.Limit}
@@ -230,7 +234,7 @@ func (p *ControlPlane) accountHealth(s *Server, entries []audit.Entry) []account
 			health.AuthStatus = entry.Status
 		}
 		switch {
-		case !account.Enabled:
+		case !account.Enabled || !providerEnabled[account.ProviderID]:
 			health.Health = "disabled"
 		case authRequiresLogin(health.AuthStatus):
 			health.Health = "auth_required"

@@ -45,9 +45,10 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNotImplemented) }))
 	defer upstream.Close()
 	c := config.Default()
-	c.Providers = []config.Provider{{ID: "p"}}
+	c.Providers = []config.Provider{{ID: "p", Enabled: true}, {ID: "disabled-provider", Enabled: false}}
 	c.Accounts = []config.Account{{ID: "a", ProviderID: "p", DisplayName: "Account", Enabled: true, MaxInflight: 1, Weight: 1, QuotaDomain: "q"}}
 	c.Accounts = append(c.Accounts, config.Account{ID: "b", ProviderID: "p", DisplayName: "Needs login", Enabled: true, MaxInflight: 1, Weight: 1, QuotaDomain: "q-b"})
+	c.Accounts = append(c.Accounts, config.Account{ID: "c", ProviderID: "disabled-provider", DisplayName: "Provider disabled", Enabled: true, MaxInflight: 1, Weight: 1, QuotaDomain: "q-c"})
 	c.Sources = []config.Source{{ID: "s", Provider: "p", Adapter: "openai", BaseURL: upstream.URL, Local: true, Enabled: true, MaxInflight: 1, AccountID: "a", QuotaDomain: "q", QuotaMaxInflight: 1, Models: []config.Model{{ID: "m", Upstream: "m", Protocols: []string{"chat"}, Tier: "unrated", Tools: "none", MaxInputBytes: 1024}}}}
 	dir := t.TempDir()
 	vault, err := credentials.Open(filepath.Join(dir, "vault"))
@@ -90,7 +91,7 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 	if err := json.Unmarshal(w.Body.Bytes(), &out); err != nil {
 		t.Fatal(err)
 	}
-	if len(out.Accounts) != 2 {
+	if len(out.Accounts) != 3 {
 		t.Fatalf("account health rows = %+v", out.Accounts)
 	}
 	a := out.Accounts[0]
@@ -100,5 +101,9 @@ func TestControlStatusAggregatesAccountHealthAndEvidence(t *testing.T) {
 	b := out.Accounts[1]
 	if b.ID != "b" || b.Health != "auth_required" || b.AuthStatus != "login_required" || b.Limit != 1 || len(b.Sources) != 0 {
 		t.Fatalf("login-required account was not classified: %+v", b)
+	}
+	cHealth := out.Accounts[2]
+	if cHealth.ID != "c" || cHealth.Health != "disabled" || cHealth.AuthStatus != "not_checked" {
+		t.Fatalf("provider-disabled account was not classified: %+v", cHealth)
 	}
 }
