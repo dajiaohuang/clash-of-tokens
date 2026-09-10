@@ -17,6 +17,7 @@ import (
 type accountCandidate struct {
 	ID         string   `json:"id"`
 	Kind       string   `json:"kind"`
+	Browser    string   `json:"browser,omitempty"`
 	Label      string   `json:"label"`
 	Origin     string   `json:"origin"`
 	Providers  []string `json:"providers,omitempty"`
@@ -102,7 +103,7 @@ func (p *ControlPlane) accountDiscoveryAdmin(w http.ResponseWriter, r *http.Requ
 	if input.ScanBrowsers {
 		for _, b := range browsermeta.Discover(browsermeta.StandardRoots()) {
 			providers := candidateProviders(b.Browser, "browser_profile", entries)
-			items = append(items, accountCandidate{ID: "browser:" + b.ID, Kind: "browser_profile", Label: b.Browser + " / " + b.Name, Origin: b.Root + " / " + b.Profile, Providers: providers, Confidence: "metadata", Action: "create_browser_profile", Available: true})
+			items = append(items, accountCandidate{ID: "browser:" + b.ID, Kind: "browser_profile", Browser: b.Browser, Label: b.Browser + " / " + b.Name, Origin: b.Root + " / " + b.Profile, Providers: providers, Confidence: "metadata", Action: "create_browser_profile", Available: true})
 		}
 	}
 	for _, m := range s.vault.List() {

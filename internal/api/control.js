@@ -463,10 +463,18 @@ async function discoverAccounts(){
  const scan=h('input',{type:'checkbox','aria-label':'Scan installed browser profile metadata'});
  const run=async()=>{
   const result=await api('/admin/discovery/accounts',{method:'POST',body:JSON.stringify({scan_browsers:scan.checked})});
-  const rows=(result.items||[]).map(x=>[x.label,badge(x.kind),x.origin,(x.providers||[]).join(', ')||'No exact catalog match',x.confidence,x.available?'Available':'Not available',x.action,['bind_credential','use_existing_profile'].includes(x.action)?button('Use in account',()=>{ $('dialog').close(); accountWizard({credential_ref:x.kind==='browser_profile'?'':x.id,browser_profile_id:x.kind==='browser_profile'?x.id.replace('profile:',''):'' ,provider_id:x.providers?.[0]||''}) }):null]);
+  const rows=(result.items||[]).map(x=>[x.label,badge(x.kind),x.origin,(x.providers||[]).join(', ')||'No exact catalog match',x.confidence,x.available?'Available':'Not available',x.action,['bind_credential','use_existing_profile'].includes(x.action)?button('Use in account',()=>{ $('dialog').close(); accountWizard({credential_ref:x.kind==='browser_profile'?'':x.id,browser_profile_id:x.kind==='browser_profile'?x.id.replace('profile:',''):'' ,provider_id:x.providers?.[0]||''}) }):x.action==='create_browser_profile'?button('Configure profile',()=>configureDiscoveredProfile(x)):null]);
   dialog('Account discovery',[h('p',{class:'muted'},'Candidates are metadata only. Secret values, cookies and passwords never leave the protected store. Browser scanning reads standard profile metadata only and does not launch a browser or test login.'),table(['Discovery channel','Status','Action','Read only'],(result.channels||[]).map(x=>[x.id,x.status,x.action,x.read_only?'Yes':'No'])),table(['Candidate','Type','Origin','Provider suggestions','Evidence','Availability','Next action','Binding'],rows,'No candidates found. Import a credential or configure a browser profile first.')],[button('Run again',run),button('Open credentials',()=>{$('dialog').close();location.hash='credentials'}),button('Open accounts',()=>{$('dialog').close();location.hash='accounts'})]);
  };
  dialog('Discover accounts',[field('Scan installed browser profile metadata',scan),h('p',{class:'muted'},'Stored credential references and configured environment names are included without exposing their values. Enable the scan only when you want to inspect local browser profile metadata.'),button('Discover',run,'primary')]);
+}
+function configureDiscoveredProfile(candidate){
+ const engineName=['chrome','edge','chromium'].includes(candidate.browser)?candidate.browser:'chrome';
+ const existing=new Set((S.config.browser_profiles||[]).map(p=>p.id));
+ let id=(candidate.browser+'-'+candidate.id.slice(0,10)).replace(/[^a-zA-Z0-9_-]/g,'-');
+ if(existing.has(id))id+='-profile';
+ const profileID=h('input',{value:id}),engine=select(['chrome','edge','chromium'],engineName),endpoint=h('input',{value:S.config.browser?.cdp_url||'http://127.0.0.1:9222'});
+ dialog('Configure discovered browser profile',[h('p',{class:'muted'},'Discovery found '+candidate.label+' at '+candidate.origin+'. It read profile metadata only. Enter the loopback CDP endpoint of a browser already running with this profile; no cookies are copied and this action does not launch a browser.'),h('div',{class:'form-grid'},field('Profile ID',profileID),field('Browser engine',engine),field('Browser connection URL',endpoint))],[button('Use in account',()=>{const value=profileID.value.trim();if(!value)throw Error('Profile ID is required.');$('dialog').close();accountWizard({provider_id:candidate.providers?.[0]||'',browser_profile_id:value,newProfile:{id:value,engine:engine.value,cdp_url:endpoint.value.trim(),enabled:true}})},'primary')]);
 }
 function importBrowserCookies(onSaved){
  const profile=select((S.config.browser_profiles||[]).filter(p=>p.enabled).map(p=>p.id),'',true);

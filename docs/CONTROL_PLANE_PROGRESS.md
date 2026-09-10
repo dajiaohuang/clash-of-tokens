@@ -220,7 +220,7 @@ Discovery protocol references: [Anthropic models](https://platform.claude.com/do
 [Gemini models](https://ai.google.dev/api/models),
 [OpenAI models](https://platform.openai.com/docs/api-reference/models).
 
-Validation: `go test ./...` passed, 599 tests in 38 packages on Windows.
+Validation: `go test ./...` passed, 604 tests in 38 packages on Windows.
 Windows and Linux-target `govulncheck` reported no vulnerabilities.
 Browser regression: credential creation/redaction, account binding, source
 creation, group membership, preview/apply, every navigation destination and
@@ -570,3 +570,8 @@ Batch 106 expands Source Detail's configuration panel with the effective base
 URL, organization/project routing fields, credential mode, source taxonomy,
 execution/inference location, and billing declaration. These are configuration
 metadata only; protected values remain in the vault.
+
+Batch 107 adds a metadata-only action for discovered browser candidates. The
+operator can configure a profile ID, engine, and loopback CDP endpoint and
+continue into the transactional account wizard; discovery still reads no
+cookies, launches no browser, and does not claim authentication.
