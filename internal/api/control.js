@@ -915,13 +915,13 @@ function implementation(){
  return [pageHead('Implementation status','Catalog and runtime evidence are shown separately.',button('Refresh implementation',load)),h('p',{class:'muted'},'A factory means the shared adapter contract is available. Catalog live evidence is a published metadata flag. Runtime checks are point-in-time checks for configured sources and do not guarantee future availability.'),target];
 }
 function searchResults(query){
- const q=query.toLowerCase(),results=[];
- for(const p of S.catalog)if((p.id+' '+p.adapter).toLowerCase().includes(q))results.push([p.id,'Provider',()=>providerDetail(p)]);
- for(const kind of ['accounts','sources','groups'])for(const item of S.config[kind]||[])if([item.id,item.display_name,item.provider_id,item.provider,item.account_id,item.quota_domain,item.credential_ref,item.base_url,item.organization,item.project].filter(Boolean).join(' ').toLowerCase().includes(q))results.push([item.display_name||item.id,title(kind),()=>kind==='sources'?sourceDetail(item):edit(kind,item)]);
- for(const source of S.config.sources)for(const model of source.models)if([model.id,model.upstream,model.canonical_model,model.declared_model,source.id,source.provider].filter(Boolean).join(' ').toLowerCase().includes(q))results.push([model.id+' · '+source.id,'Model',()=>bulkModels([{source,model}])]);
- for(const profile of S.config.browser_profiles||[])if((profile.id+' '+profile.engine).toLowerCase().includes(q))results.push([profile.id,'Browser profile',()=>edit('browser_profiles',profile)]);
- if(('device android '+(S.config.device?.serial||'')).toLowerCase().includes(q))results.push(['Android device settings','Device',()=>{$('search').value='';location.hash='devices';render()}]);
- for(const c of S.credentials)if([c.id,c.kind,c.source,c.domain].filter(Boolean).join(' ').toLowerCase().includes(q))results.push([c.id,'Credential',()=>editCredential(c)]);
+ const q=query.toLowerCase(),results=[],contains=values=>values.filter(Boolean).join(' ').toLowerCase().includes(q);
+ for(const p of S.catalog)if(contains([p.id,p.adapter,p.base_url,p.reference,p.notes,...(p.protocols||[])]))results.push([p.id,'Provider',()=>providerDetail(p)]);
+ for(const kind of ['accounts','sources','groups'])for(const item of S.config[kind]||[])if(contains([item.id,item.display_name,item.provider_id,item.provider,item.account_id,item.quota_domain,item.credential_ref,item.base_url,item.organization,item.project,item.source_kind,item.execution_location,item.inference_location,item.billing_mode,item.credential_mode,item.type,item.min_tier,item.rating_basis,...(item.preferences||[])]))results.push([item.display_name||item.id,title(kind),()=>kind==='sources'?sourceDetail(item):edit(kind,item)]);
+ for(const source of S.config.sources)for(const model of source.models)if(contains([model.id,model.upstream,model.canonical_model,model.declared_model,model.tier,model.rating_basis,model.tools,model.vision,source.id,source.provider,...(model.protocols||[])]))results.push([model.id+' · '+source.id,'Model',()=>bulkModels([{source,model}])]);
+ for(const profile of S.config.browser_profiles||[])if(contains([profile.id,profile.engine,profile.cdp_url]))results.push([profile.id,'Browser profile',()=>edit('browser_profiles',profile)]);
+ if(contains(['device','android',S.config.device?.serial,S.config.device?.package_name,S.config.device?.app_package]))results.push(['Android device settings','Device',()=>{$('search').value='';location.hash='devices';render()}]);
+ for(const c of S.credentials)if(contains([c.id,c.kind,c.source,c.domain]))results.push([c.id,'Credential',()=>editCredential(c)]);
  return [pageHead('Search',results.length+' matching entries'),h('div',{class:'search-results'},results.map(([name,type,action])=>h('div',{class:'search-result'},button(name,action),h('span',{},type))))];
 }
 function render(){

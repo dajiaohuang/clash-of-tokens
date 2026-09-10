@@ -786,6 +786,7 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     expect(page.get_by_role("row").filter(has=page.get_by_role("checkbox", name="Select model openai/test-model", exact=True))).to_contain_text("Disabled")
     expect(page.get_by_role("row").filter(has=page.get_by_role("checkbox", name="Select model openai/test-model", exact=True))).to_contain_text("Not approved")
     for search_term, result_label, expected_heading in [
+        ("Volcengine Ark", "volcengine-ark", "volcengine-ark"),
         ("tencent-hunyuan", "tencent-hunyuan", "tencent-hunyuan"),
         ("bulk-source", "bulk-source", "Source / bulk-source"),
         ("auto", "auto", "Edit Group / auto"),

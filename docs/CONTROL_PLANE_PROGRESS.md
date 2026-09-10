@@ -909,3 +909,8 @@ now removes its group memberships in the same reviewed transaction, while
 browser-profile deletion lists bound accounts and fails closed until they are
 migrated; the browser regression covers source cancellation and the profile
 preflight error.
+
+Batch 167 broadens global search across catalog references/notes, provider
+protocols, source metadata, group policy, model capability fields, profile
+endpoints, and device metadata while keeping secrets out of the search index.
+The browser regression verifies a provider found by its catalog description.
