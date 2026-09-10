@@ -42,8 +42,8 @@ func TestPersistentResourcesValidateReferencesAndRevision(t *testing.T) {
 	if w := call("PATCH", "/admin/accounts/a", "3", `{"typo":true}`); w.Code != 400 {
 		t.Fatal(w.Code)
 	}
-	if w := call("DELETE", "/admin/providers/p", "3", ""); w.Code != 400 {
-		t.Fatal("deleted referenced provider", w.Code)
+	if w := call("DELETE", "/admin/providers/p", "3", ""); w.Code != 409 || !strings.Contains(w.Body.String(), "provider still has accounts") {
+		t.Fatal("referenced provider deletion was not blocked", w.Code, w.Body.String())
 	}
 	if w := call("PATCH", "/admin/accounts/a", "3", `{"enabled":true,"auto_approved":true}`); w.Code != 200 {
 		t.Fatal(w.Code, w.Body.String())

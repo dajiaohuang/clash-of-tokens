@@ -150,6 +150,12 @@ func (p *ControlPlane) resourceAdmin(w http.ResponseWriter, r *http.Request, ser
 					return
 				}
 			}
+			for _, account := range c.Accounts {
+				if account.ProviderID == id {
+					fail(w, 409, "provider still has accounts")
+					return
+				}
+			}
 		}
 		c.Providers, err = editResource(c.Providers, id, method, raw)
 	case "accounts":

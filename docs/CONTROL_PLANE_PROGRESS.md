@@ -350,3 +350,8 @@ preserving per-account CDP and session isolation until the binding is removed.
 Batch 62 protects group membership during source deletion. The administration
 API now returns a clear conflict while a source is still listed by any group,
 so a deletion cannot leave dangling fallback or Auto references.
+
+Batch 63 completes the provider reference guard. Deleting a provider with
+accounts still bound now returns a clear conflict, matching the existing source
+guard and preserving the provider/account relationship until bindings are
+removed.
