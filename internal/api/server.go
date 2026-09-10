@@ -322,7 +322,10 @@ func (s *Server) generate(w http.ResponseWriter, r *http.Request, proto, pathMod
 		if ctx.Err() != nil {
 			status = 499
 		}
-		fail(w, clientStatus, e.Error())
+		// Adapter errors may contain provider URLs, response fragments, or
+		// credential-shaped text. Runtime callers receive a stable category;
+		// detailed causes stay out of the HTTP boundary and execution events.
+		fail(w, clientStatus, "upstream request failed")
 		return
 	}
 	defer resp.Body.Close()

@@ -258,3 +258,8 @@ Batch 49 makes execution accounting mode-independent: non-streaming responses
 now record transport completion, upstream status, rejection, or cancellation
 through the same redacted lease-health path used by streaming responses. See
 [runtime health](RUNTIME_HEALTH.md).
+
+Batch 50 hardens two upstream-facing error paths: generation failures and model
+discovery failures now return stable public categories instead of adapter error
+text that could contain URLs or response fragments. Detailed causes remain
+outside the HTTP/event boundary.

@@ -85,7 +85,7 @@ func (p *ControlPlane) sourceCheckAdmin(w http.ResponseWriter, r *http.Request, 
 		}
 		recorded := p.evidence.Append(audit.Entry{Revision: p.service.Current().Revision, Kind: "discovery", Resource: parts[0], CheckedAt: result.CheckedAt, Method: result.Method, Status: status, Count: len(result.Models)}) == nil
 		if err != nil {
-			fail(w, 502, err.Error())
+			fail(w, 502, "model discovery failed")
 			return true
 		}
 		reply(w, struct {
