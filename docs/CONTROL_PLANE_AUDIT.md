@@ -19,11 +19,11 @@ must be checked again before final acceptance.
 | 8. Provider matching | Exact catalog-domain/type suggestions plus official product/API aliases with lookalike rejection | Broader alias coverage and direct binding workflow |
 | 9. Launch login | Dedicated browser launch and bounded UI watcher | Broader provider detection and complete account creation flow |
 | 10. Profile registry | Profile CRUD, per-account CDP/session isolation | Existing-profile onboarding and lifecycle status |
-| 11. Full management pages | Provider Detail; global workload/queue, buffer and Go-memory metrics; account health/capacity rows in Accounts; credential last-use metadata in Credentials; owned browser process and session capability views | Full end-to-end page acceptance |
-| 12. Groups | Batch 28 adds vision requirement, declared input/output rate ceiling and ordered preferences to configuration/UI/router | Total-request cost accounting and full policy acceptance still outstanding |
+| 11. Full management pages | Provider Detail; global workload/queue, buffer and Go-memory metrics; source token/cost observations in Source Detail and Metrics; account health/capacity rows in Accounts; credential last-use metadata in Credentials; owned browser process and session capability views | Full end-to-end page acceptance |
+| 12. Groups | Batch 28 adds vision requirement, declared input/output rate ceiling and ordered preferences to configuration/UI/router; Batch 54 records declared usage and cost observations without inventing missing tokens | Full policy acceptance and any provider-specific billing controls still require verification |
 | 13. Multiple memberships | Source editor and group membership controls | Explicit end-to-end multiple-group routing verification |
 | 14. Source Detail | Batch 29 consolidates configuration/models/capacity/runtime/TTFT/evidence and edit/check actions; explicit three-sample benchmark with cancellation tests | Full live-adapter acceptance and aggregate benchmark persistence remain unverified |
-| 15. Routing editor | Batch 28 adds five ordered preferences with explicit rate/latency semantics and dispatch tests | Complete cross-strategy acceptance and total-request cost limits |
+| 15. Routing editor | Batch 28 adds five ordered preferences with explicit rate/latency semantics and dispatch tests; Batch 54 exposes bounded runtime token/cost accounting | Complete cross-strategy acceptance and any hard per-request budget controls |
 | 16. Drag order | Ordered group source widget | Browser drag/drop and actual fallback order test |
 | 17. Independent switches | Provider/account/source/model enable/Auto gates | Full UI-to-runtime four-level acceptance test |
 | 18. All frontend configuration | Schema-driven forms and config transactions | Missing requested settings must first exist in schema/runtime |
@@ -35,7 +35,7 @@ must be checked again before final acceptance.
 | 24. Visible source types | Source-kind badge and provider-kind filter | Consistent complete official/cloud/browser/app/CLI/local/custom taxonomy |
 | 25. Explain exclusions | Router Explain in simulator; batches 29/30 add filtered Source/Provider Detail explanations | Full policy-reason acceptance across configured adapters |
 | 26. Simulator | Model/protocol/tools/vision/size without upstream request | Ordered candidates and distinction between eligibility and final choice |
-| 27. Health | Runtime outcome, TTFT, last status/timestamps and account health/auth aggregation exist | Surface all source/account fields and distinguish degraded/exhausted/broken states consistently |
+| 27. Health | Runtime outcome, TTFT, declared token counts/cost-known state, last status/timestamps and account health/auth aggregation exist | Surface all source/account fields and distinguish degraded/exhausted/broken states consistently |
 | 28. Test Provider | Explicit one-request stream validation now records separate connection/auth/request/stream/completion stages and duration | Provider-specific phase detail and live compatibility still require operator checks |
 | 29. Live verification | Batch 25 derives status/counts from model/protocol evidence and source/credential-version bindings; rotation invalidation tested | Real configured-provider checks and complete account/capability evidence still require verification |
 | 30. Discovery hub | Batch 27 returns import results to account setup with single-result binding; batch 43 adds bounded metadata-only account candidates from vault, configured environments and optional standard-browser profile scan; stored candidates can prefill the account wizard | End-to-end candidate binding and broader provider matching |
@@ -51,13 +51,13 @@ must be checked again before final acceptance.
 | 40. Descriptor registry | Shared validation/factory/schema contract | More provider-specific credential/discovery/auth capabilities; eliminate residual setup switches |
 | 41. Administration API | Persistent CRUD, config, simulator, source checks, account validation, browser process controls and device doctor | Broader browser/device lifecycle operations |
 | 42. Embedded frontend | Go-embedded static HTML/CSS/JS, no Node runtime | Packaging/build verification |
-| 43. Navigation | All named destinations; batch 32 adds bounded runtime execution events and source/outcome filters in Activity | Complete content on every destination and broader event coverage |
+| 43. Navigation | All named destinations; batch 32 adds bounded runtime execution events and source/outcome filters in Activity; Batch 54 includes declared usage in status/events | Complete content on every destination and broader event coverage |
 | 44. Search | Batch 36 adds explicit model/browser/device matches and tests all eight entity navigation paths | Broader naming/localization and large-catalog usability acceptance |
 | 45. Preview | Config diff and optimistic revision preview | Eligibility/account impact before apply; credential replacement preview |
 | 46. Central validation | Schema validation plus runtime prepare before apply | All special actions must retain the same invariants |
 | 47. Hot reload | Generation pinning and restart-required fields | Full browser confirmation of live vs pending runtime settings |
 | 48. Sensitive confirmation | Config preview, credential-delete confirmation, billing notices | All specified sensitive actions and cost warnings acceptance test |
-| 49. Secret-safe logs | Redacted vault/import/session/evidence responses; fixed execution categories; batch 32 stores bounded structured events without raw error/body/credential fields; generation and model-discovery HTTP errors use stable public categories | Global Secret representation and all adapter/error/log paths audit; pre-acquisition rejections not logged |
+| 49. Secret-safe logs | Redacted vault/import/session/evidence responses; fixed execution categories; batch 32 stores bounded structured events without raw error/body/credential fields; Batch 54 stores only numeric declared usage/cost fields; generation and model-discovery HTTP errors use stable public categories | Global Secret representation and all adapter/error/log paths audit; pre-acquisition rejections not logged |
 | 50. Five epics | Work split into committed batches | A–E remain incomplete until their component rows are accepted |
 | 51. End-to-end workflow | API integration test covers protected credential → account → two inherited sources → Auto group → successful synthetic local API call without editing JSON | Browser-driven full install/import/login journey and live-provider call remain external-environment checks |
 

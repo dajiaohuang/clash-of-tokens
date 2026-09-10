@@ -287,6 +287,9 @@ func (s *Server) generate(w http.ResponseWriter, r *http.Request, proto, pathMod
 	status := 0
 	var cooldown time.Duration
 	recorded := false
+	var usageCapture []byte
+	usageCaptureComplete := true
+	var usageCaptureReserved int64
 	defer func() {
 		if !recorded {
 			result := protocol.ExecutionResult{UpstreamStatus: status}
@@ -301,7 +304,15 @@ func (s *Server) generate(w http.ResponseWriter, r *http.Request, proto, pathMod
 				result.TransportOK = true
 				result.ProtocolComplete = true
 			}
+			if usageCaptureComplete && len(usageCapture) > 0 {
+				observer := protocol.CompletionObserver{Protocol: proto}
+				observer.ObserveJSON(usageCapture)
+				result.InputTokens, result.OutputTokens, result.TotalTokens, result.UsageKnown = observer.InputTokens, observer.OutputTokens, observer.TotalTokens, observer.UsageSeen
+			}
 			lease.RecordExecution(result)
+		}
+		if usageCaptureReserved > 0 {
+			s.buffered.Add(-usageCaptureReserved)
 		}
 		lease.Release(status, cooldown)
 	}()
@@ -374,6 +385,7 @@ func (s *Server) generate(w http.ResponseWriter, r *http.Request, proto, pathMod
 	w.WriteHeader(status)
 	buf := s.buffers.Get().(*[]byte)
 	defer s.buffers.Put(buf)
+	usageCaptureLimit := min(s.cfg.Runtime.MaxOutputBytes, int64(1<<20))
 	var total int64
 	for {
 		n, readErr := resp.Body.Read(*buf)
@@ -387,6 +399,14 @@ func (s *Server) generate(w http.ResponseWriter, r *http.Request, proto, pathMod
 			_ = rc.SetWriteDeadline(time.Now().Add(time.Duration(s.cfg.Runtime.WriteTimeoutMS) * time.Millisecond))
 			written, writeErr := w.Write((*buf)[:n])
 			s.outputBytes.Add(uint64(written))
+			if usageCaptureComplete {
+				if int64(len(usageCapture))+int64(n) > usageCaptureLimit || !s.reserve(int64(n)) {
+					usageCaptureComplete = false
+				} else {
+					usageCapture = append(usageCapture, (*buf)[:n]...)
+					usageCaptureReserved += int64(n)
+				}
+			}
 			if writeErr != nil {
 				status = 499
 				return

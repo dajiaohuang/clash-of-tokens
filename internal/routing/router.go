@@ -20,19 +20,26 @@ type Target struct {
 	Model  config.Model
 }
 type state struct {
-	lastExecution  *protocol.ExecutionResult
-	ttftMS         float64
-	lastSuccess    time.Time
-	lastFailure    time.Time
-	lastHTTPStatus int
-	virtualFinish  float64
-	enabled        bool
-	active         int
-	cooldown       time.Time
-	failures       uint64
-	completed      uint64
-	latency        float64
-	blocked        bool
+	inputTokens      uint64
+	outputTokens     uint64
+	totalTokens      uint64
+	estimatedCost    float64
+	costKnown        bool
+	executions       uint64
+	pricedExecutions uint64
+	lastExecution    *protocol.ExecutionResult
+	ttftMS           float64
+	lastSuccess      time.Time
+	lastFailure      time.Time
+	lastHTTPStatus   int
+	virtualFinish    float64
+	enabled          bool
+	active           int
+	cooldown         time.Time
+	failures         uint64
+	completed        uint64
+	latency          float64
+	blocked          bool
 }
 type quota struct {
 	lastDispatch  uint64
@@ -529,19 +536,24 @@ func (r *Router) SetEnabled(id string, on bool) bool {
 }
 
 type Status struct {
-	LastExecution  *protocol.ExecutionResult `json:"last_execution,omitempty"`
-	TTFTMS         float64                   `json:"ttft_ms"`
-	LastSuccess    time.Time                 `json:"last_success"`
-	LastFailure    time.Time                 `json:"last_failure"`
-	LastHTTPStatus int                       `json:"last_http_status"`
-	ID             string                    `json:"id"`
-	Enabled        bool                      `json:"enabled"`
-	Active         int                       `json:"active"`
-	Completed      uint64                    `json:"completed"`
-	Failures       uint64                    `json:"failures"`
-	Blocked        bool                      `json:"blocked"`
-	Cooldown       time.Time                 `json:"cooldown"`
-	LatencyMS      float64                   `json:"latency_ms"`
+	InputTokens      uint64                    `json:"input_tokens"`
+	OutputTokens     uint64                    `json:"output_tokens"`
+	TotalTokens      uint64                    `json:"total_tokens"`
+	EstimatedCostUSD float64                   `json:"estimated_cost_usd"`
+	CostKnown        bool                      `json:"cost_known"`
+	LastExecution    *protocol.ExecutionResult `json:"last_execution,omitempty"`
+	TTFTMS           float64                   `json:"ttft_ms"`
+	LastSuccess      time.Time                 `json:"last_success"`
+	LastFailure      time.Time                 `json:"last_failure"`
+	LastHTTPStatus   int                       `json:"last_http_status"`
+	ID               string                    `json:"id"`
+	Enabled          bool                      `json:"enabled"`
+	Active           int                       `json:"active"`
+	Completed        uint64                    `json:"completed"`
+	Failures         uint64                    `json:"failures"`
+	Blocked          bool                      `json:"blocked"`
+	Cooldown         time.Time                 `json:"cooldown"`
+	LatencyMS        float64                   `json:"latency_ms"`
 }
 
 func (r *Router) Status() []Status {
@@ -554,7 +566,11 @@ func (r *Router) Status() []Status {
 			copy := *s.lastExecution
 			execution = &copy
 		}
-		out = append(out, Status{ID: r.cfg.Sources[i].ID, Enabled: s.enabled && r.parentEnabled[i], Active: s.active, Completed: s.completed, Failures: s.failures, Blocked: s.blocked, Cooldown: maxTime(s.cooldown, r.quotas[i].cooldown), LatencyMS: s.latency, TTFTMS: s.ttftMS, LastSuccess: s.lastSuccess, LastFailure: s.lastFailure, LastHTTPStatus: s.lastHTTPStatus, LastExecution: execution})
+		estimatedCost := s.estimatedCost
+		if !s.costKnown {
+			estimatedCost = 0
+		}
+		out = append(out, Status{ID: r.cfg.Sources[i].ID, Enabled: s.enabled && r.parentEnabled[i], Active: s.active, Completed: s.completed, Failures: s.failures, Blocked: s.blocked, Cooldown: maxTime(s.cooldown, r.quotas[i].cooldown), LatencyMS: s.latency, TTFTMS: s.ttftMS, LastSuccess: s.lastSuccess, LastFailure: s.lastFailure, LastHTTPStatus: s.lastHTTPStatus, LastExecution: execution, InputTokens: s.inputTokens, OutputTokens: s.outputTokens, TotalTokens: s.totalTokens, EstimatedCostUSD: estimatedCost, CostKnown: s.costKnown})
 	}
 	return out
 }

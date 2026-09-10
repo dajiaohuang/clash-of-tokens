@@ -8,7 +8,9 @@ to fetch a new snapshot. The same data is available through the authenticated
 Each event contains its process-local sequence, finish time, configured source
 and model IDs, protocol, validation/dispatch purpose, outcome, release status,
 observed upstream HTTP status, duration and first-output duration, and a fixed
-error category when available. Duration begins when the source lease is
+error category when available. Declared input/output/total token counts are
+included when the upstream response reports them; they are never estimated.
+Duration begins when the source lease is
 acquired; queue time before acquisition is excluded. First-output timing is
 per attempt, not the rolling average displayed in health views.
 

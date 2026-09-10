@@ -237,6 +237,7 @@ func observeValidation(ctx context.Context, body io.Reader, proto string, limit 
 		}
 	}
 	result.ProtocolComplete = o.Complete
+	result.InputTokens, result.OutputTokens, result.TotalTokens, result.UsageKnown = o.InputTokens, o.OutputTokens, o.TotalTokens, o.UsageSeen
 	result.ClientCanceled = ctx.Err() != nil
 	if !o.Complete && result.UpstreamError == "" {
 		result.UpstreamError = "missing_completion"

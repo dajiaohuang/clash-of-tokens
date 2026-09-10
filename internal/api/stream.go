@@ -16,6 +16,9 @@ func (s *Server) streamResponse(ctx context.Context, w http.ResponseWriter, body
 	rc := http.NewResponseController(w)
 	defer rc.SetWriteDeadline(time.Time{})
 	result := protocol.ExecutionResult{}
+	recordUsage := func() {
+		result.InputTokens, result.OutputTokens, result.TotalTokens, result.UsageKnown = observer.InputTokens, observer.OutputTokens, observer.TotalTokens, observer.UsageSeen
+	}
 	sent, observedOutput := false, false
 	var total int64
 	for {
@@ -23,6 +26,7 @@ func (s *Server) streamResponse(ctx context.Context, w http.ResponseWriter, body
 		if err == io.EOF {
 			result.TransportOK = true
 			result.ProtocolComplete = observer.Complete
+			recordUsage()
 			if !observer.Complete {
 				result.UpstreamError = "missing_completion"
 			}
@@ -31,16 +35,19 @@ func (s *Server) streamResponse(ctx context.Context, w http.ResponseWriter, body
 		if err != nil {
 			result.UpstreamError = "truncated_stream"
 			result.ClientCanceled = ctx.Err() != nil
+			recordUsage()
 			return result, sent
 		}
 		total += int64(len(frame))
 		if total > s.cfg.Runtime.MaxOutputBytes {
 			result.UpstreamError = "output_limit"
+			recordUsage()
 			return result, sent
 		}
 		observer.Observe(frame)
 		if observer.Error != "" {
 			result.UpstreamError = observer.Error
+			recordUsage()
 			return result, sent
 		}
 		if observer.SawOutput && !observedOutput {
@@ -53,15 +60,18 @@ func (s *Server) streamResponse(ctx context.Context, w http.ResponseWriter, body
 		s.outputBytes.Add(uint64(n))
 		if err != nil {
 			result.ClientCanceled = true
+			recordUsage()
 			return result, sent
 		}
 		if err = rc.Flush(); err != nil {
 			result.ClientCanceled = true
+			recordUsage()
 			return result, sent
 		}
 		if observer.Terminal {
 			result.TransportOK = true
 			result.ProtocolComplete = observer.Complete
+			recordUsage()
 			return result, sent
 		}
 	}

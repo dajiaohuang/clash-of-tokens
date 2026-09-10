@@ -33,6 +33,13 @@ ingress requests. A retried request can create multiple execution attempts.
 These metrics do not claim provider quota balance, CPU usage, OS resident memory
 or browser/device process inventory.
 
+Source status and the Metrics page additionally sum declared input/output/total
+tokens from completed execution observations. The declared-cost total includes
+only sources whose complete runtime attempt history has known usage and both
+configured rates; unknown or oversized responses are withheld. These are
+bounded runtime observations, not provider quota or billing statements. See
+[token accounting](TOKEN_ACCOUNTING.md).
+
 API tests verify admin-only access, actual configured limits, buffer accounting
 and average-rate arithmetic. Browser regression verifies the workload and memory
 view alongside the existing desktop/mobile layout checks.

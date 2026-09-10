@@ -290,3 +290,14 @@ Batch 50 hardens two upstream-facing error paths: generation failures and model
 discovery failures now return stable public categories instead of adapter error
 text that could contain URLs or response fragments. Detailed causes remain
 outside the HTTP/event boundary.
+
+Batch 54 adds bounded token and declared-cost accounting. Streaming observers
+accept common OpenAI/Anthropic field names, Gemini `usageMetadata`, camelCase
+variants and Anthropic usage split across events. Non-streaming JSON is captured
+only up to 1 MiB while forwarding, so oversized or non-JSON responses remain
+unknown rather than estimated. Source status, Metrics, Source Detail and
+execution events expose numeric observations; cost is marked known only when
+every recorded source attempt has usage and both operator-supplied rates.
+Protocol, routing, API and non-stream regression tests cover accumulation,
+explicit zero usage, cost math, duplicate recording and bounded forwarding.
+See [token accounting](TOKEN_ACCOUNTING.md).

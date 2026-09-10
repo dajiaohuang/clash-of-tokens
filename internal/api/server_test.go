@@ -78,7 +78,7 @@ func TestStreamingPassthroughAndSecrets(t *testing.T) {
 func TestNonStreamingResponseRecordsExecutionHealth(t *testing.T) {
 	s, g := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = io.WriteString(w, `{"id":"ok","choices":[{"message":{"content":"OK"}}]}`)
+		_, _ = io.WriteString(w, `{"id":"ok","choices":[{"message":{"content":"OK"}}],"usage":{"prompt_tokens":12,"completion_tokens":4,"total_tokens":16}}`)
 	})
 	res := request(t, g.URL, "/v1/chat/completions", `{"model":"mock/model","messages":[]}`, testKey)
 	res.Body.Close()
@@ -86,8 +86,25 @@ func TestNonStreamingResponseRecordsExecutionHealth(t *testing.T) {
 		t.Fatalf("non-stream request failed: %d", res.StatusCode)
 	}
 	state := s.Router.Status()[0]
-	if state.Completed != 1 || state.Failures != 0 || state.LastHTTPStatus != 200 {
+	if state.Completed != 1 || state.Failures != 0 || state.LastHTTPStatus != 200 || state.InputTokens != 12 || state.OutputTokens != 4 || state.TotalTokens != 16 || state.LastExecution == nil || !state.LastExecution.UsageKnown {
 		t.Fatalf("non-stream execution was not recorded: %+v", state)
+	}
+}
+
+func TestNonStreamingUsageCaptureRemainsBounded(t *testing.T) {
+	s, g := setup(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, `{"padding":"`+strings.Repeat("x", 1<<20)+`","usage":{"prompt_tokens":1,"completion_tokens":1,"total_tokens":2}}`)
+	})
+	res := request(t, g.URL, "/v1/chat/completions", `{"model":"mock/model","messages":[]}`, testKey)
+	_, _ = io.Copy(io.Discard, res.Body)
+	res.Body.Close()
+	state := s.Router.Status()[0]
+	if res.StatusCode != 200 || state.LastExecution == nil || state.LastExecution.UsageKnown {
+		t.Fatalf("oversized non-stream capture claimed usage: status=%d execution=%+v", res.StatusCode, state.LastExecution)
+	}
+	if s.buffered.Load() != 0 {
+		t.Fatalf("capture reservation leaked: %d", s.buffered.Load())
 	}
 }
 func TestAuthenticationAndBodyValidation(t *testing.T) {

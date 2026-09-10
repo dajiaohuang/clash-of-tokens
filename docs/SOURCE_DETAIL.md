@@ -14,6 +14,12 @@ they are not quota balances or proof of current authentication. The separate
 generation-evidence table preserves per-model/protocol verification and
 historical status after configuration or credential changes.
 
+The runtime table also shows declared input, output and total token counts and
+an estimated declared cost. Cost is displayed only when every recorded attempt
+for this source has usage and both operator-supplied model rates; otherwise it
+is unknown. These counters do not estimate missing usage or claim a provider
+invoice. See [token accounting](TOKEN_ACCOUNTING.md).
+
 **Explain eligibility** runs the existing read-only simulator for the selected
 group, protocol and input byte count, then filters results to this source. It
 models a text request and does not send an upstream prompt. Eligibility is not a
