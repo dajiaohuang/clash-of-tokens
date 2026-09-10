@@ -565,3 +565,8 @@ ordering credential and account mutations around the wizard.
 Batch 105 extends global search to credential provenance metadata (import
 source and normalized domain) while keeping the existing ID and kind matches.
 Selecting a result still opens the redacted credential editor.
+
+Batch 106 expands Source Detail's configuration panel with the effective base
+URL, organization/project routing fields, credential mode, source taxonomy,
+execution/inference location, and billing declaration. These are configuration
+metadata only; protected values remain in the vault.
