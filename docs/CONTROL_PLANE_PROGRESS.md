@@ -77,8 +77,9 @@ Q, and Augment; stateless adapters explicitly report unsupported management.
 19. Configured-source environment import and selected Codex/Gemini/OAuth JSON
     access-token import. Preview never returns tokens; imports allocate new
     references. CLI refresh tokens and account IDs are not imported and there
-    is no automatic refresh. The user must re-import current access tokens and
-    configure supplementary account fields separately.
+    is no automatic refresh. The account wizard can retain provider-specific
+    Base URL, organization, and project defaults; current access tokens still
+    require an explicit re-import after a CLI refresh.
 
 CLI format references: [Codex auth fixture](https://github.com/openai/codex/blob/main/codex-rs/model-provider/src/auth.rs),
 [Gemini OAuth implementation](https://github.com/google-gemini/gemini-cli/blob/main/packages/core/src/code_assist/oauth2.ts).
@@ -98,8 +99,9 @@ CLI format references: [Codex auth fixture](https://github.com/openai/codex/blob
 23. AES-GCM vault envelopes with per-vault random OS-keychain keys on Linux
     and macOS, restricted to Secret Service / native Keychain with no plaintext
     fallback. Linux native create/reopen/update and unavailable-service checks
-    passed in an isolated Ubuntu 24.04 WSL keyring session. macOS cgo/native
-    execution remains unverified. See [storage and verification](CREDENTIAL_STORAGE.md).
+    passed in an isolated Ubuntu 24.04 WSL keyring session. Hosted macOS cgo
+    validation is covered by Batch 123; a local operator Keychain remains
+    environment-dependent. See [storage and verification](CREDENTIAL_STORAGE.md).
 24. Claude Web / Blackbox read-only browser session checks, account/revision
     evidence persistence, authentication history on Accounts, and sequential
     login polling with cancellation and a five-minute UI limit. ChatGPT checks
