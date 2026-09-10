@@ -888,3 +888,8 @@ Health quota editor now lists every affected account and source before the
 revision-aware preview, calls out in-flight requests, and keeps Cancel
 side-effect free; the browser regression covers both the impact rendering and
 the cancellation path before applying a rename.
+
+Batch 163 applies the same quota impact review to Account and Source editor
+changes. A quota-domain mutation now lists the affected account/source members
+and new domain before entering the shared configuration preview, while Back
+leaves the edit form unchanged.

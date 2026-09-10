@@ -205,8 +205,9 @@ function objectForm(fields,value,context={}){
 }
 function edit(kind,item,create=false){
  const base=clone(S.config),revision=S.revision;
- const descriptor=kind==='sources'&&item.adapter?S.descriptors.find(d=>d.id===item.adapter):null;
- const form=objectForm(schemaFor(kind).item.fields,item,{credentialModes:descriptor?.credential_modes});
+  const descriptor=kind==='sources'&&item.adapter?S.descriptors.find(d=>d.id===item.adapter):null;
+  const form=objectForm(schemaFor(kind).item.fields,item,{credentialModes:descriptor?.credential_modes});
+  let quotaConfirmed=false;
  let membership;
  if(kind==='sources'){
   membership=h('div',{class:'array'},h('h3',{},'Group membership'));
@@ -252,7 +253,14 @@ function edit(kind,item,create=false){
       else group.sources.push(value.id);
      }else group.sources=group.sources.filter(id=>id!==item.id);
     }
-    await preview(next,(create?'Add ':'Update ')+kind+'/'+value.id,show,base,revision);
+     const quotaChanged=!create&&((kind==='accounts'&&value.quota_domain!==item.quota_domain)||(kind==='sources'&&value.quota_domain!==item.quota_domain));
+     if(quotaChanged&&!quotaConfirmed){
+      const affectedAccounts=kind==='accounts'?[item]:value.account_id?next.accounts.filter(a=>a.id===value.account_id):[];
+      const affectedSources=kind==='accounts'?next.sources.filter(s=>s.account_id===item.id):value.account_id?next.sources.filter(s=>s.account_id===value.account_id):next.sources.filter(s=>s.id===item.id);
+      dialog('Review quota change',[h('p',{class:'warning'},'Changing the quota domain updates shared capacity for the affected account and sources. Existing requests finish under their retained generation.'),table(['Affected configuration','Entries'],[['Accounts',affectedAccounts.map(a=>a.display_name||a.id).join(', ')||'None'],['Sources',affectedSources.map(s=>s.id).join(', ')||'None'],['New quota domain',value.quota_domain]])],[button('Back',show),button('Review quota change',()=>{quotaConfirmed=true;preview(next,(create?'Add ':'Update ')+kind+'/'+value.id,show,base,revision)},'primary')]);
+      return;
+     }
+     await preview(next,(create?'Add ':'Update ')+kind+'/'+value.id,show,base,revision);
    },'primary')
   ]);
  }
