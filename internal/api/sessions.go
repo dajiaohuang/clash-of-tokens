@@ -80,10 +80,6 @@ func (p *ControlPlane) sessionAdmin(w http.ResponseWriter, r *http.Request, s *S
 		return true
 	}
 	source := s.cfg.Sources[index]
-	if source.Adapter != "chatgpt-web" {
-		fail(w, 400, "session management is not implemented for this adapter")
-		return true
-	}
 	model := source.Models[0]
 	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(s.cfg.Runtime.QueueTimeoutMS)*time.Millisecond)
 	defer cancel()

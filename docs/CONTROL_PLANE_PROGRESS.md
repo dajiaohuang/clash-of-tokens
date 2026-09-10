@@ -642,3 +642,10 @@ records launch and bounded check requests, saves the account transactionally,
 and verifies the persisted account check remains redacted and evidence-backed.
 The regression exercises the provider-specific login path without contacting a
 real provider or extracting browser credentials.
+
+Batch 120 routes Sessions expire/clear mutations through the shared adapter
+session-manager contract. Stateful adapters that already expose metadata-only
+inventory (including Zed Hosted and the China Web clients) can now be changed
+from the admin API; stateless adapters still return an explicit unsupported
+capability. A synthetic Zed Hosted API test seeds one local session through a
+loopback upstream and verifies the lease-protected clear operation.
