@@ -547,3 +547,7 @@ showing secret values.
 Batch 101 expands the Account pools dialog with enabled-account counts, live
 in-flight versus aggregate limits, and per-account weights. These values are
 read-only snapshots until the existing transactional pool editor is opened.
+
+Batch 102 adds account identity and redacted credential state/version to the
+Health page's source table, keeping source runtime counters and binding
+provenance visible in one operational view.
