@@ -28,6 +28,9 @@ func TestNativeAdapterContracts(t *testing.T) {
 		t.Run(tc.adapter+"/"+tc.protocol, func(t *testing.T) {
 			t.Setenv("UPSTREAM_TEST_KEY", "upstream-secret")
 			s := config.Source{Adapter: tc.adapter, BaseURL: "https://upstream.example/v1", KeyEnv: "UPSTREAM_TEST_KEY", MaxInflight: 1}
+			if tc.adapter == "openai" {
+				s.Organization, s.Project = "org-test", "project-test"
+			}
 			c := New(s)
 			defer c.Close()
 			c.http.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
@@ -36,6 +39,9 @@ func TestNativeAdapterContracts(t *testing.T) {
 				}
 				if !strings.Contains(r.Header.Get(tc.auth), "upstream-secret") {
 					t.Error("incorrect authentication")
+				}
+				if tc.adapter == "openai" && (r.Header.Get("OpenAI-Organization") != "org-test" || r.Header.Get("OpenAI-Project") != "project-test") {
+					t.Errorf("openai account headers missing: organization=%q project=%q", r.Header.Get("OpenAI-Organization"), r.Header.Get("OpenAI-Project"))
 				}
 				if r.Header.Get("Cookie") != "" || r.Header.Get("X-Internal-Secret") != "" {
 					t.Error("client headers leaked")

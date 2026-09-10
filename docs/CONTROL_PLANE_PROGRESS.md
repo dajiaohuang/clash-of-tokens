@@ -360,3 +360,9 @@ Batch 64 exercises configuration rollback in the browser regression. It edits a
 runtime limit through the schema form, reviews and applies the transaction,
 opens version history, compares the newest revision, and restores it through
 the existing guarded API flow.
+
+Batch 65 adds explicit OpenAI organization and project metadata to source
+configuration. The schema-driven source editor exposes both fields, validates
+control characters and length, and the native OpenAI client forwards them as
+`OpenAI-Organization` and `OpenAI-Project` headers. The upstream contract test
+verifies the headers while keeping caller-controlled sensitive headers filtered.

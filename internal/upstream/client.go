@@ -130,6 +130,16 @@ func (c *Client) Do(ctx context.Context, protocol, model string, stream bool, bo
 		}
 	case "gemini":
 		req.Header.Set("x-goog-api-key", key)
+	case "openai":
+		if key != "" {
+			req.Header.Set("Authorization", "Bearer "+key)
+		}
+		if organization := strings.TrimSpace(c.source.Organization); organization != "" {
+			req.Header.Set("OpenAI-Organization", organization)
+		}
+		if project := strings.TrimSpace(c.source.Project); project != "" {
+			req.Header.Set("OpenAI-Project", project)
+		}
 	case "gemini-cli":
 		req.Header.Set("Authorization", "Bearer "+key)
 	case "claude-code":

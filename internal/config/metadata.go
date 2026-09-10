@@ -1,6 +1,9 @@
 package config
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // Legacy Local describes the transport, never a guarantee of local inference.
 func (s Source) LocalInference() bool {
@@ -18,6 +21,9 @@ func (s Source) EffectiveBilling() string {
 }
 
 func (s Source) ValidateMetadata() error {
+	if len(s.Organization) > 256 || strings.ContainsAny(s.Organization, "\r\n\x00") {
+		return fmt.Errorf("invalid organization")
+	}
 	for _, field := range []struct {
 		name, value string
 		allowed     []string

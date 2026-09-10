@@ -78,6 +78,7 @@ type Source struct {
 	BaseURL                string              `json:"base_url"`
 	KeyEnv                 string              `json:"key_env,omitempty"`
 	AccountIDEnv           string              `json:"account_id_env,omitempty"`
+	Organization           string              `json:"organization,omitempty"`
 	Project                string              `json:"project,omitempty"`
 	Enabled                bool                `json:"enabled"`
 	AutoApproved           bool                `json:"auto_approved"`
