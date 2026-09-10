@@ -31,3 +31,15 @@ func TestCredentialBindingUsesEffectiveReference(t *testing.T) {
 		t.Fatal("reviewed source override rejected:", err)
 	}
 }
+
+func TestCredentialBindingValidatesAccountBeforeSourceExists(t *testing.T) {
+	c := config.Config{Providers: []config.Provider{{ID: "openai"}}, Accounts: []config.Account{{ID: "account", ProviderID: "openai", CredentialRef: "cred://login"}}}
+	metadata := []credentials.Metadata{{ID: "cred://login", Kind: "cookie"}}
+	if validateCredentialBindings(c, metadata) == nil {
+		t.Fatal("incompatible account credential accepted without a source")
+	}
+	c.Accounts[0].CredentialTypeOverride = true
+	if err := validateCredentialBindings(c, metadata); err != nil {
+		t.Fatalf("reviewed account override rejected: %v", err)
+	}
+}

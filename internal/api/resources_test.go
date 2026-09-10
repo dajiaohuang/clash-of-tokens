@@ -15,6 +15,9 @@ import (
 func TestPersistentResourcesValidateReferencesAndRevision(t *testing.T) {
 	dir := t.TempDir()
 	vault, _ := credentials.Open(filepath.Join(dir, "vault"))
+	if err := vault.Put("cred://a", "api_key", "test", "secret"); err != nil {
+		t.Fatal(err)
+	}
 	p, err := NewControlPlane(filepath.Join(dir, "config.json"), config.Default(), testKey, adminKey, vault)
 	if err != nil {
 		t.Fatal(err)

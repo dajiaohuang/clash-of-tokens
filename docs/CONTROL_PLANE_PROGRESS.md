@@ -551,3 +551,8 @@ read-only snapshots until the existing transactional pool editor is opened.
 Batch 102 adds account identity and redacted credential state/version to the
 Health page's source table, keeping source runtime counters and binding
 provenance visible in one operational view.
+
+Batch 103 enforces the same provider credential-mode contract at the API
+boundary. An account with a protected reference is rejected before any source
+exists when its kind is incompatible with the catalog adapter, unless the
+reviewed account override is explicit.
