@@ -635,3 +635,10 @@ Batch 118 extends the browser regression to multiple group membership. It
 creates a second fallback group, adds the same two sources already ordered in
 Auto, and verifies that the membership persists independently of the Auto
 group's ordering transaction.
+
+Batch 119 extends the browser regression through a synthetic browser-login
+account setup for Claude Web. The flow selects an existing browser profile,
+records launch and bounded check requests, saves the account transactionally,
+and verifies the persisted account check remains redacted and evidence-backed.
+The regression exercises the provider-specific login path without contacting a
+real provider or extracting browser credentials.
