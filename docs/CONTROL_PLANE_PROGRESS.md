@@ -355,3 +355,8 @@ Batch 63 completes the provider reference guard. Deleting a provider with
 accounts still bound now returns a clear conflict, matching the existing source
 guard and preserving the provider/account relationship until bindings are
 removed.
+
+Batch 64 exercises configuration rollback in the browser regression. It edits a
+runtime limit through the schema form, reviews and applies the transaction,
+opens version history, compares the newest revision, and restores it through
+the existing guarded API flow.
