@@ -882,3 +882,9 @@ Batch 161 gives account deletion its own reviewed lifecycle action. The
 Accounts and Provider Detail views now inventory bound sources, reject deletion
 with an actionable migration message while references remain, and preserve the
 existing account on Cancel.
+
+Batch 162 makes shared-quota changes an explicit sensitive confirmation. The
+Health quota editor now lists every affected account and source before the
+revision-aware preview, calls out in-flight requests, and keeps Cancel
+side-effect free; the browser regression covers both the impact rendering and
+the cancellation path before applying a rename.
