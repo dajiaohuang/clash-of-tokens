@@ -253,3 +253,8 @@ these stages separately and never treats an incomplete stream as verified.
 Batch 48 adds session capability rows to `/admin/sessions` and the Sessions
 page. ChatGPT Web remains the only adapter with local conversation inventory;
 other adapters are explicitly marked unavailable instead of being scraped.
+
+Batch 49 makes execution accounting mode-independent: non-streaming responses
+now record transport completion, upstream status, rejection, or cancellation
+through the same redacted lease-health path used by streaming responses. See
+[runtime health](RUNTIME_HEALTH.md).

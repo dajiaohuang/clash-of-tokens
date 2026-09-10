@@ -286,7 +286,25 @@ func (s *Server) generate(w http.ResponseWriter, r *http.Request, proto, pathMod
 	}
 	status := 0
 	var cooldown time.Duration
-	defer func() { lease.Release(status, cooldown) }()
+	recorded := false
+	defer func() {
+		if !recorded {
+			result := protocol.ExecutionResult{UpstreamStatus: status}
+			if ctx.Err() != nil {
+				result.ClientCanceled = true
+				result.UpstreamError = "client_canceled"
+			} else if e != nil {
+				result.UpstreamError = "transport_or_adapter_error"
+			} else if status < 200 || status >= 300 {
+				result.UpstreamError = "upstream_rejected"
+			} else {
+				result.TransportOK = true
+				result.ProtocolComplete = true
+			}
+			lease.RecordExecution(result)
+		}
+		lease.Release(status, cooldown)
+	}()
 	// Client.Do closes the payload reader before returning, including on an
 	// early response. Long generations no longer retain large prompt buffers.
 	body = nil
@@ -335,6 +353,7 @@ func (s *Server) generate(w http.ResponseWriter, r *http.Request, proto, pathMod
 		result, sent := s.streamResponse(r.Context(), w, resp.Body, proto, lease)
 		result.UpstreamStatus = resp.StatusCode
 		lease.RecordExecution(result)
+		recorded = true
 		if !result.Successful() {
 			if result.ClientCanceled {
 				status = 499

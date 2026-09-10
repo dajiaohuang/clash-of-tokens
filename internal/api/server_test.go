@@ -74,6 +74,22 @@ func TestStreamingPassthroughAndSecrets(t *testing.T) {
 		t.Fatal("buffer leak")
 	}
 }
+
+func TestNonStreamingResponseRecordsExecutionHealth(t *testing.T) {
+	s, g := setup(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, `{"id":"ok","choices":[{"message":{"content":"OK"}}]}`)
+	})
+	res := request(t, g.URL, "/v1/chat/completions", `{"model":"mock/model","messages":[]}`, testKey)
+	res.Body.Close()
+	if res.StatusCode != 200 {
+		t.Fatalf("non-stream request failed: %d", res.StatusCode)
+	}
+	state := s.Router.Status()[0]
+	if state.Completed != 1 || state.Failures != 0 || state.LastHTTPStatus != 200 {
+		t.Fatalf("non-stream execution was not recorded: %+v", state)
+	}
+}
 func TestAuthenticationAndBodyValidation(t *testing.T) {
 	var calls atomic.Int32
 	_, g := setup(t, func(w http.ResponseWriter, r *http.Request) { calls.Add(1) })

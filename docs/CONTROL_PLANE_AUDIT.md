@@ -9,7 +9,7 @@ must be checked again before final acceptance.
 
 | Section | Current evidence | Remaining work or verification |
 | --- | --- | --- |
-| 1. Runtime correctness | `config/metadata.go`, router metadata/attempt/stream tests | End-to-end cross-adapter replay/completion audit; metadata preset accuracy |
+| 1. Runtime correctness | `config/metadata.go`, router metadata/attempt/stream tests; both streaming and non-streaming leases record redacted execution health | End-to-end cross-adapter replay/completion audit; metadata preset accuracy |
 | 2. Account/credential separation | `config/accounts.go`, `credential.go`, injected adapter resolution | Finish provider-specific credential setup and migration UX |
 | 3. Account model | Account configuration plus `/admin/status` account health aggregation: health/auth state, capacity, sources, counters, last success/failure and last validation; explicit account validation entry point | Provider-specific health evidence and broader account lifecycle |
 | 4. Protected store | DPAPI; Linux native Secret Service integration tests; AES-GCM envelope tests; credentials package cross-compiles for darwin/amd64 and linux/amd64 with cgo disabled | Native macOS cgo runtime verification |
