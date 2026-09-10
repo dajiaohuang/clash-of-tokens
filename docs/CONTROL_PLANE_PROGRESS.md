@@ -427,6 +427,11 @@ Batch 141 follows the saved disabled source into Routing → Simulate and
 asserts that the candidate table reports the `disabled` exclusion reason. This
 connects the browser control state to the router's visible explanation.
 
+Batch 142 adds an API-to-router discovery regression. A synthetic native
+`/models` response is recorded, its model is configured with disabled and
+unapproved defaults, and the simulator confirms the candidate is excluded as
+`model_disabled` until a later policy edit explicitly enables it.
+
 Batch 65 adds explicit OpenAI organization and project metadata to source
 configuration. The schema-driven source editor exposes both fields, validates
 control characters and length, and the native OpenAI client forwards them as

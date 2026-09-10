@@ -186,3 +186,70 @@ func TestProviderValidateFallsBackToBrowserAccount(t *testing.T) {
 		t.Fatalf("status=%d body=%s result=%+v", w.Code, w.Body.String(), result)
 	}
 }
+
+func TestDiscoveredModelStaysDisabledUntilApproved(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/models" {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{"data":[{"id":"discovered","owned_by":"fixture"}]}`)
+	}))
+	defer upstream.Close()
+	c := config.Default()
+	c.Sources = []config.Source{{ID: "source", Provider: "p", Adapter: "openai", BaseURL: upstream.URL, Local: true, Enabled: true, AutoApproved: true, BillingMode: "free_allowance", MaxInflight: 1, QuotaDomain: "quota", QuotaMaxInflight: 1, Models: []config.Model{{ID: "configured", Upstream: "configured", Protocols: []string{"chat"}, Tier: "silver", RatingBasis: "fixture", Tools: "none", MaxInputBytes: 4096}}}}
+	c.Groups[0].Sources = []string{"source"}
+	dir := t.TempDir()
+	vault, err := credentials.Open(filepath.Join(dir, "vault"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, err := NewControlPlane(filepath.Join(dir, "config.json"), c, testKey, adminKey, vault)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer p.Close()
+	discover := httptest.NewRequest("POST", "/admin/sources/source/discover", nil)
+	discover.Header.Set("Authorization", "Bearer "+adminKey)
+	discovered := httptest.NewRecorder()
+	p.ServeHTTP(discovered, discover)
+	if discovered.Code != http.StatusOK || !strings.Contains(discovered.Body.String(), `"id":"discovered"`) {
+		t.Fatalf("discovery status=%d body=%s", discovered.Code, discovered.Body.String())
+	}
+	next := p.service.Current().Config
+	next.Sources[0].Models = append(next.Sources[0].Models, config.Model{ID: "discovered", Upstream: "discovered", Protocols: []string{"chat"}, Tier: "unrated", Tools: "none", MaxInputBytes: 4096, Enabled: func() *bool { v := false; return &v }(), AutoApproved: func() *bool { v := false; return &v }()})
+	body, _ := json.Marshal(map[string]any{"revision": uint64(1), "config": next, "summary": "Configure discovered model"})
+	apply := httptest.NewRequest("PATCH", "/admin/config", strings.NewReader(string(body)))
+	apply.Header.Set("Authorization", "Bearer "+adminKey)
+	response := httptest.NewRecorder()
+	p.ServeHTTP(response, apply)
+	if response.Code != http.StatusOK {
+		t.Fatalf("configure discovered model status=%d body=%s", response.Code, response.Body.String())
+	}
+	simulate := httptest.NewRequest("POST", "/admin/routing/simulate", strings.NewReader(`{"model":"auto/silver","protocol":"chat","detail":true}`))
+	simulate.Header.Set("Authorization", "Bearer "+adminKey)
+	simulated := httptest.NewRecorder()
+	p.ServeHTTP(simulated, simulate)
+	if simulated.Code != http.StatusOK {
+		t.Fatalf("simulation status=%d body=%s", simulated.Code, simulated.Body.String())
+	}
+	var result struct {
+		Candidates []struct {
+			ID     string `json:"id"`
+			Reason string `json:"reason"`
+		} `json:"candidates"`
+	}
+	if err := json.Unmarshal(simulated.Body.Bytes(), &result); err != nil {
+		t.Fatal(err)
+	}
+	for _, candidate := range result.Candidates {
+		if candidate.ID == "source/discovered" {
+			if candidate.Reason != "model_disabled" {
+				t.Fatalf("discovered model routing reason=%q", candidate.Reason)
+			}
+			return
+		}
+	}
+	t.Fatalf("discovered model missing from simulation: %s", simulated.Body.String())
+}
