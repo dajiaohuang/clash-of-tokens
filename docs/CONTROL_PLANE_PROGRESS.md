@@ -209,7 +209,7 @@ Discovery protocol references: [Anthropic models](https://platform.claude.com/do
 [Gemini models](https://ai.google.dev/api/models),
 [OpenAI models](https://platform.openai.com/docs/api-reference/models).
 
-Validation: `go test ./...` passed, 587 tests in 38 packages on Windows.
+Validation: `go test ./...` passed, 588 tests in 38 packages on Windows.
 Windows and Linux-target `govulncheck` reported no vulnerabilities.
 Browser regression: credential creation/redaction, account binding, source
 creation, group membership, preview/apply, every navigation destination and
@@ -342,3 +342,7 @@ Batch 60 protects account lifecycle integrity in the administration API. An
 account with bound sources now returns a clear conflict instead of attempting a
 configuration that would fail later reference validation. The quota regression
 also verifies the guard before exercising source-domain moves.
+
+Batch 61 applies the same lifecycle guard to browser profiles. Deleting a
+profile that is still selected by an account now returns a clear conflict,
+preserving per-account CDP and session isolation until the binding is removed.

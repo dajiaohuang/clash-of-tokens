@@ -150,3 +150,25 @@ func TestSourceQuotaMoveCascadesToAccountAndMembers(t *testing.T) {
 		t.Fatalf("source account move did not adopt destination domain: accounts=%+v sources=%+v", loaded.Accounts, loaded.Sources)
 	}
 }
+
+func TestBrowserProfileDeletionGuard(t *testing.T) {
+	dir := t.TempDir()
+	vault, _ := credentials.Open(filepath.Join(dir, "vault"))
+	c := config.Default()
+	c.Providers = []config.Provider{{ID: "p", Enabled: true}}
+	c.BrowserProfiles = []config.BrowserProfile{{ID: "profile", Enabled: true, Engine: "chrome", CDPURL: "http://127.0.0.1:9223"}}
+	c.Accounts = []config.Account{{ID: "a", ProviderID: "p", BrowserProfileID: "profile", Enabled: true, QuotaDomain: "q", MaxInflight: 1, Weight: 1}}
+	p, err := NewControlPlane(filepath.Join(dir, "config.json"), c, testKey, adminKey, vault)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer p.Close()
+	req := httptest.NewRequest("DELETE", "/admin/browser_profiles/profile", nil)
+	req.Header.Set("Authorization", "Bearer "+adminKey)
+	req.Header.Set("If-Match", "1")
+	w := httptest.NewRecorder()
+	p.ServeHTTP(w, req)
+	if w.Code != 409 || !strings.Contains(w.Body.String(), "browser profile still has accounts") {
+		t.Fatalf("bound profile deletion was not blocked: status=%d body=%s", w.Code, w.Body.String())
+	}
+}

@@ -133,6 +133,14 @@ func (p *ControlPlane) resourceAdmin(w http.ResponseWriter, r *http.Request, ser
 	var err error
 	switch kind {
 	case "browser_profiles":
+		if method == "DELETE" {
+			for _, account := range c.Accounts {
+				if account.BrowserProfileID == id {
+					fail(w, 409, "browser profile still has accounts")
+					return
+				}
+			}
+		}
 		c.BrowserProfiles, err = editResource(c.BrowserProfiles, id, method, raw)
 	case "providers":
 		if method == "DELETE" {
