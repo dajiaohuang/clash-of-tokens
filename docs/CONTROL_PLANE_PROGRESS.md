@@ -257,6 +257,25 @@ page. ChatGPT Web remains the only adapter with local conversation inventory;
 other adapters are explicitly marked unavailable instead of being scraped.
 
 Batch 49 makes execution accounting mode-independent: non-streaming responses
+record transport completion, upstream status, rejection, or cancellation
+through the same redacted lease-health path used by streaming responses. See
+[runtime health](RUNTIME_HEALTH.md).
+
+Batch 50 hardens upstream-facing errors: generation failures and model
+discovery failures return stable public categories instead of adapter error text
+that could contain URLs or response fragments.
+
+Batch 51 retains a normalized source domain as non-sensitive metadata on
+password-manager imports. Account discovery uses it for exact catalog provider
+suggestions and can carry a stored credential into the account wizard; secret
+values remain encrypted and absent from responses. See
+[credential imports](CREDENTIAL_IMPORTS.md).
+
+Batch 52 adds a direct **Use in account** action for stored credentials and
+configured browser profiles discovered by the Accounts page. It pre-fills the
+existing transactional account wizard without enabling the account or source.
+
+Batch 49 makes execution accounting mode-independent: non-streaming responses
 now record transport completion, upstream status, rejection, or cancellation
 through the same redacted lease-health path used by streaming responses. See
 [runtime health](RUNTIME_HEALTH.md).
