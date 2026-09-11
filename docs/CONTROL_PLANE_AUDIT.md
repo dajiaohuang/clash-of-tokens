@@ -1,11 +1,32 @@
 # Control plane acceptance audit
 
 Scope: all 51 sections in [the original synthesis](CONTROL_PLANE_REQUIREMENTS.md).
-This is an active gap ledger, initially inspected at `279105f` on 2026-09-10.
-Implemented mechanisms below are evidence of progress, **not acceptance of the
-whole section**. No section is declared fully accepted by this initial pass.
+This re-check covers repository `HEAD 0ef0e049` on 2026-09-11. Every section
+now has a current implementation reference and an explicit remaining-work or
+environment boundary. Implemented mechanisms are evidence of progress,
+**not acceptance of the whole section**: this project has no blanket claim that
+all provider accounts, browser profiles, devices, or upstream protocols work.
 The original requirements remain authoritative; examples and subrequirements
-must be checked again before final acceptance.
+must be checked again when a provider is enabled.
+
+## Re-check result
+
+- **51/51 sections mapped:** each row below was re-read against the current
+  code, tests, UI regression notes, and verification documents.
+- **Local contract boundary:** `go test ./...` passes 648 tests in 39 packages;
+  hosted CI run [34549312886](https://github.com/dajiaohuang/clash-of-tokens/actions/runs/34549312886)
+  is green for cross-platform tests, Linux race, native macOS Keychain, and
+  three gateway builds.
+- **Catalog boundary:** 144 catalog entries are inert metadata (120 native
+  HTTP, 10 native browser, 3 native CLI, 3 native device, and 8 research-only);
+  only `chatgpt-web` and `cloudflare-playground` are marked live-verified.
+  The original strict scope remains 93/93 registered paths and 2/93 live
+  upstream checks in [Source status](SOURCE_STATUS.md).
+- **Acceptance state:** the table keeps separate evidence and remaining-work
+  columns instead of a single green status. A row with remaining work is not
+  fully accepted. Live compatibility, provider-specific login, installed-
+  browser behavior, physical-device tests, and signed distribution are
+  explicit external checks.
 
 | Section | Current evidence | Remaining work or verification |
 | --- | --- | --- |
