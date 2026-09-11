@@ -258,6 +258,14 @@ func (p *ControlPlane) resourceAdmin(w http.ResponseWriter, r *http.Request, ser
 		}
 		c.Sources, err = editResource(c.Sources, id, method, raw)
 		if err == nil && method != "DELETE" {
+			// A source may be created directly from the catalog without first
+			// opening Provider settings. Materialize the parent policy record so
+			// the provider enable/Auto switches immediately govern the new source.
+			// Existing provider settings are preserved; this only adds a safe,
+			// disabled-for-Auto default for a previously unseen provider ID.
+			for _, source := range c.Sources {
+				ensureProviderConfig(&c, source.Provider)
+			}
 			normalizeSourceQuotaDomain(&c, id, originalSource)
 		}
 	case "groups":
@@ -277,6 +285,18 @@ func (p *ControlPlane) resourceAdmin(w http.ResponseWriter, r *http.Request, ser
 		return
 	}
 	reply(w, map[string]any{"revision": updated.Revision, "status": "saved", "persistence": "durable", "restart_required": restartFields(p.startup, updated.Config)})
+}
+
+func ensureProviderConfig(c *config.Config, providerID string) {
+	if providerID == "" {
+		return
+	}
+	for _, provider := range c.Providers {
+		if provider.ID == providerID {
+			return
+		}
+	}
+	c.Providers = append(c.Providers, config.Provider{ID: providerID, Enabled: true, AutoApproved: false, PoolStrategy: "round-robin"})
 }
 
 func containsString(values []string, want string) bool {

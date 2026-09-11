@@ -123,6 +123,41 @@ func TestProviderReadIncludesCatalogAndDescriptor(t *testing.T) {
 	}
 }
 
+func TestSourceCreationMaterializesParentProviderPolicy(t *testing.T) {
+	dir := t.TempDir()
+	vault, err := credentials.Open(filepath.Join(dir, "vault"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := config.Default()
+	c.Providers = nil
+	p, err := NewControlPlane(filepath.Join(dir, "config.json"), c, testKey, adminKey, vault)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer p.Close()
+	source := config.Source{
+		ID: "new-source", Provider: "custom-provider", Adapter: "openai",
+		BaseURL: "http://127.0.0.1:1", Enabled: true, AutoApproved: false,
+		Local: true, SourceKind: "custom_api", ExecutionLocation: "local",
+		InferenceLocation: "remote", BillingMode: "free_allowance", CredentialMode: "api_key",
+		MaxInflight: 1, QuotaDomain: "new-quota", QuotaMaxInflight: 1,
+		Models: []config.Model{{ID: "model", Upstream: "model", Protocols: []string{"chat"}, Tier: "unrated", Tools: "none", MaxInputBytes: 4096}},
+	}
+	body, _ := json.Marshal(source)
+	req := httptest.NewRequest("POST", "/admin/sources", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+adminKey)
+	w := httptest.NewRecorder()
+	p.ServeHTTP(w, req)
+	if w.Code != 200 {
+		t.Fatalf("source creation status=%d body=%s", w.Code, w.Body.String())
+	}
+	current := p.service.Current().Config
+	if len(current.Providers) != 1 || current.Providers[0].ID != "custom-provider" || !current.Providers[0].Enabled || current.Providers[0].AutoApproved {
+		t.Fatalf("parent provider policy was not materialized: %+v", current.Providers)
+	}
+}
+
 func TestRoutingSimulationDetailReportsSelection(t *testing.T) {
 	dir := t.TempDir()
 	vault, _ := credentials.Open(filepath.Join(dir, "vault"))

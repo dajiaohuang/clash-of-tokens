@@ -224,6 +224,10 @@ function edit(kind,item,create=false){
     const next=clone(base),value=form.read();
     next[kind]=next[kind]||[];
     if(create)next[kind].push(value);else next[kind][next[kind].findIndex(x=>x.id===item.id)]=value;
+    if(kind==='sources'&&value.provider&&!(next.providers||[]).some(p=>p.id===value.provider)){
+     next.providers=next.providers||[];
+     next.providers.push({id:value.provider,enabled:true,auto_approved:false,pool_strategy:'round-robin'});
+    }
     if(kind==='accounts'&&value.quota_domain!==item.quota_domain){
      for(const source of next.sources||[])if(source.account_id===item.id)source.quota_domain=value.quota_domain;
     }

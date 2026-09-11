@@ -923,3 +923,10 @@ configuration fields remain under `items`/`item`, so clients can adopt the
 joined view without changing mutation semantics. The API regression verifies
 the OpenAI catalog and HTTP descriptor are present and that no associations are
 invented.
+
+Batch 169 closes the catalog-to-Source onboarding gap. Creating or editing a
+Source through the persistent API or embedded console now materializes its
+parent Provider policy when one is not already configured. The new record is
+enabled for explicit use but excluded from Auto until reviewed, and existing
+Provider settings are untouched. An API regression verifies a direct Source
+creation produces the parent policy with the safe defaults.
