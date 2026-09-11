@@ -21,6 +21,11 @@ func nativeKeyringConfig() keyring.Config {
 		// keyring library appends its platform suffix when opening it.
 		c.KeychainName = name
 	}
+	if os.Getenv("COT_TEST_KEYCHAIN_TRUST") == "1" {
+		// The temporary CI keychain is isolated and synthetic; trust the test
+		// process so macOS does not open an interactive authorization prompt.
+		c.KeychainTrustApplication = true
+	}
 	return c
 }
 
