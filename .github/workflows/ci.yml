@@ -62,19 +62,19 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          keychain="$RUNNER_TEMP/clash-of-tokens.keychain-db"
+          keychain="$RUNNER_TEMP/clash-of-tokens"
+          keychain_path="$keychain.keychain"
           password="$(uuidgen)"
           cleanup() {
-            security delete-keychain "$keychain" >/dev/null 2>&1 || true
+            security delete-keychain "$keychain_path" >/dev/null 2>&1 || true
           }
           trap cleanup EXIT
-          security create-keychain -p "$password" "$keychain" >/dev/null
-          security set-keychain-settings -lut 21600 "$keychain"
-          security unlock-keychain -p "$password" "$keychain"
-          security list-keychains -d user -s "$keychain"
-          security default-keychain -s "$keychain"
-          security set-key-partition-list -S apple-tool:,apple: -s -k "$password" "$keychain"
-          COT_TEST_NATIVE_KEYRING=1 go test ./internal/credentials -run '^TestNativeKeyringRoundTrip$' -count=1
+          security create-keychain -p "$password" "$keychain_path" >/dev/null
+          security set-keychain-settings -lut 21600 "$keychain_path"
+          security unlock-keychain -p "$password" "$keychain_path"
+          security list-keychains -d user -s "$keychain_path"
+          security default-keychain -s "$keychain_path"
+          COT_TEST_KEYCHAIN="$keychain" COT_TEST_NATIVE_KEYRING=1 go test ./internal/credentials -run '^TestNativeKeyringRoundTrip$' -count=1
 
   build:
     name: Build (${{ matrix.goos }}/${{ matrix.goarch }})

@@ -5,7 +5,9 @@ package credentials
 import (
 	"errors"
 	"github.com/99designs/keyring"
+	"os"
 	"runtime"
+	"strings"
 )
 
 func nativeKeyringConfig() keyring.Config {
@@ -13,7 +15,13 @@ func nativeKeyringConfig() keyring.Config {
 	if runtime.GOOS == "darwin" {
 		backend = keyring.KeychainBackend
 	}
-	return keyring.Config{AllowedBackends: []keyring.BackendType{backend}, ServiceName: "clash-of-tokens", LibSecretCollectionName: "login", KeychainAccessibleWhenUnlocked: true}
+	c := keyring.Config{AllowedBackends: []keyring.BackendType{backend}, ServiceName: "clash-of-tokens", LibSecretCollectionName: "login", KeychainAccessibleWhenUnlocked: true}
+	if name := strings.TrimSpace(os.Getenv("COT_TEST_KEYCHAIN")); name != "" {
+		// The hosted native test supplies a temporary keychain base name. The
+		// keyring library appends its platform suffix when opening it.
+		c.KeychainName = name
+	}
+	return c
 }
 
 func platformProtection() (func([]byte) ([]byte, error), func([]byte) ([]byte, error)) {
