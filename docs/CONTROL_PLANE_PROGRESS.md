@@ -934,6 +934,7 @@ creation produces the parent policy with the safe defaults.
 Batch 170 completes the reviewed-override path in account onboarding. The
 account wizard now exposes a `Reviewed credential type override` switch; once
 enabled it reveals all protected references, persists the risk flag and keeps
-the server-side compatibility check authoritative. Source editors likewise
-keep incompatible references available for an explicit override instead of
-silently hiding them. No credential value is ever returned to the UI.
+the server-side compatibility check authoritative. Source editors continue to
+filter credential choices by their descriptor, while an existing incompatible
+reference remains visible for migration review. No credential value is ever
+returned to the UI.

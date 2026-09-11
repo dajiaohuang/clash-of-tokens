@@ -206,7 +206,7 @@ function objectForm(fields,value,context={}){
 function edit(kind,item,create=false){
  const base=clone(S.config),revision=S.revision;
   const descriptor=kind==='sources'&&item.adapter?S.descriptors.find(d=>d.id===item.adapter):null;
-  const form=objectForm(schemaFor(kind).item.fields,item,{credentialModes:descriptor?.credential_modes,allowIncompatible:kind==='sources'});
+  const form=objectForm(schemaFor(kind).item.fields,item,{credentialModes:descriptor?.credential_modes});
   let quotaConfirmed=false;
  let membership;
  if(kind==='sources'){
