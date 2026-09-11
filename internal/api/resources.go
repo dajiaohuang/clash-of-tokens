@@ -11,7 +11,9 @@ import (
 	"strconv"
 	"strings"
 
+	"clash-of-tokens/catalog"
 	"clash-of-tokens/internal/config"
+	"clash-of-tokens/internal/providerdef"
 	"clash-of-tokens/internal/routing"
 )
 
@@ -83,12 +85,62 @@ func (p *ControlPlane) resourceAdmin(w http.ResponseWriter, r *http.Request, ser
 			return
 		}
 		if id == "" {
+			if kind == "providers" {
+				// Keep the durable configuration list as `items`, while exposing
+				// the inert catalog and descriptor registries needed by API clients
+				// to render a complete provider management page without duplicating
+				// catalog joins in every client.
+				reply(w, map[string]any{
+					"revision":    current.Revision,
+					"items":       items,
+					"catalog":     catalog.All(),
+					"descriptors": providerdef.All(),
+				})
+				return
+			}
 			reply(w, map[string]any{"revision": current.Revision, "items": items})
 			return
 		}
 		list := reflect.ValueOf(items)
 		for i := 0; i < list.Len(); i++ {
 			if list.Index(i).FieldByName("ID").String() == id {
+				if kind == "providers" {
+					accounts := []string{}
+					sources := []string{}
+					for _, account := range c.Accounts {
+						if account.ProviderID == id {
+							accounts = append(accounts, account.ID)
+						}
+					}
+					for _, source := range c.Sources {
+						if source.Provider == id {
+							sources = append(sources, source.ID)
+						}
+					}
+					var entry *catalog.Entry
+					for _, candidate := range catalog.All() {
+						if candidate.ID == id {
+							candidate := candidate
+							entry = &candidate
+							break
+						}
+					}
+					var descriptor any
+					if entry != nil {
+						if value, ok := providerdef.Lookup(entry.Adapter); ok {
+							descriptor = value
+						}
+					}
+					reply(w, map[string]any{
+						"revision":   current.Revision,
+						"item":       list.Index(i).Interface(),
+						"catalog":    entry,
+						"descriptor": descriptor,
+						"accounts":   accounts,
+						"sources":    sources,
+					})
+					return
+				}
 				reply(w, map[string]any{"revision": current.Revision, "item": list.Index(i).Interface()})
 				return
 			}

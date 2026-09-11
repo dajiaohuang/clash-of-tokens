@@ -914,3 +914,12 @@ Batch 167 broadens global search across catalog references/notes, provider
 protocols, source metadata, group policy, model capability fields, profile
 endpoints, and device metadata while keeping secrets out of the search index.
 The browser regression verifies a provider found by its catalog description.
+
+Batch 168 makes the Provider administration API self-describing. `GET
+/admin/providers` now returns the durable configured items alongside the inert
+catalog and descriptor registries; `GET /admin/providers/{id}` also returns
+the matching catalog entry, descriptor and bound account/source IDs. Existing
+configuration fields remain under `items`/`item`, so clients can adopt the
+joined view without changing mutation semantics. The API regression verifies
+the OpenAI catalog and HTTP descriptor are present and that no associations are
+invented.

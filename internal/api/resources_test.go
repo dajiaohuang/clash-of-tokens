@@ -78,6 +78,51 @@ func TestPersistentResourcesValidateReferencesAndRevision(t *testing.T) {
 	}
 }
 
+func TestProviderReadIncludesCatalogAndDescriptor(t *testing.T) {
+	dir := t.TempDir()
+	vault, err := credentials.Open(filepath.Join(dir, "vault"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := config.Default()
+	c.Providers = []config.Provider{{ID: "openai", Enabled: true, AutoApproved: false, PoolStrategy: "round-robin"}}
+	p, err := NewControlPlane(filepath.Join(dir, "config.json"), c, testKey, adminKey, vault)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer p.Close()
+	req := httptest.NewRequest("GET", "/admin/providers/openai", nil)
+	req.Header.Set("Authorization", "Bearer "+adminKey)
+	w := httptest.NewRecorder()
+	p.ServeHTTP(w, req)
+	if w.Code != 200 {
+		t.Fatalf("provider detail status=%d body=%s", w.Code, w.Body.String())
+	}
+	var result struct {
+		Revision uint64          `json:"revision"`
+		Item     config.Provider `json:"item"`
+		Catalog  struct {
+			ID      string `json:"id"`
+			Adapter string `json:"adapter"`
+		} `json:"catalog"`
+		Descriptor struct {
+			ID      string `json:"id"`
+			Factory string `json:"factory"`
+		} `json:"descriptor"`
+		Accounts []string `json:"accounts"`
+		Sources  []string `json:"sources"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
+		t.Fatal(err)
+	}
+	if result.Revision != 1 || result.Item.ID != "openai" || result.Catalog.ID != "openai" || result.Catalog.Adapter != "openai" || result.Descriptor.ID != "openai" || result.Descriptor.Factory != "http" {
+		t.Fatalf("provider detail omitted metadata: %+v", result)
+	}
+	if len(result.Accounts) != 0 || len(result.Sources) != 0 {
+		t.Fatalf("unexpected provider associations: %+v", result)
+	}
+}
+
 func TestRoutingSimulationDetailReportsSelection(t *testing.T) {
 	dir := t.TempDir()
 	vault, _ := credentials.Open(filepath.Join(dir, "vault"))
