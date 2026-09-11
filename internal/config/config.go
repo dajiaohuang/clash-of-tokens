@@ -107,8 +107,12 @@ type Model struct {
 	MaxInputBytes       int64    `json:"max_input_bytes"`
 }
 type Group struct {
-	RequireVision      bool     `json:"require_vision"`
-	MaxUSDPerMillion   *float64 `json:"max_usd_per_million,omitempty"`
+	RequireVision    bool     `json:"require_vision"`
+	MaxUSDPerMillion *float64 `json:"max_usd_per_million,omitempty"`
+	// MaxUSDPerRequest is a hard admission budget. It requires complete model
+	// pricing and an explicit request output-token ceiling so routing never
+	// silently treats an unknown charge as free.
+	MaxUSDPerRequest   *float64 `json:"max_usd_per_request,omitempty"`
 	Preferences        []string `json:"preferences,omitempty"`
 	MaxAttempts        int      `json:"max_attempts,omitempty"`
 	AllowMetered       *bool    `json:"allow_metered,omitempty"`
@@ -376,8 +380,8 @@ func (c Config) Validate() error {
 	}
 	gids := map[string]bool{}
 	for _, g := range c.Groups {
-		if !ValidPrice(g.MaxUSDPerMillion) {
-			return fmt.Errorf("group %s: invalid maximum USD rate", g.ID)
+		if !ValidPrice(g.MaxUSDPerMillion) || !ValidPrice(g.MaxUSDPerRequest) {
+			return fmt.Errorf("group %s: invalid USD budget", g.ID)
 		}
 		seenPreferences := map[string]bool{}
 		for _, preference := range g.Preferences {

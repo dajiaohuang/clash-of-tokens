@@ -24,11 +24,20 @@ permission switches continue to apply independently: allowing unknown billing
 does not bypass an explicit rate ceiling. Prices must be finite and between
 zero and one billion USD per million tokens.
 
-This is a unit-price constraint, not a per-request spending budget. It does not
-estimate tokens, reserve money, include cache/tool/image prices, or guarantee a
-final charge. Subscription and free-allowance sources are not assigned a zero
-price automatically. A total-request budget still requires separate accounting
-and output-limit work.
+This unit-price constraint is separate from the optional hard per-request
+budget. Set `max_usd_per_request` on a group to reject a request before any
+upstream submission when its conservative estimate exceeds the configured
+amount. The estimate uses the complete input/output model rates, the raw
+request byte count as an input-token upper bound, and the caller's positive
+`max_tokens`, `max_completion_tokens`, `max_output_tokens`, or Gemini
+`generationConfig.maxOutputTokens` value. A missing rate or output bound is
+reported as `request_cost_unknown` and fails closed; an estimate over the limit
+is reported as `request_cost_budget`. Safe replay attempts consume the same
+request budget cumulatively, while a transport failure confirmed before
+submission consumes none. This admission check does not reserve money or
+guarantee the provider's final charge, and cache/tool/image pricing may differ
+upstream. Subscription and free-allowance sources are not assigned a zero price
+automatically.
 
 ## Ordered preferences
 

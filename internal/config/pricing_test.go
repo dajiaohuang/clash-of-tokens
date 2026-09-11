@@ -31,17 +31,20 @@ func TestPriceAndPreferenceValidation(t *testing.T) {
 	c := Default()
 	zero := 0.0
 	c.Groups[0].MaxUSDPerMillion = &zero
+	budget := 0.01
+	c.Groups[0].MaxUSDPerRequest = &budget
 	c.Groups[0].RequireVision = true
 	c.Groups[0].Preferences = []string{"lower_cost", "existing_subscription"}
 	if err := c.Validate(); err != nil {
 		t.Fatal(err)
 	}
 	clone, err := Clone(c)
-	if err != nil || clone.Groups[0].MaxUSDPerMillion == nil || *clone.Groups[0].MaxUSDPerMillion != 0 || !clone.Groups[0].RequireVision || len(clone.Groups[0].Preferences) != 2 {
+	if err != nil || clone.Groups[0].MaxUSDPerMillion == nil || *clone.Groups[0].MaxUSDPerMillion != 0 || clone.Groups[0].MaxUSDPerRequest == nil || *clone.Groups[0].MaxUSDPerRequest != budget || !clone.Groups[0].RequireVision || len(clone.Groups[0].Preferences) != 2 {
 		t.Fatalf("roundtrip: %+v %v", clone.Groups[0], err)
 	}
 	*clone.Groups[0].MaxUSDPerMillion = 1
-	if *c.Groups[0].MaxUSDPerMillion != 0 {
+	*clone.Groups[0].MaxUSDPerRequest = 1
+	if *c.Groups[0].MaxUSDPerMillion != 0 || *c.Groups[0].MaxUSDPerRequest != budget {
 		t.Fatal("cloned price aliases original")
 	}
 }

@@ -153,6 +153,39 @@ func TestAccountRoutingMetadataIsUsedWhenSourceOmitsOverrides(t *testing.T) {
 	res.Body.Close()
 }
 
+func TestHardRequestCostBudgetAdmitsBoundedGeneration(t *testing.T) {
+	up := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, `{"id":"ok","choices":[{"message":{"content":"OK"}}]}`)
+	}))
+	defer up.Close()
+	c := config.Default()
+	inputRate, outputRate, budget := 1.0, 2.0, 0.0004
+	c.Groups[0].MaxUSDPerRequest = &budget
+	c.Groups[0].AllowUnrated = true
+	c.Groups[0].Sources = []string{"source"}
+	c.Sources = []config.Source{{ID: "source", Provider: "test", Adapter: "openai", BaseURL: up.URL, Local: true, SourceKind: "custom_api", BillingMode: "free_allowance", Enabled: true, AutoApproved: true, MaxInflight: 1, QuotaDomain: "source", QuotaMaxInflight: 1, Models: []config.Model{{ID: "model", Upstream: "real", Protocols: []string{"chat"}, Tier: "unrated", Tools: "none", MaxInputBytes: 4096, InputUSDPerMillion: &inputRate, OutputUSDPerMillion: &outputRate}}}}
+	s, err := NewWithKeys(c, testKey, adminKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	gateway := httptest.NewServer(s)
+	defer gateway.Close()
+	res := request(t, gateway.URL, "/v1/chat/completions", `{"model":"auto","messages":[],"max_tokens":100}`, testKey)
+	firstBody, _ := io.ReadAll(res.Body)
+	res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("bounded request rejected: %d %s", res.StatusCode, firstBody)
+	}
+	res = request(t, gateway.URL, "/v1/chat/completions", `{"model":"auto","messages":[]}`, testKey)
+	body, _ := io.ReadAll(res.Body)
+	res.Body.Close()
+	if res.StatusCode != http.StatusServiceUnavailable || !strings.Contains(string(body), "no eligible source") {
+		t.Fatalf("missing output bound was not rejected safely: %d %s", res.StatusCode, body)
+	}
+}
+
 func TestNonStreamingResponseRecordsExecutionHealth(t *testing.T) {
 	s, g := setup(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

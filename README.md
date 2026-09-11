@@ -118,7 +118,11 @@ and [account discovery](docs/ACCOUNT_DISCOVERY.md).
 ## Routing and runtime behavior
 
 Groups can express minimum tier, source-kind and billing filters, tool/vision
-requirements, rate ceilings, ordered preferences, and ordered source members.
+requirements, rate ceilings, an optional hard `max_usd_per_request` admission
+budget, ordered preferences, and ordered source members. The hard budget uses
+the request byte count and the caller's explicit output-token limit; unknown
+pricing or an unbounded output is rejected before upstream submission, and
+safe retries consume the same request budget cumulatively.
 Quota domains make shared entitlement visible across accounts and models.
 Account pools support round-robin, weighted, least-load, and sticky dispatch.
 The simulator evaluates eligibility without acquiring a lease or contacting an
@@ -382,7 +386,10 @@ OAuth/CLI token 导入、浏览器 Profile 元数据发现和选定 CDP Cookie �
 ## 路由与运行时行为
 
 Group 可以设置最低等级、来源类型和计费过滤、工具/图片要求、速率上限、
-有序偏好和有序 Source 成员。Quota Domain 将多个账号和模型共享的权益
+可选的每请求硬 USD 预算、有序偏好和有序 Source 成员。硬预算使用请求体字节数
+和调用方明确给出的输出 token 上限；价格或输出上限未知时，会在提交上游前拒绝，
+安全重试会累计消耗同一个请求预算。
+Quota Domain 将多个账号和模型共享的权益
 显式展示。Account Pool 支持轮询、加权、最少负载和 sticky。Simulator
 只计算资格，不获取 lease，也不联系上游。
 

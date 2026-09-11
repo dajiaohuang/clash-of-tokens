@@ -43,6 +43,36 @@ func TestGroupVisionAndPriceCeiling(t *testing.T) {
 	}
 }
 
+func TestHardRequestCostBudget(t *testing.T) {
+	c := fixture(1)
+	c.Sources[0].Models[0].InputUSDPerMillion = rate(1)
+	c.Sources[0].Models[0].OutputUSDPerMillion = rate(2)
+	c.Groups[0].MaxUSDPerRequest = rate(0.0002)
+	q := query()
+	q.Bytes = 100
+	q.OutputTokens = 100
+	if got := New(c).Explain(q)["s0/model"]; got != "request_cost_budget" {
+		t.Fatalf("budget should reject estimated cost: %s", got)
+	}
+	c.Groups[0].MaxUSDPerRequest = rate(0.00031)
+	if got := New(c).Explain(q)["s0/model"]; got != "eligible" {
+		t.Fatalf("budget should admit within bound: %s", got)
+	}
+	q.OutputTokens = 0
+	if got := New(c).Explain(q)["s0/model"]; got != "request_cost_unknown" {
+		t.Fatalf("missing output bound should fail closed: %s", got)
+	}
+	q.OutputTokens = 100
+	q.SpentUSD = 0.0002
+	if got := New(c).Explain(q)["s0/model"]; got != "request_cost_budget" {
+		t.Fatalf("spent retry budget was not enforced: %s", got)
+	}
+	q.Model = "s0/model"
+	if got := New(c).Explain(q)["s0/model"]; got != "eligible" {
+		t.Fatalf("named source unexpectedly inherited budget: %s", got)
+	}
+}
+
 func TestOrderedPreferencesAndCapacity(t *testing.T) {
 	c := fixture(3)
 	c.Groups[0].Preferences = []string{"lower_cost", "official_api"}

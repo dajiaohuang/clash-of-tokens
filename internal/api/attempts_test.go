@@ -75,3 +75,36 @@ func TestRequestFallbackSafety(t *testing.T) {
 		})
 	}
 }
+
+func TestRequestBudgetAppliesAcrossSafeRetries(t *testing.T) {
+	var calls atomic.Int32
+	up := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if calls.Add(1) == 1 {
+			w.WriteHeader(http.StatusTooManyRequests)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, `{"ok":true}`)
+	}))
+	defer up.Close()
+	inputRate, outputRate, budget := 1.0, 2.0, 0.0003
+	c := config.Default()
+	c.Sources = []config.Source{
+		{ID: "one", Provider: "test", Adapter: "openai", BaseURL: up.URL, Local: true, SourceKind: "custom_api", BillingMode: "free_allowance", Enabled: true, AutoApproved: true, MaxInflight: 1, QuotaDomain: "one", QuotaMaxInflight: 1, Models: []config.Model{{ID: "model", Upstream: "upstream-1", Protocols: []string{"chat"}, Tier: "unrated", Tools: "none", MaxInputBytes: 4096, InputUSDPerMillion: &inputRate, OutputUSDPerMillion: &outputRate}}},
+		{ID: "two", Provider: "test", Adapter: "openai", BaseURL: up.URL, Local: true, SourceKind: "custom_api", BillingMode: "free_allowance", Enabled: true, AutoApproved: true, MaxInflight: 1, QuotaDomain: "two", QuotaMaxInflight: 1, Models: []config.Model{{ID: "model", Upstream: "upstream-2", Protocols: []string{"chat"}, Tier: "unrated", Tools: "none", MaxInputBytes: 4096, InputUSDPerMillion: &inputRate, OutputUSDPerMillion: &outputRate}}},
+	}
+	c.Groups = []config.Group{{ID: "fallback", Type: "fallback", Sources: []string{"one", "two"}, MinTier: "silver", AllowUnrated: true, MaxAttempts: 2, MaxUSDPerRequest: &budget}}
+	s, err := NewWithKeys(c, testKey, adminKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	gateway := httptest.NewServer(s)
+	defer gateway.Close()
+	res := request(t, gateway.URL, "/v1/chat/completions", `{"model":"fallback","messages":[],"max_tokens":100}`, testKey)
+	body, _ := io.ReadAll(res.Body)
+	res.Body.Close()
+	if calls.Load() != 1 || res.StatusCode != http.StatusServiceUnavailable || !strings.Contains(string(body), "no eligible source") {
+		t.Fatalf("budget allowed an over-limit retry: calls=%d status=%d body=%s", calls.Load(), res.StatusCode, body)
+	}
+}

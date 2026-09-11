@@ -9,11 +9,14 @@ import (
 )
 
 type Request struct {
-	Model                string
-	Stream               bool
-	Tools                bool
-	Stateful             bool
-	Vision               bool
+	Model    string
+	Stream   bool
+	Tools    bool
+	Stateful bool
+	Vision   bool
+	// MaxOutputTokens is the caller-declared output ceiling used by hard
+	// routing budgets. Zero means the request did not provide a usable bound.
+	MaxOutputTokens      int64
 	ModelStart, ModelEnd int
 }
 
@@ -68,6 +71,18 @@ func Inspect(b []byte) (Request, error) {
 			}
 		case "messages", "contents", "input":
 			r.Vision = r.Vision || hasImage(b[start:i])
+		case "max_tokens", "max_completion_tokens", "max_output_tokens":
+			if value, ok := positiveInt(b[start:i]); ok {
+				if value > r.MaxOutputTokens {
+					r.MaxOutputTokens = value
+				}
+			}
+		case "generationConfig", "generation_config":
+			if value, ok := generationOutputLimit(b[start:i]); ok {
+				if value > r.MaxOutputTokens {
+					r.MaxOutputTokens = value
+				}
+			}
 		}
 		i = space(b, i)
 		if b[i] == ',' {
@@ -75,6 +90,31 @@ func Inspect(b []byte) (Request, error) {
 		}
 	}
 	return r, nil
+}
+
+func positiveInt(raw []byte) (int64, bool) {
+	var value int64
+	if err := json.Unmarshal(raw, &value); err != nil || value <= 0 {
+		return 0, false
+	}
+	return value, true
+}
+
+func generationOutputLimit(raw []byte) (int64, bool) {
+	var value struct {
+		MaxOutputTokens      int64 `json:"maxOutputTokens"`
+		MaxOutputTokensSnake int64 `json:"max_output_tokens"`
+	}
+	if err := json.Unmarshal(raw, &value); err != nil {
+		return 0, false
+	}
+	if value.MaxOutputTokensSnake > value.MaxOutputTokens {
+		value.MaxOutputTokens = value.MaxOutputTokensSnake
+	}
+	if value.MaxOutputTokens <= 0 {
+		return 0, false
+	}
+	return value.MaxOutputTokens, true
 }
 
 // The input was validated before scanning. Literal keys need no JSON decoder
@@ -99,6 +139,16 @@ func routingKey(raw []byte) string {
 		return "contents"
 	case `"input"`:
 		return "input"
+	case `"max_tokens"`:
+		return "max_tokens"
+	case `"max_completion_tokens"`:
+		return "max_completion_tokens"
+	case `"max_output_tokens"`:
+		return "max_output_tokens"
+	case `"generationConfig"`:
+		return "generationConfig"
+	case `"generation_config"`:
+		return "generation_config"
 	default:
 		if bytes.IndexByte(raw, '\\') >= 0 {
 			var key string

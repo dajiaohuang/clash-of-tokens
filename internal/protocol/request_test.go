@@ -22,6 +22,37 @@ func TestInspectRewrite(t *testing.T) {
 		t.Fatal(v)
 	}
 }
+
+func TestInspectOutputTokenCeilings(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		body string
+		want int64
+	}{
+		{"openai", `{"model":"m","max_tokens":321}`, 321},
+		{"responses", `{"model":"m","max_output_tokens":654}`, 654},
+		{"anthropic", `{"model":"m","max_completion_tokens":987}`, 987},
+		{"gemini", `{"contents":[],"generationConfig":{"maxOutputTokens":123}}`, 123},
+		{"gemini-snake", `{"contents":[],"generation_config":{"max_output_tokens":456}}`, 456},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := Inspect([]byte(tc.body))
+			if err != nil || got.MaxOutputTokens != tc.want {
+				t.Fatalf("metadata=%+v err=%v", got, err)
+			}
+		})
+	}
+	for _, body := range []string{`{"model":"m","max_tokens":0}`, `{"model":"m","max_tokens":-1}`, `{"model":"m","max_tokens":"10"}`} {
+		got, err := Inspect([]byte(body))
+		if err != nil || got.MaxOutputTokens != 0 {
+			t.Fatalf("invalid output ceiling accepted: %+v %v", got, err)
+		}
+	}
+	got, err := Inspect([]byte(`{"model":"m","max_tokens":1000,"max_output_tokens":10}`))
+	if err != nil || got.MaxOutputTokens != 1000 {
+		t.Fatalf("multiple ceilings did not retain conservative upper bound: %+v %v", got, err)
+	}
+}
 func TestRejectAmbiguousJSON(t *testing.T) {
 	for _, v := range []string{`[]`, `{"model":"a","mo\u0064el":"b"}`, `{"stream":true,"stream":false}`, `{"model":3}`, `{"stream":"true"}`, `{`} {
 		if _, e := Inspect([]byte(v)); e == nil {

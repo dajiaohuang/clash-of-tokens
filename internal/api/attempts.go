@@ -72,6 +72,15 @@ func (s *Server) acquireResponse(ctx context.Context, q routing.Query, stream bo
 		if !safe || attempt+1 >= limit || ctx.Err() != nil {
 			return lease, resp, err
 		}
+		// A response proves the request reached the upstream. Count its
+		// conservative admission estimate against this request's total budget
+		// before permitting a replay. A transport failure marked
+		// BeforeSubmission has no upstream attempt and therefore costs nothing.
+		if resp != nil {
+			if cost, known := lease.EstimatedRequestCost(q); known {
+				q.SpentUSD += cost
+			}
+		}
 		if resp != nil {
 			resp.Body.Close()
 		}

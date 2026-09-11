@@ -297,7 +297,7 @@ func (s *Server) generate(w http.ResponseWriter, r *http.Request, proto, pathMod
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(s.cfg.Runtime.RequestTimeoutMS)*time.Millisecond)
 	defer cancel()
-	lease, resp, e := s.acquireResponse(ctx, routing.Query{Model: meta.Model, Protocol: proto, Tools: meta.Tools, Bytes: int64(n), Stateful: meta.Stateful, Vision: meta.Vision, Affinity: affinity}, meta.Stream, r.Header, func(model string) []byte { return protocol.Rewrite(body, meta, model) })
+	lease, resp, e := s.acquireResponse(ctx, routing.Query{Model: meta.Model, Protocol: proto, Tools: meta.Tools, Bytes: int64(n), OutputTokens: meta.MaxOutputTokens, Stateful: meta.Stateful, Vision: meta.Vision, Affinity: affinity}, meta.Stream, r.Header, func(model string) []byte { return protocol.Rewrite(body, meta, model) })
 	if lease == nil {
 		s.rejected.Add(1)
 		fail(w, 503, e.Error())

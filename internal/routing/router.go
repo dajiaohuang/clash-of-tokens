@@ -100,6 +100,8 @@ type Query struct {
 	Protocol        string   `json:"protocol"`
 	Tools           bool     `json:"tools"`
 	Bytes           int64    `json:"bytes"`
+	OutputTokens    int64    `json:"output_tokens,omitempty"`
+	SpentUSD        float64  `json:"-"`
 	Stateful        bool     `json:"stateful"`
 	Vision          bool     `json:"vision"`
 }
@@ -288,6 +290,15 @@ func (r *Router) eligible(t Target, q Query) (bool, string) {
 				return false, "cost_ceiling"
 			}
 		}
+		if g.MaxUSDPerRequest != nil {
+			cost, known := estimatedRequestCost(t.Model, q)
+			if !known {
+				return false, "request_cost_unknown"
+			}
+			if q.SpentUSD < 0 || q.SpentUSD+cost > *g.MaxUSDPerRequest {
+				return false, "request_cost_budget"
+			}
+		}
 		if g.Type == "select" && (len(g.Sources) == 0 || g.Sources[0] != s.ID) {
 			return false, "not_selected"
 		}
@@ -307,6 +318,29 @@ func (r *Router) eligible(t Target, q Query) (bool, string) {
 		return true, ""
 	}
 	return false, "model"
+}
+
+// estimatedRequestCost deliberately uses the raw request byte count as an
+// upper bound for input tokens. A byte can be one or more tokenizer units, so
+// this conservative bound prevents a hard budget from being exceeded merely
+// because a tokenizer is unavailable at admission time. Output must be
+// explicitly bounded by the caller (max_tokens/max_output_tokens); otherwise
+// a hard total-request budget cannot be enforced safely.
+func estimatedRequestCost(model config.Model, q Query) (float64, bool) {
+	if q.Bytes < 0 || q.OutputTokens <= 0 || model.InputUSDPerMillion == nil || model.OutputUSDPerMillion == nil {
+		return 0, false
+	}
+	if !config.ValidPrice(model.InputUSDPerMillion) || !config.ValidPrice(model.OutputUSDPerMillion) {
+		return 0, false
+	}
+	return float64(q.Bytes)/1e6*(*model.InputUSDPerMillion) + float64(q.OutputTokens)/1e6*(*model.OutputUSDPerMillion), true
+}
+
+// EstimatedRequestCost exposes the same conservative admission estimate to
+// the retry coordinator. It is intentionally derived from the lease target so
+// a rejected attempt can be counted before selecting a different source.
+func (l *Lease) EstimatedRequestCost(q Query) (float64, bool) {
+	return estimatedRequestCost(l.Target.Model, q)
 }
 func (r *Router) choose(q Query, now time.Time) (int, bool) {
 	if r.retired {

@@ -128,9 +128,12 @@ CLI format references: [Codex auth fixture](https://github.com/openai/codex/blob
     are tested to leave configuration and evidence history unchanged.
     See [account setup wizard](BROWSER_LOGIN.md#account-setup-wizard).
 28. Group vision requirements, declared USD input/output rate metadata and
-    ceilings, and five ordered routing preferences. Includes dispatch/capacity,
-    unknown-price/latency, validation and browser editing coverage. This rate
-    ceiling is not a total-request spending budget.
+    ceilings, five ordered routing preferences, and a hard optional
+    `max_usd_per_request` admission budget. The budget uses a conservative
+    request-byte/input and explicit output-token upper bound, failing closed on
+    missing price or output limits. Safe replay attempts consume this budget
+    cumulatively; it does not reserve provider money or predict a final
+    upstream charge.
     See [routing policies](ROUTING_POLICIES.md).
 29. Source detail consolidates models, quota/account capacity, runtime duration,
     TTFT, verification evidence and read-only eligibility explanations. Optional
