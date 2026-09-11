@@ -186,7 +186,7 @@ function formField(schema,value,label=schema.name,context={}){
  if(schema.name==='adapter')choices=S.descriptors.map(d=>d.id);
  if(schema.name==='account_id')choices=(S.config.accounts||[]).map(a=>a.id);
  if(schema.name==='credential_ref'){
-  const credentials=context.credentialModes?.length?S.credentials.filter(c=>context.credentialModes.includes(c.kind)||c.id===value):S.credentials;
+  const credentials=context.allowIncompatible?S.credentials:context.credentialModes?.length?S.credentials.filter(c=>context.credentialModes.includes(c.kind)||c.id===value):S.credentials;
   choices=[...new Set([...credentials.map(c=>c.id),...(value?[value]:[])])];
  }
  if(schema.name==='browser_profile_id')choices=(S.config.browser_profiles||[]).map(p=>p.id);
@@ -206,7 +206,7 @@ function objectForm(fields,value,context={}){
 function edit(kind,item,create=false){
  const base=clone(S.config),revision=S.revision;
   const descriptor=kind==='sources'&&item.adapter?S.descriptors.find(d=>d.id===item.adapter):null;
-  const form=objectForm(schemaFor(kind).item.fields,item,{credentialModes:descriptor?.credential_modes});
+  const form=objectForm(schemaFor(kind).item.fields,item,{credentialModes:descriptor?.credential_modes,allowIncompatible:kind==='sources'});
   let quotaConfirmed=false;
  let membership;
  if(kind==='sources'){
@@ -331,15 +331,17 @@ function accountWizard(draft={}){
  const providerDescriptor=()=>{const p=S.catalog.find(p=>p.id===provider.value),d=S.descriptors.find(d=>d.id===p?.adapter);return d};
  const allowedModes=()=>{const d=providerDescriptor();return d?.credential_modes?.length?d.credential_modes:null};
  const supports=(...modes)=>{const allowed=allowedModes();return !allowed||modes.some(mode=>allowed.includes(mode))};
- const compatibleCredentials=()=>{const allowed=allowedModes();return S.credentials.filter(c=>!allowed||allowed.includes(c.kind))};
+ const credentialOverride=h('input',{type:'checkbox',checked:!!draft.credential_type_override,'aria-label':'Reviewed credential type override'});
+ const compatibleCredentials=()=>{const allowed=allowedModes();return S.credentials.filter(c=>credentialOverride.checked||!allowed||allowed.includes(c.kind))};
  const credential=select(compatibleCredentials().map(c=>({value:c.id,label:c.id+' · '+c.kind})),draft.credential_ref||'',true);
  const available=[...(S.config.browser_profiles||[]),...(draft.newProfile?[draft.newProfile]:[])];
  const profile=select(available.map(p=>({value:p.id,label:p.id+(p===draft.newProfile?' (new isolated profile)':'')})),draft.browser_profile_id||'',true);
  const hints=h('p',{class:'muted'});
  const authNotice=h('p',{},draft.authenticated?'Login detected for this selected profile. Review and save the account.':'Choose a protected credential or a browser profile. Import actions return here with the new reference.');
- const capture=()=>({...draft,id:id.value.trim(),display_name:name.value.trim(),quota_domain:quota.value.trim(),provider_id:provider.value,credential_ref:credential.value,browser_profile_id:profile.value,base_url:baseURL.value.trim(),organization:organization.value.trim(),project:project.value.trim(),newProfile:draft.newProfile?.id===profile.value?draft.newProfile:undefined});
- const hint=()=>{const modes=allowedModes()||[];hints.textContent='Compatible credential types: '+(modes.join(', ')||'any declared type')+'. Incompatible protected references are hidden. Password imports are login material, not API keys. Base URL, organization and project are optional account defaults; a source may override them. Accounts are saved disabled and excluded from Auto routing.'};
+ const capture=()=>({...draft,id:id.value.trim(),display_name:name.value.trim(),quota_domain:quota.value.trim(),provider_id:provider.value,credential_ref:credential.value,credential_type_override:credentialOverride.checked,browser_profile_id:profile.value,base_url:baseURL.value.trim(),organization:organization.value.trim(),project:project.value.trim(),newProfile:draft.newProfile?.id===profile.value?draft.newProfile:undefined});
+ const hint=()=>{const modes=allowedModes()||[];hints.textContent='Compatible credential types: '+(modes.join(', ')||'any declared type')+'. '+(credentialOverride.checked?'Reviewed override is enabled; incompatible protected references may be selected and the server keeps the explicit risk flag. ':'Incompatible protected references are hidden until reviewed override is enabled. ')+'Password imports are login material, not API keys. Base URL, organization and project are optional account defaults; a source may override them. Accounts are saved disabled and excluded from Auto routing.'};
  const updateCredentialOptions=()=>{const current=credential.value,options=compatibleCredentials();credential.replaceChildren(h('option',{value:''},'Choose…'),...options.map(c=>h('option',{value:c.id},c.id+' · '+c.kind)));credential.value=options.some(c=>c.id===current)?current:''};
+ credentialOverride.addEventListener('change',()=>{updateCredentialOptions();hint()});
  const newCredentialAction=button('New credential',()=>credentialForm(undefined,imported,allowedModes,providerDescriptor));
  const passwordImportAction=button('Import password manager',()=>importCredentials(imported));
  const tokenImportAction=button('Import token',()=>importToken(imported,allowedModes));
@@ -355,13 +357,13 @@ function accountWizard(draft={}){
  const updateSetupActions=()=>{const d=providerDescriptor(),browser=!!(d?.browser_required||d?.browser_auth_check||allowedModes()?.includes('browser_profile'));passwordImportAction.hidden=!supports('username_password');tokenImportAction.hidden=!supports('api_key','oauth');browserCookieAction.hidden=!(browser&&supports('cookie'));newProfileAction.hidden=!browser;loginAction.hidden=!browser;newCredentialAction.hidden=!!allowedModes()&&(!allowedModes().length||!d?.credential_fields?.length)};
  provider.onchange=()=>{draft.authenticated=false;updateCredentialOptions();authNotice.textContent='Selection changed. Check login again for this selection.';hint();updateSetupActions()};profile.onchange=()=>{draft.authenticated=false;authNotice.textContent='Selection changed. Check login again for this selection.'};hint();updateSetupActions();
  const imported=saved=>{const next=capture(),items=Array.isArray(saved)?saved:[saved];if(items.length===1)next.credential_ref=items[0].id;accountWizard(next)};
- dialog('Set up account',[h('div',{class:'form-grid'},field('Provider',provider),field('ID',id),field('Display Name',name),field('Quota domain',quota),field('Base URL',baseURL),field('Organization',organization),field('Project',project),field('Credential',credential),field('Browser Profile Id',profile)),hints,authNotice,h('div',{class:'toolbar'},setupActions)],[button('Review changes',async()=>{
+ dialog('Set up account',[h('div',{class:'form-grid'},field('Provider',provider),field('ID',id),field('Display Name',name),field('Quota domain',quota),field('Base URL',baseURL),field('Organization',organization),field('Project',project),field('Credential',credential),field('Browser Profile Id',profile),h('label',{class:'boolean'},credentialOverride,'Reviewed credential type override')),hints,authNotice,h('div',{class:'toolbar'},setupActions)],[button('Review changes',async()=>{
   const next=clone(S.config),value=capture();
   if(!value.id||!value.provider_id||!value.quota_domain)throw new Error('Enter account ID, provider and quota domain.');
   if((next.accounts||[]).some(a=>a.id===value.id))throw new Error('This account ID already exists.');
   if(value.newProfile){next.browser_profiles=next.browser_profiles||[];next.browser_profiles.push(value.newProfile)}
   next.providers=next.providers||[];if(!next.providers.some(p=>p.id===value.provider_id))next.providers.push({id:value.provider_id,enabled:true,auto_approved:false,pool_strategy:'round-robin'});
-  next.accounts=next.accounts||[];next.accounts.push({id:value.id,provider_id:value.provider_id,display_name:value.display_name,base_url:value.base_url,organization:value.organization,project:value.project,quota_domain:value.quota_domain,credential_ref:value.credential_ref,browser_profile_id:value.browser_profile_id,enabled:false,auto_approved:false,max_inflight:1,weight:1,created_at:new Date().toISOString()});
+  next.accounts=next.accounts||[];next.accounts.push({id:value.id,provider_id:value.provider_id,display_name:value.display_name,base_url:value.base_url,organization:value.organization,project:value.project,quota_domain:value.quota_domain,credential_ref:value.credential_ref,credential_type_override:value.credential_type_override,browser_profile_id:value.browser_profile_id,enabled:false,auto_approved:false,max_inflight:1,weight:1,created_at:new Date().toISOString()});
   await preview(next,'Add account '+value.id,()=>accountWizard(value),clone(S.config),S.revision,value.authenticated?async()=>{await api('/admin/accounts/'+encodeURIComponent(value.id)+'/check-login',{method:'POST'});await refresh()}:undefined);
  },'primary')]);
  }
