@@ -1,4 +1,4 @@
-//go:build linux || darwin
+//go:build (linux || darwin) && !cot_test_keyring
 
 package credentials
 

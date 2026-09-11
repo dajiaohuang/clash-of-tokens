@@ -1,4 +1,4 @@
-//go:build !windows && !linux && !darwin
+//go:build !windows && !linux && !darwin && !cot_test_keyring
 
 package credentials
 

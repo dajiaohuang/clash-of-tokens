@@ -53,6 +53,12 @@ verified in Ubuntu 24.04 on WSL using synthetic credentials and an isolated
 GNOME Keyring session. The runtime packages were extracted into test artifacts;
 no system packages or existing user keyrings were modified.
 
+Hosted Unix control-plane and race jobs use the explicit `cot_test_keyring`
+build tag. That test-only implementation keeps random envelope keys in memory
+for the duration of the process, so those jobs exercise vault and control-plane
+behavior without weakening the production native-backend boundary. The
+dedicated macOS job continues to exercise the real Keychain backend.
+
 To repeat on Linux with `dbus-run-session`, `dbus-send` and
 `gnome-keyring-daemon` available:
 

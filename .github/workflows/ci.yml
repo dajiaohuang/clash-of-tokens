@@ -26,7 +26,11 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
+      - name: Run tests with isolated test keyring (Unix)
+        if: runner.os != 'Windows'
+        run: go test -tags=cot_test_keyring ./...
       - name: Run tests
+        if: runner.os == 'Windows'
         run: go test ./...
       - name: Run vet
         run: go vet ./...
@@ -42,8 +46,8 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
-      - name: Run race tests
-        run: go test -race ./...
+      - name: Run race tests with isolated test keyring
+        run: go test -race -tags=cot_test_keyring ./...
 
   native-keychain:
     name: macOS native Keychain
@@ -69,6 +73,7 @@ jobs:
           security unlock-keychain -p "$password" "$keychain"
           security list-keychains -d user -s "$keychain"
           security default-keychain -s "$keychain"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$password" "$keychain"
           COT_TEST_NATIVE_KEYRING=1 go test ./internal/credentials -run '^TestNativeKeyringRoundTrip$' -count=1
 
   build:
