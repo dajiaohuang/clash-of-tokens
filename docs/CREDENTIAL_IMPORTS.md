@@ -40,7 +40,8 @@ the extracted credentials CSV. The application never scans or decrypts a
 password-manager vault. It never deletes the user's export file.
 
 **Credentials → Import token** supports a configured source's environment
-variable and selected Codex, Gemini CLI or generic OAuth JSON. Only the current
+variable or an explicitly named safe environment variable before a source
+exists, plus selected Codex, Gemini CLI or generic OAuth JSON. Only the current
 access token is imported. Refresh tokens and CLI account IDs are not copied;
 automatic refresh remains unimplemented. The UI reports this before saving.
 

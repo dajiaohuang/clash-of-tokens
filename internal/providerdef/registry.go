@@ -15,16 +15,27 @@ type CredentialField struct {
 	Required bool   `json:"required"`
 }
 type Descriptor struct {
-	ID                 string            `json:"id"`
-	Factory            string            `json:"factory"`
-	Protocols          []string          `json:"protocols"`
-	TextOnly           bool              `json:"text_only"`
-	ToolsAllowed       bool              `json:"tools_allowed"`
-	BrowserRequired    bool              `json:"browser_required"`
-	BrowserAuthCheck   bool              `json:"browser_auth_check"`
-	CredentialModes    []string          `json:"credential_modes"`
-	CredentialFields   []CredentialField `json:"credential_fields"`
-	DefaultMaxInflight int               `json:"default_max_inflight"`
+	ID                     string                       `json:"id"`
+	Factory                string                       `json:"factory"`
+	Protocols              []string                     `json:"protocols"`
+	TextOnly               bool                         `json:"text_only"`
+	ToolsAllowed           bool                         `json:"tools_allowed"`
+	BrowserRequired        bool                         `json:"browser_required"`
+	BrowserAuthCheck       bool                         `json:"browser_auth_check"`
+	CredentialModes        []string                     `json:"credential_modes"`
+	CredentialFields       []CredentialField            `json:"credential_fields"`
+	CredentialFieldsByMode map[string][]CredentialField `json:"credential_fields_by_mode,omitempty"`
+	DefaultMaxInflight     int                          `json:"default_max_inflight"`
+}
+
+// FieldsForMode returns the descriptor-owned fields for a credential mode.
+// A copy is returned so API consumers cannot mutate the registry's templates.
+func (d Descriptor) FieldsForMode(mode string) []CredentialField {
+	fields := d.CredentialFields
+	if modeFields, ok := d.CredentialFieldsByMode[mode]; ok {
+		fields = modeFields
+	}
+	return append([]CredentialField(nil), fields...)
 }
 
 var registry = build()
@@ -87,6 +98,15 @@ func build() map[string]Descriptor {
 		if !slices.Contains(d.CredentialModes, "username_password") {
 			d.CredentialModes = append(d.CredentialModes, "username_password")
 		}
+		d.CredentialFieldsByMode = map[string][]CredentialField{
+			"username_password": {
+				{Name: "username", Label: "Username", Required: true},
+				{Name: "password", Label: "Password", Secret: true, Required: true},
+			},
+			"browser_session": {{Name: "value", Label: "Browser session reference", Secret: true, Required: true}},
+			"cookie":          {{Name: "value", Label: "Cookie", Secret: true, Required: true}},
+			"browser_profile": {{Name: "value", Label: "Browser profile reference", Required: true}},
+		}
 		out[id] = d
 	}
 	for _, id := range []string{"openai", "anthropic", "gemini"} {
@@ -111,6 +131,9 @@ func build() map[string]Descriptor {
 	d = out["app-device"]
 	d.CredentialModes = []string{"device_session"}
 	d.CredentialFields = nil
+	d.CredentialFieldsByMode = map[string][]CredentialField{
+		"device_session": {{Name: "value", Label: "Device session reference", Required: true}},
+	}
 	out["app-device"] = d
 	return out
 }
@@ -122,6 +145,13 @@ func Lookup(id string) (Descriptor, bool) {
 	d.Protocols = append([]string(nil), d.Protocols...)
 	d.CredentialModes = append([]string(nil), d.CredentialModes...)
 	d.CredentialFields = append([]CredentialField(nil), d.CredentialFields...)
+	if d.CredentialFieldsByMode != nil {
+		fields := make(map[string][]CredentialField, len(d.CredentialFieldsByMode))
+		for mode, values := range d.CredentialFieldsByMode {
+			fields[mode] = append([]CredentialField(nil), values...)
+		}
+		d.CredentialFieldsByMode = fields
+	}
 	return d, true
 }
 func All() []Descriptor {

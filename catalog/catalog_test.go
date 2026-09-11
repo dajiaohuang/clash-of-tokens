@@ -58,6 +58,19 @@ func TestCredentialMatchingUsesExactOfficialAliases(t *testing.T) {
 	if got := MatchCredentials("chat.openai.com.evil.test", "api_key"); len(got) != 0 {
 		t.Fatalf("lookalike domain matched: %#v", got)
 	}
+	matched = MatchCredentials("https://chatgpt.com/login", "browser_session")
+	foundBrowser := false
+	for _, item := range matched {
+		if item.Provider == "chatgpt-web" && item.Compatible {
+			foundBrowser = true
+		}
+	}
+	if !foundBrowser {
+		t.Fatalf("full official URL was not normalized: %#v", matched)
+	}
+	if got := MatchCredentials("https://chatgpt.com.evil.test/login", "browser_session"); len(got) != 0 {
+		t.Fatalf("lookalike URL matched: %#v", got)
+	}
 }
 
 func TestBrowserPresetsExposeBrowserReverseMetadata(t *testing.T) {

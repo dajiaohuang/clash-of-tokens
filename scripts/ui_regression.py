@@ -370,6 +370,14 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     page.get_by_role("button", name="Discover models", exact=True).click()
     expect(page.get_by_role("heading", name="Discovered models", exact=True)).to_be_visible()
     expect(page.get_by_text("discovered-model", exact=True)).to_be_visible()
+    # A discovered model must be assigned at least one declared gateway
+    # protocol before the source editor can accept it.
+    page.get_by_role("row").filter(has=page.get_by_text("discovered-model", exact=True)).get_by_role("button", name="Configure model", exact=True).click()
+    expect(page.get_by_role("heading", name="Configure discovered model", exact=True)).to_be_visible()
+    expect(page.get_by_label("chat", exact=True)).to_be_visible()
+    page.get_by_role("button", name="Cancel", exact=True).click()
+    page.get_by_role("button", name="Discover models", exact=True).click()
+    expect(page.get_by_role("heading", name="Discovered models", exact=True)).to_be_visible()
     page.get_by_role("button", name="Close", exact=True).click()
     page.get_by_role("button", name="Validate", exact=True).click()
     page.get_by_role("button", name="Run validation", exact=True).click()
@@ -499,6 +507,16 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     page.get_by_role("button", name="Save imported token", exact=True).click()
     expect(page.get_by_role("dialog")).not_to_be_visible()
     expect(page.get_by_text("environment:openai", exact=True)).to_be_visible()
+    # An explicit environment variable can be imported before a matching
+    # source exists; the value remains protected and is never rendered.
+    page.get_by_role("button", name="Import token", exact=True).click()
+    page.get_by_label("Explicit environment variable (optional)", exact=True).fill("COT_OPENAI_KEY")
+    page.get_by_role("button", name="Preview token", exact=True).click()
+    expect(page.get_by_text("Available: Yes", exact=True)).to_be_visible()
+    assert "synthetic-env-token-not-for-display" not in page.content()
+    page.get_by_role("button", name="Save imported token", exact=True).click()
+    expect(page.get_by_role("dialog")).not_to_be_visible()
+    expect(page.get_by_text("environment:COT_OPENAI_KEY", exact=True)).to_be_visible()
     page.get_by_role("button", name="Import token", exact=True).click()
     page.get_by_label("Import from", exact=True).select_option("codex")
     page.get_by_label("CLI session JSON file", exact=True).set_input_files({"name":"auth.json","mimeType":"application/json","buffer":b'{"tokens":{"access_token":"synthetic-cli-access","refresh_token":"never-import-refresh"}}'})

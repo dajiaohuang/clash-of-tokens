@@ -102,7 +102,7 @@ protected vault:
   plaintext file fallback.
 
 The control plane supports selected CSV/JSON exports from the named password
-managers, configured environment imports, selected OAuth/CLI token imports,
+managers, configured or explicitly named environment imports, selected OAuth/CLI token imports,
 browser profile metadata discovery, and selected CDP cookie import. Import is
 explicit and bounded: the user selects records, the preview is redacted, and
 only a new protected reference is persisted. Username/password material is
@@ -372,7 +372,7 @@ Provider、Account、Source、Model 和 Auto 批准是独立开关。关闭父�
 - macOS 使用 AES-GCM vault，密钥放在原生 Keychain，需 cgo 构建。
 - 原生保护不可用时拒绝读写，不使用明文文件 fallback。
 
-控制面支持指定密码管理器的 CSV/JSON 导出、环境变量导入、部分
+控制面支持指定密码管理器的 CSV/JSON 导出、已配置来源或显式变量名的环境变量导入、部分
 OAuth/CLI token 导入、浏览器 Profile 元数据发现和选定 CDP Cookie 导入。
 导入必须由用户明确选择，预览会脱敏，只保存新的受保护引用。账密以有界
 结构值保存。详见[凭证导入](docs/CREDENTIAL_IMPORTS.md)、

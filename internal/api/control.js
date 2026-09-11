@@ -402,11 +402,17 @@ function credentialForm(existing,onSaved,allowedModes,descriptor){
  const kind=select(kinds,existing?.kind||kinds[0]||'api_key');
  const value=h('input',{type:'password',autocomplete:'new-password',placeholder:'New secret value'});
  const username=h('input',{autocomplete:'off',placeholder:'Username (username/password only)'});
- const fields=descriptor?.()?.credential_fields||[],secretField=fields.find(f=>f.secret)||fields.find(f=>f.name==='value'),valueLabel=secretField?.label||'Secret value';
- const usernameField=field('Username',username),valueField=field('Credential value',value);
+ const descriptorValue=()=>descriptor?.()||{};
+ const defaultFields=[{name:'value',label:'Secret value',secret:true,required:true}];
+ const fieldsForMode=mode=>descriptorValue().credential_fields_by_mode?.[mode]||descriptorValue().credential_fields||defaultFields;
+ const fieldFor=(fields,names)=>fields.find(f=>names.includes(f.name));
+ const initialFields=fieldsForMode(kind.value),initialUsername=fieldFor(initialFields,['username']),initialSecret=fieldFor(initialFields,['password','value'])||initialFields.find(f=>f.secret);
+ const usernameField=field(initialUsername?.label||'Username',username),valueField=field(initialSecret?.label||'Credential value',value);
  const updateCredentialFields=()=>{
-  usernameField.hidden=kind.value!=='username_password';
-  valueField.querySelector('label').textContent=kind.value==='username_password'?'Password':valueLabel;
+  const fields=fieldsForMode(kind.value),usernameDefinition=fieldFor(fields,['username']),secretDefinition=fieldFor(fields,['password','value'])||fields.find(f=>f.secret);
+  usernameField.hidden=!usernameDefinition;
+  if(usernameDefinition)usernameField.querySelector('label').textContent=usernameDefinition.label||'Username';
+  valueField.querySelector('label').textContent=secretDefinition?.label||'Credential value';
   valueField.hidden=kind.value==='device_session';
  };
  kind.addEventListener('change',updateCredentialFields);
@@ -663,8 +669,17 @@ function importCredentials(onSaved){
   dialog('Select credentials to import',[h('p',{class:'muted'},'Skipped '+report.skipped+' non-web or non-password records. Only checked entries will be saved. Existing credentials will not be replaced. Bind the new references from Accounts after importing.'),table(['Select','Name','Domain','Type','Provider match'],rows.map(row=>[h('input',{type:'checkbox','aria-label':'Import entry '+(row.index+1),onchange:e=>{if(e.target.checked)selected.add(row.index);else selected.delete(row.index)}}),row.name,row.domain,row.kind,(row.matches||[]).map(m=>m.provider+(m.compatible?' (compatible)':' (login or different credential required)')).join(', ')||'No exact domain match']))],[button('Cancel',()=>{data='';$('dialog').close()}),button('Import selected',async()=>{
    if(!selected.size)throw new Error('Select at least one entry.');
    const saved=await api('/admin/credentials/import',{method:'POST',body:JSON.stringify({format,data,selected:[...selected],apply:true})});
-   data='';$('dialog').close();await refresh();message('Imported '+saved.length+' credentials. Bind their references from Accounts.');
-   onSaved?.(saved);
+   const selectedRows=rows.filter(row=>selected.has(row.index));
+   const suggested=selectedRows.length===1?(selectedRows[0].matches||[]).find(match=>match.compatible)?.provider||'':'';
+   data='';$('dialog').close();await refresh();
+   if(saved.length===1&&suggested&&!onSaved){
+    message('Imported credential. Review the suggested provider binding before saving the account.');
+    onSaved?.(saved);
+    accountWizard({credential_ref:saved[0].id,provider_id:suggested});
+   }else{
+    message('Imported '+saved.length+' credentials. Bind their references from Accounts.');
+    onSaved?.(saved);
+   }
   },'primary')]);
  },'primary')]);
 }
@@ -720,10 +735,26 @@ async function sourceVerification(source){
 async function discoverModels(source){
  const result=await api('/admin/sources/'+encodeURIComponent(source.id)+'/discover',{method:'POST'});
  dialog('Discovered models',[h('p',{class:'muted'},(result.complete?'Complete list':'Partial list: limit reached')+' · '+result.pages+' pages · '+result.checked_at+'. Metadata is provider-reported; discovery does not verify generation, tools, vision or quality.'+(result.history_recorded?' History saved.':' History could not be saved.')),table(['Model','Owner','Token limits','Generation methods','Created','Action'],result.models.map(m=>[m.display_name&&m.display_name!==m.id?m.display_name+' ('+m.id+')':m.id,m.owned_by||'Not reported',m.input_token_limit||m.output_token_limit?(m.input_token_limit||'—')+' / '+(m.output_token_limit||'—'):'Not reported',(m.supported_methods||[]).join(', ')||'Not reported',m.created_unix?new Date(m.created_unix*1000).toLocaleString():'Not reported',button('Configure model',()=>{
-  const next=clone(source);if(next.models.some(x=>x.id===m.id||x.upstream===m.id))throw new Error('This model is already configured.');
-  next.models.push({id:m.id,upstream:m.id,declared_model:m.id,canonical_model:m.id,protocols:[],tier:'unrated',tools:'unknown',vision:false,max_input_bytes:65536,enabled:false,auto_approved:false});
-  edit('sources',next);
+  configureDiscoveredModel(source,m);
  })]))]);
+}
+function configureDiscoveredModel(source,discovered){
+ const descriptor=S.descriptors.find(d=>d.id===source.adapter);
+ const protocols=[...(descriptor?.protocols||[])];
+ if(!protocols.length)throw new Error('This adapter has no declared protocols for discovered models.');
+ const existing=new Set(source.models.flatMap(m=>m.protocols||[]));
+ const checks=protocols.map(protocol=>h('label',{class:'boolean'},h('input',{type:'checkbox',checked:existing.has(protocol),'data-protocol':protocol}),protocol));
+ const methods=(discovered.supported_methods||[]).join(', ')||'Not reported by provider';
+ dialog('Configure discovered model',[h('p',{class:'muted'},'Discovery provides metadata only. Select the gateway protocols this configured source explicitly supports; no protocol is inferred from the upstream method names.'),table(['Field','Value'],[['Model',discovered.id],['Display name',discovered.display_name||'Not reported'],['Owner',discovered.owned_by||'Not reported'],['Provider methods',methods]]),h('h3',{},'Gateway protocols'),h('div',{class:'form-grid'},checks)],[button('Cancel',()=>$('dialog').close()),button('Review model',()=>{
+  const selected=checks.filter(label=>label.querySelector('input').checked).map(label=>label.querySelector('input').dataset.protocol);
+  if(!selected.length)throw new Error('Select at least one gateway protocol.');
+  const next=clone(S.config),target=next.sources.find(s=>s.id===source.id);
+  if(!target||target.models.some(x=>x.id===discovered.id||x.upstream===discovered.id))throw new Error('This model is already configured. Refresh and try again.');
+  const maxInputBytes=source.models.find(model=>model.max_input_bytes>0)?.max_input_bytes||1048576;
+  target.models.push({id:discovered.id,upstream:discovered.id,declared_model:discovered.id,canonical_model:discovered.id,protocols:selected,tier:'unrated',tools:'unknown',vision:false,max_input_bytes:maxInputBytes,enabled:false,auto_approved:false});
+  $('dialog').close();
+  edit('sources',target);
+},'primary')]);
 }
 function validateSource(source){
  const model=h('select',{},source.models.map(m=>h('option',{value:m.id},m.id))),proto=h('select',{});
@@ -865,12 +896,13 @@ function importToken(onSaved,allowedModes){
  ]:['environment','codex','gemini-cli','oauth'];
  const mode=select(modeOptions,modeOptions[0]||'environment');
  const source=select(S.config.sources.filter(s=>s.key_env).map(s=>s.id),'',true);
+ const variable=h('input',{placeholder:'Optional explicit variable, e.g. OPENAI_API_KEY',autocomplete:'off'});
  const kindOptions=allowed?['api_key','oauth','cookie'].filter(k=>allowed.includes(k)):['api_key','oauth','cookie'];
  const kind=select(kindOptions,kindOptions[0]||'api_key');
  const file=h('input',{type:'file',accept:'.json'});
- dialog('Import token',[field('Import from',mode),field('Configured source for environment import',source),field('Environment credential type',kind),field('CLI session JSON file',file),h('p',{class:'muted'},'Environment import reads only the selected source’s configured variable. CLI import copies the current access token only; refresh tokens and account IDs are not imported. Source account-ID configuration may still be required.')],[button('Preview token',async()=>{
+  dialog('Import token',[field('Import from',mode),field('Configured source for environment import',source),field('Explicit environment variable (optional)',variable),field('Environment credential type',kind),field('CLI session JSON file',file),h('p',{class:'muted'},'Environment import reads the selected source variable, or the explicit variable when no source is selected. CLI import copies the current access token only; refresh tokens and account IDs are not imported. Source account-ID configuration may still be required.')],[button('Preview token',async()=>{
   let payload,path;
-  if(mode.value==='environment'){path='/admin/credentials/import-env';payload={source:source.value,kind:kind.value}}
+  if(mode.value==='environment'){path='/admin/credentials/import-env';payload={source:source.value,variable:variable.value.trim(),kind:kind.value}}
   else {const chosen=file.files[0];if(!chosen||chosen.size>1024*1024)throw new Error('Choose a CLI JSON file up to 1 MiB.');path='/admin/credentials/import-cli';payload={format:mode.value,data:await chosen.text()}}
   const preview=await api(path,{method:'POST',body:JSON.stringify(payload)});
   dialog('Token import preview',[h('p',{},'Available: '+(preview.available?'Yes':'No')),h('p',{},'Type: '+preview.kind),h('p',{class:'muted'},preview.message||'Variable: '+preview.variable+'. The value is never returned to this page.')],[button('Save imported token',async()=>{

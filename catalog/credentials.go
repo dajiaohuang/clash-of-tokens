@@ -1,6 +1,7 @@
 package catalog
 
 import (
+	"net/url"
 	"slices"
 	"strings"
 )
@@ -21,7 +22,10 @@ type CredentialMatch struct {
 // account-availability evidence.
 func MatchCredentials(domain, kind string) []CredentialMatch {
 	out := []CredentialMatch{}
-	domain = strings.ToLower(strings.TrimSuffix(domain, "."))
+	domain = normalizeHost(domain)
+	if domain == "" {
+		return out
+	}
 	for _, p := range All() {
 		if !slices.Contains(p.Credentials.Domains, domain) {
 			continue
@@ -34,4 +38,22 @@ func MatchCredentials(domain, kind string) []CredentialMatch {
 		out = append(out, CredentialMatch{Provider: p.ID, Compatible: compatible, Reason: reason})
 	}
 	return out
+}
+
+// normalizeHost accepts either a host or an explicit HTTP(S) URL while
+// retaining host-exact matching. Paths and query strings never influence the
+// recommendation, and malformed or credential-bearing URLs are rejected.
+func normalizeHost(value string) string {
+	value = strings.TrimSpace(strings.ToLower(value))
+	if strings.Contains(value, "://") {
+		u, err := url.Parse(value)
+		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Hostname() == "" || u.User != nil {
+			return ""
+		}
+		value = u.Hostname()
+	}
+	if strings.ContainsAny(value, "/?#\r\n\x00") {
+		return ""
+	}
+	return strings.TrimSuffix(value, ".")
 }

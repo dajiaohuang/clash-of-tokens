@@ -941,3 +941,34 @@ the server-side compatibility check authoritative. Source editors continue to
 filter credential choices by their descriptor, while an existing incompatible
 reference remains visible for migration review. No credential value is ever
 returned to the UI.
+
+Batch 171 adds a hard per-request USD admission budget. Groups can require a
+complete input/output price pair and an explicit output-token ceiling; the
+router fails closed when either is unknown and counts conservative request
+estimates across safe retries. The simulator and source detail expose the
+output-token control, while protocol tests cover OpenAI, Anthropic and Gemini
+field spellings.
+
+Batch 172 makes credential setup fields descriptor-driven. Browser-auth
+descriptors declare username/password, cookie, browser-session and profile
+field labels by credential mode; the protected-value form consumes those
+templates and falls back to a generic secret field only when no descriptor is
+available. Registry copies are isolated so UI clients cannot mutate templates.
+
+Batch 173 closes the model-discovery configuration loop. A discovered model
+now requires an explicit selection of the adapter's declared gateway protocols
+before it enters the source editor. The saved model remains disabled,
+unrated and not Auto-approved, and its input-byte limit comes from the source
+policy rather than being inferred from provider token metadata.
+
+Batch 174 broadens safe provider matching. Exact aliases now include current
+OpenAI, OpenRouter, Poe, Copilot, Cursor and Windsurf product hosts, and the
+matcher accepts a full HTTP(S) URL while still rejecting lookalike hosts.
+Credential imports with one compatible match can open the account wizard for
+direct binding from the control plane.
+
+Batch 175 adds explicit environment-variable import for account setup. The
+import endpoint accepts a bounded variable name when no configured source
+exists, blocks the gateway's API/admin variables, returns availability without
+the value, and stores the value in the protected vault with auditable
+provenance.

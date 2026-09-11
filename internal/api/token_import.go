@@ -3,9 +3,13 @@ package api
 import (
 	"net/http"
 	"os"
+	"regexp"
+	"strings"
 
 	"clash-of-tokens/internal/credentials"
 )
+
+var importEnvName = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]{0,127}$`)
 
 func (s *Server) tokenImport(w http.ResponseWriter, r *http.Request) bool {
 	if r.URL.Path != "/admin/credentials/import-env" && r.URL.Path != "/admin/credentials/import-cli" {
@@ -16,11 +20,12 @@ func (s *Server) tokenImport(w http.ResponseWriter, r *http.Request) bool {
 		return true
 	}
 	var input struct {
-		Source string `json:"source"`
-		Format string `json:"format"`
-		Data   string `json:"data"`
-		Kind   string `json:"kind"`
-		Apply  bool   `json:"apply"`
+		Source   string `json:"source"`
+		Variable string `json:"variable"`
+		Format   string `json:"format"`
+		Data     string `json:"data"`
+		Kind     string `json:"kind"`
+		Apply    bool   `json:"apply"`
 	}
 	if decodeInput(w, r, &input, 2<<20) != nil {
 		fail(w, 400, "invalid token import request")
@@ -30,14 +35,17 @@ func (s *Server) tokenImport(w http.ResponseWriter, r *http.Request) bool {
 	origin := ""
 	kind := input.Kind
 	if r.URL.Path == "/admin/credentials/import-env" {
-		name := ""
-		for _, source := range s.cfg.Sources {
-			if source.ID == input.Source {
-				name = source.KeyEnv
+		name := strings.TrimSpace(input.Variable)
+		if input.Source != "" {
+			name = ""
+			for _, source := range s.cfg.Sources {
+				if source.ID == input.Source {
+					name = source.KeyEnv
+				}
 			}
 		}
-		if name == "" || name == s.cfg.APIKeyEnv || name == s.cfg.AdminKeyEnv {
-			fail(w, 400, "source has no importable credential variable")
+		if name == "" || !importEnvName.MatchString(name) || name == s.cfg.APIKeyEnv || name == s.cfg.AdminKeyEnv {
+			fail(w, 400, "choose a configured source or a safe environment variable name")
 			return true
 		}
 		if kind != "api_key" && kind != "oauth" && kind != "cookie" {
@@ -45,7 +53,13 @@ func (s *Server) tokenImport(w http.ResponseWriter, r *http.Request) bool {
 			return true
 		}
 		value = os.Getenv(name)
-		origin = "environment:" + input.Source
+		origin = "environment:" + name
+		if input.Source != "" {
+			// Preserve the existing source-oriented provenance label for the
+			// configured-source flow; explicit variable imports retain the
+			// variable name so they remain auditable without exposing its value.
+			origin = "environment:" + input.Source
+		}
 		if !input.Apply {
 			reply(w, map[string]any{"variable": name, "available": value != "", "kind": kind})
 			return true

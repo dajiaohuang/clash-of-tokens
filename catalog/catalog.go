@@ -49,7 +49,7 @@ func All() []Entry {
 // documentation. Matching remains host-exact; a lookalike domain never gains
 // a provider suggestion.
 var domainAliases = map[string][]string{
-	"openai":          {"chat.openai.com", "platform.openai.com"},
+	"openai":          {"chat.openai.com", "chatgpt.com", "platform.openai.com"},
 	"anthropic":       {"claude.ai", "console.anthropic.com"},
 	"gemini":          {"gemini.google.com", "aistudio.google.com", "ai.google.dev"},
 	"deepseek":        {"chat.deepseek.com", "platform.deepseek.com"},
@@ -69,6 +69,13 @@ var domainAliases = map[string][]string{
 	"volcengine-ark":  {"console.volcengine.com", "ark.cn-beijing.volces.com"},
 	"tencent-hunyuan": {"console.cloud.tencent.com", "hunyuan.cloud.tencent.com"},
 	"baidu-qianfan":   {"console.bce.baidu.com", "qianfan.baidubce.com"},
+	"openrouter":      {"openrouter.ai"},
+	"poe-api":         {"poe.com"},
+	"poe-web":         {"poe.com"},
+	"copilot":         {"copilot.microsoft.com"},
+	"copilot-web":     {"copilot.microsoft.com"},
+	"cursor":          {"cursor.com"},
+	"windsurf":        {"windsurf.com"},
 }
 
 func Preset(id, model string, baseOverride ...string) (config.Source, error) {
