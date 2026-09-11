@@ -1,7 +1,8 @@
 # Control plane acceptance audit
 
 Scope: all 51 sections in [the original synthesis](CONTROL_PLANE_REQUIREMENTS.md).
-This re-check covers repository `HEAD 70fcf711` on 2026-09-11. Every section
+This re-check covers the implementation currently on `main` as of 2026-09-11.
+Every section
 now has a current implementation reference and an explicit remaining-work or
 environment boundary. Implemented mechanisms are evidence of progress,
 **not acceptance of the whole section**: this project has no blanket claim that
