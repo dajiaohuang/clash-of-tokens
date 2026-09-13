@@ -84,7 +84,7 @@ var aliases = map[string]string{
 }
 
 var (
-	ErrCredential     = errors.New("major web adapter: source credential environment variable is not set")
+	ErrCredential     = errors.New("major web adapter: source credential is unavailable")
 	ErrUnsupported    = errors.New("major web adapter: unsupported protocol or request field")
 	ErrTruncated      = errors.New("major web adapter: truncated upstream stream")
 	errStreamComplete = errors.New("major web adapter: upstream stream complete")
@@ -213,7 +213,7 @@ func (c *Client) Do(ctx context.Context, protocol, model string, stream bool, bo
 		}
 		return c.doDuck(ctx, protocol, model, stream, body)
 	}
-	credential, err := readCredential(c.source)
+	credential, err := readCredential(c.source, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -332,11 +332,8 @@ type credentials struct {
 // JSON object for account-bound products.  JSON is useful when an organization
 // or user ID is issued alongside the secret, but no file or caller header is
 // consulted.
-func readCredential(source config.Source) (credentials, error) {
-	if strings.TrimSpace(source.KeyEnv) == "" {
-		return credentials{}, ErrCredential
-	}
-	raw := strings.TrimSpace(source.CredentialValue())
+func readCredential(source config.Source, contexts ...context.Context) (credentials, error) {
+	raw := strings.TrimSpace(source.CredentialValue(contexts...))
 	if raw == "" {
 		return credentials{}, ErrCredential
 	}

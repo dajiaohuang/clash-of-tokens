@@ -225,7 +225,7 @@ func (c *Client) Do(ctx context.Context, protocol, model string, stream bool, bo
 		}
 		return c.doDevin(ctx, model, stream, body)
 	}
-	token, err := c.credential()
+	token, err := c.credential(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -317,11 +317,8 @@ func (c *Client) Do(ctx context.Context, protocol, model string, stream bool, bo
 	return response, nil
 }
 
-func (c *Client) credential() (string, error) {
-	if strings.TrimSpace(c.source.KeyEnv) == "" {
-		return "", ErrCredential
-	}
-	value := strings.TrimSpace(c.source.CredentialValue())
+func (c *Client) credential(contexts ...context.Context) (string, error) {
+	value := strings.TrimSpace(c.source.CredentialValue(contexts...))
 	if value == "" || len(value) > maxHeaderValue || strings.ContainsAny(value, "\r\n") {
 		return "", ErrCredential
 	}

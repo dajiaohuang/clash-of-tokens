@@ -133,7 +133,7 @@ func (c *Client) Do(ctx context.Context, p, model string, stream bool, body []by
 	path := ""
 	var payload any
 	headers := http.Header{"Content-Type": []string{"application/json"}, "Accept": []string{"text/event-stream"}, "User-Agent": []string{"clash-tokens/0.1"}}
-	key := strings.TrimSpace(c.source.CredentialValue())
+	key := strings.TrimSpace(c.source.CredentialValue(ctx))
 	if key == "" && !c.source.Anonymous && !c.source.Local {
 		return nil, &Error{401, "provider credential is missing"}
 	}

@@ -33,7 +33,7 @@ func (c *Client) doIFlow(ctx context.Context, protocol, model string, stream boo
 	if err != nil {
 		return nil, err
 	}
-	key := credential(c.source)
+	key := credential(c.source, ctx)
 	setBearer(req, key)
 	req.Header.Set("Accept", "application/json")
 	if stream {

@@ -204,7 +204,7 @@ func (c *Client) Do(ctx context.Context, proto, model string, stream bool, body 
 	if clientHeaders.Get("X-COT-Session") != "" && (c.source.Adapter == AdapterDola || c.source.Adapter == "doubao-web" || c.source.Adapter == AdapterDeepSeek) {
 		return nil, fmt.Errorf("%w: this adapter currently supports isolated turns only", ErrUnsupported)
 	}
-	key, e := c.credential()
+	key, e := c.credential(ctx)
 	if e != nil {
 		return nil, e
 	}
@@ -254,11 +254,8 @@ func (c *Client) Do(ctx context.Context, proto, model string, stream bool, body 
 	return converted, nil
 }
 
-func (c *Client) credential() (string, error) {
-	if strings.TrimSpace(c.source.KeyEnv) == "" {
-		return "", ErrCredential
-	}
-	v := c.source.CredentialValue()
+func (c *Client) credential(contexts ...context.Context) (string, error) {
+	v := c.source.CredentialValue(contexts...)
 	if strings.TrimSpace(v) == "" {
 		return "", ErrCredential
 	}

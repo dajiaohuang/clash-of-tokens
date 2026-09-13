@@ -163,13 +163,10 @@ func validateSemantics(body []byte, adapter string) error {
 	return nil
 }
 
-func (c *Client) credential() (string, error) {
-	if c.source.KeyEnv == "" {
-		return "", errors.New("embedded provider key_env is required")
-	}
-	value := strings.TrimSpace(c.source.CredentialValue())
+func (c *Client) credential(contexts ...context.Context) (string, error) {
+	value := strings.TrimSpace(c.source.CredentialValue(contexts...))
 	if value == "" {
-		return "", errors.New("source credential environment variable is not set")
+		return "", errors.New("source credential is unavailable")
 	}
 	return value, nil
 }

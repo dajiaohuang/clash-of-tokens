@@ -118,7 +118,7 @@ func (c *Client) doWhiteRabbit(ctx context.Context, model string, stream bool, m
 	if err != nil {
 		return nil, err
 	}
-	cookie := strings.TrimSpace(c.source.CredentialValue())
+	cookie := strings.TrimSpace(c.source.CredentialValue(ctx))
 	if cookie == "" || strings.ContainsAny(cookie, "\r\n\x00") {
 		return nil, &Error{401, "WhiteRabbitNeo credential is missing or invalid"}
 	}

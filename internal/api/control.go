@@ -1,6 +1,8 @@
 package api
 
 import (
+	"bytes"
+	"context"
 	"crypto/rand"
 	"encoding/json"
 	"errors"
@@ -10,6 +12,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"clash-of-tokens/internal/config"
 	"clash-of-tokens/internal/credentials"
@@ -25,6 +28,7 @@ type generation struct {
 
 // ControlPlane owns durable configuration and request-pinned runtime snapshots.
 type ControlPlane struct {
+	jobs       managementJobs
 	browsers   browserProcesses
 	runtimeID  string
 	evidence   *evidence.Store
@@ -108,6 +112,8 @@ func (p *ControlPlane) release(g *generation) {
 	}
 }
 func (p *ControlPlane) Close() {
+	p.jobs.close()
+	p.browsers.close()
 	p.changes.Lock()
 	defer p.changes.Unlock()
 	p.mu.Lock()
@@ -129,17 +135,57 @@ func (p *ControlPlane) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Serialize administrative mutations with snapshot publication, including
 	// credential deletion, so reference checks cannot race new bindings.
 	mutation := strings.HasPrefix(r.URL.Path, "/admin/") && r.Method != "GET" && r.Method != "HEAD"
-	if mutation || r.URL.Path == "/admin/status" {
+	longOperation := r.Method == "POST" && managementOperation(r.URL.Path)
+	if mutation && !longOperation && !strings.HasPrefix(r.URL.Path, "/admin/jobs") {
 		p.changes.Lock()
 		defer p.changes.Unlock()
 	}
+	if longOperation {
+		p.changes.Lock()
+		r = p.operationRequest(r)
+	}
 	g := p.acquire()
+	if longOperation {
+		p.changes.Unlock()
+	}
 	if g == nil {
 		fail(w, 503, "gateway is closed")
 		return
 	}
 	defer p.release(g)
-	if strings.HasPrefix(r.URL.Path, "/admin/config") || managedResource(r.URL.Path) || r.URL.Path == "/admin/status" || credentialUnbindPath(r.URL.Path) {
+	if longOperation && r.Context().Value(jobReservedKey{}) != true {
+		if !authorized(r, g.server.adminKey) {
+			fail(w, 401, "authentication required")
+			return
+		}
+		if !sameOrigin(r) {
+			fail(w, 403, "same-origin management request required")
+			return
+		}
+		body, err := io.ReadAll(io.LimitReader(r.Body, (64<<10)+1))
+		if err != nil || len(body) > 64<<10 {
+			fail(w, 400, "management input exceeds limit")
+			return
+		}
+		r.Body = io.NopCloser(bytes.NewReader(body))
+		resource := p.operationResource(r.URL.Path, body)
+		p.jobs.mu.Lock()
+		if p.jobs.closed || p.jobs.resources[resource] || len(p.jobs.resources) >= maxManagementActive {
+			p.jobs.mu.Unlock()
+			fail(w, 409, "management resource or capacity unavailable")
+			return
+		}
+		if p.jobs.resources == nil {
+			p.jobs.resources = map[string]bool{}
+		}
+		p.jobs.resources[resource] = true
+		p.jobs.mu.Unlock()
+		defer func() { p.jobs.mu.Lock(); delete(p.jobs.resources, resource); p.jobs.mu.Unlock() }()
+		ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
+		defer cancel()
+		r = r.WithContext(ctx)
+	}
+	if strings.HasPrefix(r.URL.Path, "/admin/jobs") || strings.HasPrefix(r.URL.Path, "/admin/config") || managedResource(r.URL.Path) || r.URL.Path == "/admin/status" || credentialUnbindPath(r.URL.Path) {
 		w.Header().Set("Cache-Control", "no-store")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		if !authorized(r, g.server.adminKey) {
@@ -148,6 +194,10 @@ func (p *ControlPlane) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		if mutation && !sameOrigin(r) {
 			fail(w, 403, "cross-origin mutation rejected")
+			return
+		}
+		if strings.HasPrefix(r.URL.Path, "/admin/jobs") {
+			p.jobsAdmin(w, r)
 			return
 		}
 		if r.URL.Path == "/admin/status" {
@@ -201,6 +251,9 @@ func (p *ControlPlane) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			if p.browserLoginAdmin(w, r) {
+				return
+			}
+			if p.acquireSessionAdmin(w, r) {
 				return
 			}
 			p.resourceAdmin(w, r, g.server)
@@ -292,8 +345,9 @@ func previewImpact(before, after config.Config) map[string]any {
 		}
 	}
 	return map[string]any{
-		"groups":         rows,
-		"sources_before": len(before.Sources), "sources_after": len(after.Sources),
+		"credential_destinations": credentialDestinationChanges(before, after),
+		"groups":                  rows,
+		"sources_before":          len(before.Sources), "sources_after": len(after.Sources),
 		"accounts_before": len(before.Accounts), "accounts_after": len(after.Accounts),
 		"providers_before": len(before.Providers), "providers_after": len(after.Providers),
 		"browser_profiles_before": len(before.BrowserProfiles), "browser_profiles_after": len(after.BrowserProfiles),
@@ -351,10 +405,11 @@ func (p *ControlPlane) configAdmin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var input struct {
-		Revision uint64        `json:"revision"`
-		Config   config.Config `json:"config"`
-		Summary  string        `json:"summary"`
-		Target   uint64        `json:"target_revision"`
+		Revision            uint64        `json:"revision"`
+		Config              config.Config `json:"config"`
+		Summary             string        `json:"summary"`
+		Target              uint64        `json:"target_revision"`
+		ConfirmDestinations bool          `json:"confirm_credential_destinations"`
 	}
 	d := json.NewDecoder(http.MaxBytesReader(w, r.Body, (4<<20)+4096))
 	d.DisallowUnknownFields()
@@ -365,6 +420,20 @@ func (p *ControlPlane) configAdmin(w http.ResponseWriter, r *http.Request) {
 	var v config.Version
 	var err error
 	var impact map[string]any
+	if r.URL.Path == "/admin/config" || r.URL.Path == "/admin/config/rollback" {
+		next := input.Config
+		if r.URL.Path == "/admin/config/rollback" {
+			for _, item := range p.service.History() {
+				if item.Revision == input.Target {
+					next = item.Config
+				}
+			}
+		}
+		if len(credentialDestinationChanges(p.service.Current().Config, next)) > 0 && !input.ConfirmDestinations {
+			fail(w, 409, "credential destination changed; review the preview and explicitly confirm destinations")
+			return
+		}
+	}
 	switch r.URL.Path {
 	case "/admin/config/preview":
 		v, err = p.service.Preview(input.Revision, input.Config)

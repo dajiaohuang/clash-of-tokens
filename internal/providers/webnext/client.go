@@ -197,7 +197,7 @@ func (c *Client) Do(ctx context.Context, protocolName, model string, stream bool
 	if err != nil {
 		return nil, err
 	}
-	cred, err := c.credential()
+	cred, err := c.credential(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -226,11 +226,8 @@ func (c *Client) Do(ctx context.Context, protocolName, model string, stream bool
 	return resp, nil
 }
 
-func (c *Client) credential() (credentials, error) {
-	if strings.TrimSpace(c.source.KeyEnv) == "" {
-		return credentials{}, ErrCredential
-	}
-	raw := strings.TrimSpace(c.source.CredentialValue())
+func (c *Client) credential(contexts ...context.Context) (credentials, error) {
+	raw := strings.TrimSpace(c.source.CredentialValue(contexts...))
 	if raw == "" || len(raw) > maxResponseBytes {
 		return credentials{}, ErrCredential
 	}

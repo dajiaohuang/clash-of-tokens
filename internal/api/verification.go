@@ -112,15 +112,23 @@ func (p *ControlPlane) bindingWithMetadata(c config.Config, s config.Source, met
 	// metadata cannot leave evidence from the previous effective configuration
 	// marked as current.
 	effective := c.EffectiveSource(s)
+	var identity config.Account
+	for _, account := range c.Accounts {
+		if account.ID == s.AccountID {
+			identity = account
+			break
+		}
+	}
 	data, _ := json.Marshal(struct {
 		Source           config.Source
+		Account          config.Account
 		Browser          config.Browser
 		Device           config.Device
 		CredentialID     string
 		Version          uint64
 		Created, Updated time.Time
 		Runtime          string
-	}{effective, c.SourceBrowser(s), c.Device, meta.ID, meta.Version, meta.CreatedAt, meta.UpdatedAt, run})
+	}{effective, identity, c.SourceBrowser(s), c.Device, meta.ID, meta.Version, meta.CreatedAt, meta.UpdatedAt, run})
 	digest := sha256.Sum256(data)
 	return hex.EncodeToString(digest[:])
 }

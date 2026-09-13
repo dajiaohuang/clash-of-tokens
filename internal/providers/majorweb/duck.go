@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/chromedp/chromedp"
+	chromedp "clash-of-tokens/internal/browserexec"
 )
 
 func (c *Client) doDuck(parent context.Context, protocol, model string, stream bool, body []byte) (*http.Response, error) {
@@ -29,7 +29,7 @@ func (c *Client) doDuck(parent context.Context, protocol, model string, stream b
 	if err != nil {
 		return nil, err
 	}
-	a, stopA := chromedp.NewRemoteAllocator(context.Background(), c.browser.CDPURL)
+	a, stopA := chromedp.NewRemoteAllocator(context.Background(), c.browser.CDPURL, c.browser.Engine)
 	defer stopA()
 	tab, stopTab := chromedp.NewContext(a)
 	defer stopTab()

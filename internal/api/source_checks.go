@@ -83,7 +83,7 @@ func (p *ControlPlane) sourceCheckAdmin(w http.ResponseWriter, r *http.Request, 
 		if err != nil {
 			status = "failed"
 		}
-		recorded := p.evidence.Append(audit.Entry{Revision: p.service.Current().Revision, Kind: "discovery", Resource: parts[0], CheckedAt: result.CheckedAt, Method: result.Method, Status: status, Count: len(result.Models)}) == nil
+		recorded := p.appendOperationEvidence(r, audit.Entry{Kind: "discovery", Resource: parts[0], CheckedAt: result.CheckedAt, Method: result.Method, Status: status, Count: len(result.Models)}) == nil
 		if err != nil {
 			fail(w, 502, "model discovery failed")
 			return true
@@ -181,7 +181,7 @@ func (p *ControlPlane) sourceCheckAdmin(w http.ResponseWriter, r *http.Request, 
 	if evidence.Verified {
 		checkStatus = "verified"
 	}
-	evidence.HistoryRecorded = p.evidence.Append(audit.Entry{Binding: evidence.Binding, Revision: p.service.Current().Revision, Kind: "validation", Resource: source.ID, Model: model.ID, Protocol: input.Protocol, CheckedAt: evidence.CheckedAt, Method: evidence.Method, Status: checkStatus, UpstreamStatus: evidence.Result.UpstreamStatus, ProtocolComplete: evidence.Result.ProtocolComplete, OutputObserved: evidence.OutputObserved}) == nil
+	evidence.HistoryRecorded = p.appendOperationEvidence(r, audit.Entry{Binding: evidence.Binding, Kind: "validation", Resource: source.ID, Model: model.ID, Protocol: input.Protocol, CheckedAt: evidence.CheckedAt, Method: evidence.Method, Status: checkStatus, UpstreamStatus: evidence.Result.UpstreamStatus, ProtocolComplete: evidence.Result.ProtocolComplete, OutputObserved: evidence.OutputObserved}) == nil
 	reply(w, evidence)
 	return true
 }

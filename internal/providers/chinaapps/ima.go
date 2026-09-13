@@ -82,7 +82,7 @@ func (c *Client) Do(ctx context.Context, proto, model string, stream bool, body 
 	if !utf8.Valid(body) {
 		return nil, ErrUnsupported
 	}
-	cookie := strings.TrimSpace(c.source.CredentialValue())
+	cookie := strings.TrimSpace(c.source.CredentialValue(ctx))
 	if strings.HasPrefix(cookie, "{") {
 		var cred struct {
 			Cookie string `json:"cookie"`

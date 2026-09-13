@@ -49,7 +49,7 @@ func (p *ControlPlane) browserMetadataAdmin(w http.ResponseWriter, r *http.Reque
 		go func() {
 			defer workers.Done()
 			for i := range jobs {
-				out[i] = browsermeta.Check(ctx, profiles[i].ID, profiles[i].CDPURL)
+				out[i] = browsermeta.CheckEngine(ctx, profiles[i].ID, profiles[i].CDPURL, profiles[i].Engine)
 				out[i].MaxSessions = current.Browser.MaxSessions
 				out[i].BoundAccounts, out[i].BoundSources = profileBindings(current, profiles[i].ID)
 			}

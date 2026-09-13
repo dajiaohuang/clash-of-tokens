@@ -34,9 +34,14 @@ the client, identifies a port owner or sends CDP `Browser.close`. Each new launc
 has a new identity. A stale stop for an exited launch cannot stop a replacement
 launch using the same profile. Unknown launch identities are rejected.
 
-This controls the recorded parent process only. A browser launcher may hand off
-to children and exit; an `exited` or `stopped` entry does not establish that all
-browser children have exited. Such untracked processes are not terminated. CDP
+On Windows, the browser starts suspended, is assigned to a kernel Job Object,
+and only then resumes. Stop terminates that owned tree. Job handles use
+kill-on-close, so gateway exit or root-process exit also cleans up descendants.
+The browser's profile files remain. Tests exercise a root and child process and
+prove that an unrelated process survives stop, gateway close and root exit.
+
+Other platforms currently retain parent-process stopping only. Complete Unix
+process-tree ownership and crash recovery remain release gates. CDP/BiDi
 connection checks and authentication evidence remain separate observations.
 
 ## Lifetime and limits
@@ -46,9 +51,10 @@ unfinished owned launch. The registry retains at most 128 records and evicts the
 oldest exited record when a new launch needs room. Failed starts do not create a
 record. Registry reads return copied metadata.
 
-Ownership exists only in the current gateway process. Restarting the gateway
-does not reclaim earlier browser processes. Closing the gateway does not
-automatically kill browsers. Deleting a profile configuration likewise does not
+Ownership exists only in the current gateway process. The gateway never adopts
+an unknown process discovered after restart. Closing the gateway stops its owned
+launches; Windows kernel ownership also covers an abrupt gateway exit.
+Deleting a profile configuration does not
 delete its browser data or terminate its recorded process; use the explicit
 owned-process action while the gateway still retains that launch.
 

@@ -346,14 +346,6 @@ func TestGoogleAIModeBrowserFixture(t *testing.T) {
 	if cdp == "" {
 		t.Skip("set COT_TEST_CDP to a loopback Chrome DevTools endpoint")
 	}
-	probe, err := http.Get(strings.TrimRight(cdp, "/") + "/json/version")
-	if err != nil {
-		t.Skipf("configured Chrome DevTools endpoint unavailable: %v", err)
-	}
-	_ = probe.Body.Close()
-	if probe.StatusCode != http.StatusOK {
-		t.Skipf("configured Chrome DevTools endpoint returned %d", probe.StatusCode)
-	}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/search" {
@@ -381,7 +373,7 @@ func TestGoogleAIModeBrowserFixture(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c := New(config.Source{Adapter: AdapterGoogleAI}, config.Browser{Enabled: true, CDPURL: cdp})
+	c := New(config.Source{Adapter: AdapterGoogleAI}, config.Browser{Enabled: true, CDPURL: cdp, Engine: os.Getenv("COT_TEST_BROWSER_ENGINE")})
 	defer c.Close()
 	answer, err := c.googleAIModeTextAt(context.Background(), "fixture query", server.URL)
 	if err != nil {
@@ -403,14 +395,6 @@ func TestGoogleAIModeBrowserFixtureBounds(t *testing.T) {
 	if cdp == "" {
 		t.Skip("set COT_TEST_CDP to a loopback Chrome DevTools endpoint")
 	}
-	probe, err := http.Get(strings.TrimRight(cdp, "/") + "/json/version")
-	if err != nil {
-		t.Skipf("configured Chrome DevTools endpoint unavailable: %v", err)
-	}
-	_ = probe.Body.Close()
-	if probe.StatusCode != http.StatusOK {
-		t.Skipf("configured Chrome DevTools endpoint returned %d", probe.StatusCode)
-	}
 	large := strings.Repeat("x", (2<<20)+1000)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -422,9 +406,9 @@ document.getElementById('ai').addEventListener('click',()=>{
 </script></body></html>`)
 	}))
 	defer server.Close()
-	c := New(config.Source{Adapter: AdapterGoogleAI}, config.Browser{Enabled: true, CDPURL: cdp})
+	c := New(config.Source{Adapter: AdapterGoogleAI}, config.Browser{Enabled: true, CDPURL: cdp, Engine: os.Getenv("COT_TEST_BROWSER_ENGINE")})
 	defer c.Close()
-	_, err = c.googleAIModeTextAt(context.Background(), "fixture bounds", server.URL)
+	_, err := c.googleAIModeTextAt(context.Background(), "fixture bounds", server.URL)
 	if err == nil || !strings.Contains(err.Error(), "response exceeds limit") {
 		t.Fatalf("fixture overflow error = %v", err)
 	}

@@ -23,7 +23,7 @@ func (c *Client) doFanzha(ctx context.Context, protocol, model string, stream bo
 	if protocol != "chat" {
 		return nil, errors.New("fanzha adapter supports only chat protocol")
 	}
-	key, err := c.credential()
+	key, err := c.credential(ctx)
 	if err != nil {
 		return nil, err
 	}

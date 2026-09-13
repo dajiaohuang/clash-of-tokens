@@ -13,10 +13,9 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
-	"github.com/chromedp/cdproto/input"
-	cdpRuntime "github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
 
 	"clash-of-tokens/internal/config"
@@ -42,6 +41,11 @@ type Driver struct {
 func New(c config.Browser, source string) *Driver {
 	d := &Driver{cfg: c, source: source, store: newStore(c), origin: "https://chatgpt.com"}
 	d.connect = func() (context.Context, context.CancelFunc) {
+		if c.Engine == "firefox" {
+			tab := &bidiTab{endpoint: c.CDPURL}
+			ctx, cancel := context.WithCancel(context.WithValue(context.Background(), bidiTabKey{}, tab))
+			return ctx, func() { tab.close(); cancel() }
+		}
 		allocator, acancel := chromedp.NewRemoteAllocator(context.Background(), c.CDPURL)
 		tab, tcancel := chromedp.NewContext(allocator)
 		return tab, func() { tcancel(); acancel() }
@@ -73,7 +77,7 @@ func evaluate(ctx context.Context, code string, args any, out any) error {
 	data, _ := json.Marshal(args)
 	script := "(async()=>{try { const args=" + string(data) + ";" + pageHelpers + " const value=await(async()=>{" + code + "})();return {value};} catch(e){ return {error:String(e.message || 'page_error')}; }})()"
 	var result scriptResult
-	e := chromedp.Run(ctx, chromedp.Evaluate(script, &result, func(p *cdpRuntime.EvaluateParams) *cdpRuntime.EvaluateParams { return p.WithAwaitPromise(true) }))
+	e := browserEvaluate(ctx, script, &result)
 	if e != nil {
 		return problem(502, "browser connection or page execution failed")
 	}
@@ -153,10 +157,11 @@ func (d *Driver) Do(ctx context.Context, protocol, model string, body []byte, he
 	tab, closeTab := d.connect()
 	turn, turnCancel := context.WithCancel(tab)
 	stopCancel := context.AfterFunc(ctx, turnCancel)
-	cleanup := func() { stopCancel(); turnCancel(); closeTab() }
+	var cleanupOnce sync.Once
+	cleanup := func() { cleanupOnce.Do(func() { stopCancel(); turnCancel(); closeTab() }) }
 	// chromedp binds target lifetime to its first Run context. Initialize on the
 	// whole-turn context, not the shorter navigation timeout below.
-	if e = chromedp.Run(turn); e != nil {
+	if e = browserInitialize(turn); e != nil {
 		cleanup()
 		return nil, problem(503, "cannot connect to the configured browser; run browser-login first")
 	}
@@ -165,14 +170,14 @@ func (d *Driver) Do(ctx context.Context, protocol, model string, body []byte, he
 		target = d.origin + "/c/" + session.Conversation
 	}
 	setupCtx, setupCancel := context.WithTimeout(turn, 30*time.Second)
-	if e = chromedp.Run(setupCtx, chromedp.Navigate(target)); e != nil {
+	if e = browserNavigate(setupCtx, target); e != nil {
 		setupCancel()
 		cleanup()
 		return nil, problem(503, "cannot connect to the configured browser; run browser-login first")
 	}
 	var page pageState
 	for {
-		e = evaluate(setupCtx, inspectPage, nil, &page)
+		e = evaluate(setupCtx, inspectPage, map[string]string{"expected_identity": d.cfg.ExpectedIdentity}, &page)
 		if e != nil {
 			break
 		}
@@ -214,7 +219,7 @@ func (d *Driver) Do(ctx context.Context, protocol, model string, body []byte, he
 		}
 	}
 	if e = evaluate(turn, `const el=composer();if(!el)throw new Error('composer_missing');el.focus();return true;`, nil, nil); e == nil {
-		e = chromedp.Run(turn, chromedp.ActionFunc(func(ctx context.Context) error { return input.InsertText(prompt).Do(ctx) }))
+		e = browserInsertText(turn, prompt)
 	}
 	if e != nil {
 		cleanup()
@@ -336,8 +341,12 @@ func (d *Driver) Do(ctx context.Context, protocol, model string, body []byte, he
 		}
 		if e != nil {
 			d.stop(tab)
+			cleanup()
 			_ = writer.CloseWithError(e)
 		} else {
+			// EOF releases the routing lease. Finish owned browser cleanup first
+			// so the next request can acquire the same profile immediately.
+			cleanup()
 			_ = writer.Close()
 		}
 	}()
@@ -401,18 +410,21 @@ func (d *Driver) Check(ctx context.Context) (map[string]any, error) {
 	defer cancel()
 	stop := context.AfterFunc(ctx, cancel)
 	defer stop()
-	if e := chromedp.Run(turn, chromedp.Navigate(d.origin+"/?model=auto")); e != nil {
+	if e := browserNavigate(turn, d.origin+"/?model=auto"); e != nil {
 		return nil, errors.New("browser unavailable")
 	}
 	var p pageState
 	deadline := time.Now().Add(10 * time.Second)
 	for {
-		if e := evaluate(turn, inspectPage, nil, &p); e != nil {
+		if e := evaluate(turn, inspectPage, map[string]string{"expected_identity": d.cfg.ExpectedIdentity}, &p); e != nil {
 			return nil, e
 		}
-		if p.Ready || time.Now().After(deadline) { break }
+		if p.Ready || time.Now().After(deadline) {
+			break
+		}
 		select {
-		case <-turn.Done(): return nil, turn.Err()
+		case <-turn.Done():
+			return nil, turn.Err()
 		case <-time.After(500 * time.Millisecond):
 		}
 	}

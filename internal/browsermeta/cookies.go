@@ -1,6 +1,7 @@
 package browsermeta
 
 import (
+	"clash-of-tokens/internal/browserexec"
 	"context"
 	"fmt"
 	"net/http"
@@ -16,12 +17,13 @@ import (
 func Cookies(ctx context.Context, endpoint, destination string) (string, int, error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	allocator, stop := chromedp.NewRemoteAllocator(ctx, endpoint)
-	defer stop()
-	tab, closeTab := chromedp.NewContext(allocator)
+	tab, closeTab, err := browserexec.OpenCDP(ctx, endpoint)
+	if err != nil {
+		return "", 0, fmt.Errorf("cannot connect to configured browser")
+	}
 	defer closeTab()
 	var cookies []*network.Cookie
-	err := chromedp.Run(tab, chromedp.ActionFunc(func(ctx context.Context) error {
+	err = chromedp.Run(tab, chromedp.ActionFunc(func(ctx context.Context) error {
 		var err error
 		cookies, err = network.GetCookies().WithURLs([]string{destination}).Do(ctx)
 		return err

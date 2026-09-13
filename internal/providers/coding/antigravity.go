@@ -41,7 +41,7 @@ func (c *Client) doAntigravity(ctx context.Context, protocol, model string, stre
 	if err != nil {
 		return nil, err
 	}
-	setBearer(req, credential(c.source))
+	setBearer(req, credential(c.source, ctx))
 	req.Header.Set("Accept", "application/json")
 	if stream {
 		req.Header.Set("Accept", "text/event-stream")

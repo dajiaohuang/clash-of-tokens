@@ -264,15 +264,18 @@ func qoderCLIEnvironment(token string) []string {
 }
 
 type qoderLimitedBuffer struct {
-	bytes.Buffer
-	limit int64
+	buffer bytes.Buffer
+	limit  int64
 }
+
+func (b *qoderLimitedBuffer) Len() int       { return b.buffer.Len() }
+func (b *qoderLimitedBuffer) String() string { return b.buffer.String() }
 
 func (b *qoderLimitedBuffer) Write(data []byte) (int, error) {
 	if int64(b.Len()+len(data)) > b.limit {
 		return 0, fmt.Errorf("qodercli output exceeds byte limit")
 	}
-	return b.Buffer.Write(data)
+	return b.buffer.Write(data)
 }
 
 func qoderCLIResult(stdout string) (string, bool) {

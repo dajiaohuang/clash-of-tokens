@@ -178,7 +178,7 @@ func (c *Client) Do(ctx context.Context, proto, model string, stream bool, body 
 	if closed {
 		return nil, errors.New("coding next adapter: client is closed")
 	}
-	token, err := c.credential()
+	token, err := c.credential(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -247,11 +247,8 @@ func (c *Client) Do(ctx context.Context, proto, model string, stream bool, body 
 	return response, nil
 }
 
-func (c *Client) credential() (string, error) {
-	if strings.TrimSpace(c.source.KeyEnv) == "" {
-		return "", ErrCredential
-	}
-	token := strings.TrimSpace(c.source.CredentialValue())
+func (c *Client) credential(contexts ...context.Context) (string, error) {
+	token := strings.TrimSpace(c.source.CredentialValue(contexts...))
 	if token == "" || len(token) > maxHeaderValueLen || strings.ContainsAny(token, "\r\n") {
 		return "", ErrCredential
 	}

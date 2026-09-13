@@ -31,14 +31,19 @@ type result struct {
 	TTFTP50MS         float64 `json:"ttft_p50_ms"`
 	TTFTP95MS         float64 `json:"ttft_p95_ms"`
 	TTFTP99MS         float64 `json:"ttft_p99_ms"`
+	BodyBytes         int     `json:"body_bytes"`
+	PeakGoroutines    int     `json:"peak_goroutines"`
+	PeakGoHeapBytes   uint64  `json:"peak_go_heap_bytes"`
+	GCCycles          uint32  `json:"gc_cycles"`
 }
 
 func main() {
 	concurrency := flag.Int("concurrency", 100, "simultaneous loopback streams")
 	requests := flag.Int("requests", 1000, "requests per path")
 	delay := flag.Duration("delay", 10*time.Millisecond, "mock delay before each of 4 chunks")
+	bodyBytes := flag.Int("body-bytes", 0, "total JSON request bytes, 0 uses small fixture; maximum 16 MiB")
 	flag.Parse()
-	if *concurrency < 1 || *concurrency > 1000 || *requests < 1 || *requests > 100000 || *delay < 0 || *delay > time.Second {
+	if *concurrency < 1 || *concurrency > 1000 || *requests < 1 || *requests > 100000 || *delay < 0 || *delay > time.Second || *bodyBytes < 0 || *bodyBytes > 16<<20 {
 		fmt.Fprintln(os.Stderr, "invalid benchmark limits")
 		os.Exit(2)
 	}
@@ -61,7 +66,20 @@ func main() {
 	c := config.Default()
 	c.Runtime.MaxInflight = *concurrency
 	c.Runtime.MaxQueued = *concurrency
+	payload := `{"model":"mock/model","messages":[{"role":"user","content":"fixture"}],"stream":true}`
+	if *bodyBytes > 0 {
+		if *bodyBytes < len(payload) {
+			fmt.Fprintln(os.Stderr, "body-bytes is smaller than fixture JSON")
+			os.Exit(2)
+		}
+		payload = strings.Replace(payload, "fixture", strings.Repeat("x", *bodyBytes-len(payload)+len("fixture")), 1)
+	}
+	// This fixture emits under 1 KiB. Explicitly budget the requested wave
+	// rather than measuring expected admission rejection at default limits.
+	c.Runtime.MaxOutputBytes = 64 << 10
+	c.Runtime.MaxBufferedBytes = max(c.Runtime.MaxBufferedBytes, int64(*concurrency)*(4*c.Runtime.MaxOutputBytes+2*int64(len(payload))+32768))
 	c.Sources = []config.Source{{ID: "mock", Provider: "fixture", Adapter: "openai", BaseURL: mock.URL + "/v1", Enabled: true, Local: true, MaxInflight: *concurrency, QuotaDomain: "fixture", QuotaMaxInflight: *concurrency, Models: []config.Model{{ID: "model", Upstream: "real", Protocols: []string{"chat"}, Tier: "unrated", Tools: "none", MaxInputBytes: 1 << 20}}}}
+	c.Sources[0].Models[0].MaxInputBytes = 16 << 20
 	gateway, e := api.NewWithKeys(c, "fixture-data-key-0123456789", "fixture-admin-key-0123456789")
 	if e != nil {
 		panic(e)
@@ -69,13 +87,15 @@ func main() {
 	defer gateway.Close()
 	server := httptest.NewServer(gateway)
 	defer server.Close()
-	outputs := []result{load("direct_mock", mock.URL, *requests, *concurrency), load("gateway", server.URL, *requests, *concurrency)}
+	outputs := []result{load("direct_mock", mock.URL, payload, *requests, *concurrency), load("gateway", server.URL, payload, *requests, *concurrency)}
 	report := struct {
-		GoVersion string   `json:"go_version"`
-		Platform  string   `json:"platform"`
-		Scope     string   `json:"scope"`
-		Results   []result `json:"results"`
-	}{runtime.Version(), runtime.GOOS + "/" + runtime.GOARCH, "In-process loopback mock and client; excludes browser/provider latency. TTFT is first nonempty SSE data line. No RSS/CPU certification.", outputs}
+		GoVersion      string   `json:"go_version"`
+		Platform       string   `json:"platform"`
+		Scope          string   `json:"scope"`
+		BufferedBudget int64    `json:"buffered_budget_bytes"`
+		OutputLimit    int64    `json:"output_limit_bytes"`
+		Results        []result `json:"results"`
+	}{runtime.Version(), runtime.GOOS + "/" + runtime.GOARCH, "In-process loopback mock and client; excludes browser/provider latency. TTFT is first nonempty SSE data line. No RSS/CPU certification.", c.Runtime.MaxBufferedBytes, c.Runtime.MaxOutputBytes, outputs}
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
 	_ = enc.Encode(report)
@@ -85,7 +105,27 @@ func main() {
 		}
 	}
 }
-func load(label, url string, n, concurrency int) result {
+func load(label, url, payload string, n, concurrency int) result {
+	var initial runtime.MemStats
+	runtime.ReadMemStats(&initial)
+	peakHeap, peakGoroutines := initial.HeapAlloc, runtime.NumGoroutine()
+	stopSampling, samplingDone := make(chan struct{}), make(chan struct{})
+	go func() {
+		defer close(samplingDone)
+		ticker := time.NewTicker(10 * time.Millisecond)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-stopSampling:
+				return
+			case <-ticker.C:
+				var m runtime.MemStats
+				runtime.ReadMemStats(&m)
+				peakHeap = max(peakHeap, m.HeapAlloc)
+				peakGoroutines = max(peakGoroutines, runtime.NumGoroutine())
+			}
+		}
+	}()
 	transport := &http.Transport{MaxIdleConns: concurrency, MaxIdleConnsPerHost: concurrency, MaxConnsPerHost: concurrency}
 	defer transport.CloseIdleConnections()
 	client := http.Client{Transport: transport, Timeout: 30 * time.Second}
@@ -101,7 +141,7 @@ func load(label, url string, n, concurrency int) result {
 			defer wg.Done()
 			for i := range jobs {
 				before := time.Now()
-				r, _ := http.NewRequest("POST", url+"/v1/chat/completions", strings.NewReader(`{"model":"mock/model","messages":[{"role":"user","content":"fixture"}],"stream":true}`))
+				r, _ := http.NewRequest("POST", url+"/v1/chat/completions", strings.NewReader(payload))
 				r.Header.Set("Content-Type", "application/json")
 				r.Header.Set("Authorization", "Bearer fixture-data-key-0123456789")
 				response, e := client.Do(r)
@@ -159,5 +199,9 @@ func load(label, url string, n, concurrency int) result {
 		}
 		return valid[int(float64(len(valid)-1)*p)]
 	}
-	return result{label, n, concurrency, errors, sample, seconds, float64(n-errors) / seconds, percentile(.5), percentile(.95), percentile(.99)}
+	close(stopSampling)
+	<-samplingDone
+	var final runtime.MemStats
+	runtime.ReadMemStats(&final)
+	return result{label, n, concurrency, errors, sample, seconds, float64(n-errors) / seconds, percentile(.5), percentile(.95), percentile(.99), len(payload), peakGoroutines, peakHeap, final.NumGC - initial.NumGC}
 }

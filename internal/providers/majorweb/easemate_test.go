@@ -52,7 +52,7 @@ func TestEaseMateBrowserFixture(t *testing.T) {
 				io.WriteString(w, `<!doctype html><html><body><div class="model-select-active"><span class="text-sm">old</span></div><div class="model-item"><span onclick="document.querySelector('.text-sm').textContent='Exact Model'">Exact Model</span></div><textarea placeholder="Ask me anything…"></textarea><button class="css-1wchz4a" onclick="`+send+`">Send</button></body></html>`)
 			}))
 			defer server.Close()
-			c := New(config.Source{Adapter: "easemate", BaseURL: server.URL}, config.Browser{Enabled: true, CDPURL: cdp})
+			c := New(config.Source{Adapter: "easemate", BaseURL: server.URL}, config.Browser{Enabled: true, CDPURL: cdp, Engine: os.Getenv("COT_TEST_BROWSER_ENGINE")})
 			defer c.Close()
 			ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 			defer cancel()

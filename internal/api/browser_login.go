@@ -130,10 +130,10 @@ func (p *ControlPlane) browserLoginAdmin(w http.ResponseWriter, r *http.Request)
 			v := driver.CheckAuth(r.Context())
 			result = browserauth.Evidence{Status: v.Status, Method: v.Method, CheckedAt: v.CheckedAt, ComposerReady: v.ComposerReady}
 		} else {
-			result = browserauth.Check(r.Context(), profile.CDPURL, origin, adapter)
+			result = browserauth.CheckExpected(r.Context(), profile.CDPURL, origin, adapter, profile.Engine, account.ExpectedIdentity, account.Organization)
 		}
 		revision := p.service.Current().Revision
-		recorded := p.evidence.Append(audit.Entry{Revision: revision, Kind: "authentication", Resource: account.ID, CheckedAt: result.CheckedAt, Method: result.Method, Status: result.Status, UpstreamStatus: result.UpstreamStatus}) == nil
+		recorded := p.appendOperationEvidence(r, audit.Entry{Revision: revision, Kind: "authentication", Resource: account.ID, CheckedAt: result.CheckedAt, Method: result.Method, Status: result.Status, UpstreamStatus: result.UpstreamStatus}) == nil
 		reply(w, struct {
 			browserauth.Evidence
 			Account         string `json:"account"`
@@ -226,14 +226,14 @@ func (p *ControlPlane) setupBrowserLogin(w http.ResponseWriter, r *http.Request)
 	}
 	if input.Action == "check" {
 		var result browserauth.Evidence
-		if adapter == "chatgpt-web" {
+		if adapter == "chatgpt-web" && input.Profile.Engine != "firefox" {
 			browser := p.startup.Browser
 			browser.Enabled = true
 			browser.CDPURL = input.Profile.CDPURL
 			value := chatgptweb.New(browser, "setup-check").CheckAuth(r.Context())
 			result = browserauth.Evidence{Status: value.Status, Method: value.Method, CheckedAt: value.CheckedAt, ComposerReady: value.ComposerReady}
 		} else {
-			result = browserauth.Check(r.Context(), input.Profile.CDPURL, destination, adapter)
+			result = browserauth.CheckEngine(r.Context(), input.Profile.CDPURL, destination, adapter, input.Profile.Engine)
 		}
 		reply(w, struct {
 			browserauth.Evidence

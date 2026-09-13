@@ -296,14 +296,6 @@ func TestDoubaoBrowserFixture(t *testing.T) {
 	if cdp == "" {
 		t.Skip("set COT_TEST_CDP to a loopback Chrome DevTools endpoint")
 	}
-	probe, err := http.Get(strings.TrimRight(cdp, "/") + "/json/version")
-	if err != nil {
-		t.Skipf("configured Chrome DevTools endpoint unavailable: %v", err)
-	}
-	_ = probe.Body.Close()
-	if probe.StatusCode != http.StatusOK {
-		t.Skipf("configured Chrome DevTools endpoint returned %d", probe.StatusCode)
-	}
 
 	const model = "Exact UI Model"
 	var mu sync.Mutex
@@ -352,7 +344,7 @@ document.getElementById('send').addEventListener('click',()=>{
 	}))
 	defer server.Close()
 
-	c := New(config.Source{Adapter: AdapterDoubao, BaseURL: server.URL}, config.Browser{Enabled: true, CDPURL: cdp})
+	c := New(config.Source{Adapter: AdapterDoubao, BaseURL: server.URL}, config.Browser{Enabled: true, CDPURL: cdp, Engine: os.Getenv("COT_TEST_BROWSER_ENGINE")})
 	defer c.Close()
 	for _, stream := range []bool{false, true} {
 		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)

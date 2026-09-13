@@ -253,7 +253,7 @@ func (c *Client) Do(ctx context.Context, protocol, model string, stream bool, bo
 	token := ""
 	var err error
 	if adapter != AdapterZCode {
-		token, err = c.credential()
+		token, err = c.credential(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -398,11 +398,8 @@ func (c *Client) Do(ctx context.Context, protocol, model string, stream bool, bo
 	return upstream, nil
 }
 
-func (c *Client) credential() (string, error) {
-	if strings.TrimSpace(c.source.KeyEnv) == "" {
-		return "", ErrCredential
-	}
-	token := strings.TrimSpace(c.source.CredentialValue())
+func (c *Client) credential(contexts ...context.Context) (string, error) {
+	token := strings.TrimSpace(c.source.CredentialValue(contexts...))
 	if token == "" || len(token) > maxHeaderValue || strings.ContainsAny(token, "\r\n") {
 		return "", ErrCredential
 	}

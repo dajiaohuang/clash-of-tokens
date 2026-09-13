@@ -37,7 +37,7 @@ const (
 )
 
 var (
-	ErrCredential = errors.New("coding source credential environment variable is not set")
+	ErrCredential = errors.New("coding source credential is unavailable")
 	ErrProtocol   = errors.New("coding adapter does not support protocol")
 )
 
@@ -90,7 +90,7 @@ func (c *Client) Do(ctx context.Context, protocol, model string, stream bool, bo
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	if c.source.CredentialValue() == "" {
+	if c.source.CredentialValue(ctx) == "" {
 		return nil, ErrCredential
 	}
 
@@ -130,7 +130,9 @@ func (c *Client) execute(req *http.Request) (*http.Response, error) {
 	return resp, nil
 }
 
-func credential(source config.Source) string { return source.CredentialValue() }
+func credential(source config.Source, contexts ...context.Context) string {
+	return source.CredentialValue(contexts...)
+}
 
 func baseURL(source config.Source, suffix string) (string, error) {
 	base := strings.TrimRight(strings.TrimSpace(source.BaseURL), "/")

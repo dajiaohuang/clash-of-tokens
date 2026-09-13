@@ -66,10 +66,16 @@ func (p *ControlPlane) credentialUnbindAdmin(w http.ResponseWriter, r *http.Requ
 	accountIDs := map[string]bool{}
 	accounts := []string{}
 	for i := range next.Accounts {
+		loginBound := next.Accounts[i].LoginCredentialRef == "cred://"+id
+		if loginBound {
+			next.Accounts[i].LoginCredentialRef = ""
+		}
 		if next.Accounts[i].CredentialRef == "cred://"+id {
 			accountIDs[next.Accounts[i].ID] = true
 			accounts = append(accounts, next.Accounts[i].ID)
 			next.Accounts[i].CredentialRef = ""
+		} else if loginBound {
+			accounts = append(accounts, next.Accounts[i].ID)
 		}
 	}
 	sources := []string{}

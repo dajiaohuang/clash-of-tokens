@@ -151,6 +151,9 @@ func aiStudioBuildRequest(req chatRequest) (string, []byte, error) {
 }
 
 func (c *Client) aiStudioBuildFetch(parent context.Context, appURL, path string, body []byte) (aiStudioBuildFetchResult, error) {
+	if c.browser.Engine == "firefox" {
+		return c.aiStudioBuildBiDi(parent, appURL, path, body)
+	}
 	if err := parent.Err(); err != nil {
 		return aiStudioBuildFetchResult{}, err
 	}
@@ -204,11 +207,13 @@ func (c *Client) aiStudioBuildFetch(parent context.Context, appURL, path string,
 	return result, nil
 }
 
+const aiStudioBuildClickScript = `(()=>{const visible=e=>{const r=e.getBoundingClientRect();const s=getComputedStyle(e);return r.width>0&&r.height>0&&s.visibility!=='hidden'&&s.display!=='none'};const exact=['Continue to the app','Skip'];for(const b of document.querySelectorAll('button,[role="button"]')){if(!visible(b))continue;const t=(b.innerText||b.textContent||'').trim();if(exact.includes(t)||(t==='Launch'||t.startsWith('Launch '))){b.click();return t}}return ''})()`
+
 func aiStudioBuildStartup(ctx context.Context) error {
-	const clickScript = `(()=>{const visible=e=>{const r=e.getBoundingClientRect();const s=getComputedStyle(e);return r.width>0&&r.height>0&&s.visibility!=='hidden'&&s.display!=='none'};const exact=['Continue to the app','Skip'];for(const b of document.querySelectorAll('button,[role="button"]')){if(!visible(b))continue;const t=(b.innerText||b.textContent||'').trim();if(exact.includes(t)||(t==='Launch'||t.startsWith('Launch '))){b.click();return t}}return ''})()`
+
 	for i := 0; i < 30; i++ {
 		var clicked string
-		if err := chromedp.Run(ctx, chromedp.Evaluate(clickScript, &clicked)); err != nil {
+		if err := chromedp.Run(ctx, chromedp.Evaluate(aiStudioBuildClickScript, &clicked)); err != nil {
 			return &aiStudioBuildBrowserError{status: http.StatusBadGateway, message: "AI Studio Build startup control lookup failed"}
 		}
 		if clicked != "" {

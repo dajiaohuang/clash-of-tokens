@@ -41,7 +41,7 @@ func TestTinyCMSBrowserSigningContract(t *testing.T) {
 	}))
 	defer srv.Close()
 	t.Setenv("COT_TEST_TINYCMS", `{"key":"Rfixture-owned-identity","client_ip":"127.0.0.1"}`)
-	c := New(config.Source{Adapter: "tinycms-web", BaseURL: srv.URL, KeyEnv: "COT_TEST_TINYCMS"}, config.Browser{Enabled: true, CDPURL: cdp})
+	c := New(config.Source{Adapter: "tinycms-web", BaseURL: srv.URL, KeyEnv: "COT_TEST_TINYCMS"}, config.Browser{Enabled: true, CDPURL: cdp, Engine: os.Getenv("COT_TEST_BROWSER_ENGINE")})
 	defer c.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
 	defer cancel()

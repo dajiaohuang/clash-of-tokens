@@ -42,7 +42,7 @@ func (c *Client) doCopilotM365(ctx context.Context, req chatRequest) (*http.Resp
 	if strings.TrimSpace(req.Model) != "web" {
 		return nil, &unsupportedError{"business web adapter: M365 supports only the web model"}
 	}
-	cred, err := credential(c.source)
+	cred, err := credential(c.source, ctx)
 	if err != nil {
 		return nil, err
 	}

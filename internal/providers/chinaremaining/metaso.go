@@ -22,11 +22,8 @@ func removeMetasoIndexLabels(value string) string {
 	return metasoIndexLabelPattern.ReplaceAllString(value, "")
 }
 
-func (c *Client) metasoCredential() (string, error) {
-	if strings.TrimSpace(c.source.KeyEnv) == "" {
-		return "", ErrCredential
-	}
-	raw := strings.TrimSpace(c.source.CredentialValue())
+func (c *Client) metasoCredential(contexts ...context.Context) (string, error) {
+	raw := strings.TrimSpace(c.source.CredentialValue(contexts...))
 	if len(raw) == 0 || len(raw) > maxCredentialBytes || strings.ContainsAny(raw, "\r\n\x00") {
 		return "", ErrCredential
 	}
@@ -49,7 +46,7 @@ func (c *Client) metasoCredential() (string, error) {
 }
 
 func (c *Client) doMetaso(ctx context.Context, model string, req chatRequest) (*http.Response, error) {
-	token, err := c.metasoCredential()
+	token, err := c.metasoCredential(ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -17,7 +18,13 @@ import (
 
 func TestControlPlaneHotUpdateKeepsHeldRequest(t *testing.T) {
 	started, finish := make(chan struct{}), make(chan struct{})
+	var submissions atomic.Int32
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if submissions.Add(1) != 1 {
+			t.Error("disabled source received a new submission")
+			w.WriteHeader(500)
+			return
+		}
 		_, _ = io.Copy(io.Discard, r.Body)
 		close(started)
 		select {
@@ -53,22 +60,29 @@ func TestControlPlaneHotUpdateKeepsHeldRequest(t *testing.T) {
 		t.Fatal("upstream did not start")
 	}
 	c.Sources[0].Enabled = false
-	body, _ := json.Marshal(map[string]any{"revision": 1, "config": c, "summary": "Disable source"})
-	w := httptest.NewRecorder()
-	req := httptest.NewRequest("PATCH", "/admin/config", bytes.NewReader(body))
-	req.Header.Set("Authorization", "Bearer "+adminKey)
-	plane.ServeHTTP(w, req)
-	if w.Code != 200 {
-		close(finish)
-		t.Fatal(w.Code, w.Body.String())
+	for revision := uint64(1); revision <= 100; revision++ {
+		body, _ := json.Marshal(map[string]any{"revision": revision, "config": c, "summary": "Disable source; retain held capacity"})
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("PATCH", "/admin/config", bytes.NewReader(body))
+		req.Header.Set("Authorization", "Bearer "+adminKey)
+		plane.ServeHTTP(w, req)
+		if w.Code != 200 {
+			close(finish)
+			t.Fatal(w.Code, w.Body.String())
+		}
+		status := plane.current.server.Router.Status()[0]
+		if status.Enabled || status.Active != 1 {
+			close(finish)
+			t.Fatal("held capacity or disable state lost", revision, status)
+		}
 	}
-	if plane.current.server.Router.Status()[0].Enabled {
+	newRequest := httptest.NewRequest("POST", "/v1/chat/completions", strings.NewReader(`{"model":"mock/m","messages":[{"role":"user","content":"must not submit"}]}`))
+	newRequest.Header.Set("Authorization", "Bearer "+testKey)
+	rejected := httptest.NewRecorder()
+	plane.ServeHTTP(rejected, newRequest)
+	if rejected.Code < 400 || submissions.Load() != 1 {
 		close(finish)
-		t.Fatal("source still enabled")
-	}
-	if plane.current.server.Router.Status()[0].Active != 1 {
-		close(finish)
-		t.Fatal("old capacity lost")
+		t.Fatal("disable barrier failed", rejected.Code)
 	}
 	close(finish)
 	result := <-done

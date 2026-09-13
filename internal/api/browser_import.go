@@ -7,6 +7,7 @@ import (
 
 	"clash-of-tokens/catalog"
 	"clash-of-tokens/internal/browsermeta"
+	"clash-of-tokens/internal/credentials"
 )
 
 func (s *Server) browserCookieImport(w http.ResponseWriter, r *http.Request) bool {
@@ -26,10 +27,11 @@ func (s *Server) browserCookieImport(w http.ResponseWriter, r *http.Request) boo
 		fail(w, 400, "invalid browser import request")
 		return true
 	}
-	endpoint, destination := "", ""
+	endpoint, destination, engine := "", "", ""
 	for _, p := range s.cfg.BrowserProfiles {
 		if p.ID == input.Profile && p.Enabled {
 			endpoint = p.CDPURL
+			engine = p.Engine
 		}
 	}
 	for _, p := range catalog.All() {
@@ -42,7 +44,7 @@ func (s *Server) browserCookieImport(w http.ResponseWriter, r *http.Request) boo
 		fail(w, 400, "select an enabled profile and a provider accepting cookies")
 		return true
 	}
-	value, count, err := browsermeta.Cookies(r.Context(), endpoint, destination)
+	value, count, err := browsermeta.CookiesEngine(r.Context(), endpoint, destination, engine)
 	if err != nil {
 		fail(w, 400, err.Error())
 		return true
@@ -55,7 +57,12 @@ func (s *Server) browserCookieImport(w http.ResponseWriter, r *http.Request) boo
 		fail(w, 400, "no cookies available for this provider")
 		return true
 	}
-	metadata, err := s.vault.Create("cookie", "browser:"+input.Profile+":"+input.Provider, value)
+	var metadata credentials.Metadata
+	err = commitOperation(r, func() error {
+		var saveErr error
+		metadata, saveErr = s.vault.Create("cookie", "browser:"+input.Profile+":"+input.Provider, value)
+		return saveErr
+	})
 	if err != nil {
 		fail(w, 400, err.Error())
 		return true

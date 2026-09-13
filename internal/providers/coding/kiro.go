@@ -30,7 +30,7 @@ func (c *Client) doKiro(ctx context.Context, protocol, model string, stream bool
 	if err != nil {
 		return nil, err
 	}
-	setBearer(req, credential(c.source))
+	setBearer(req, credential(c.source, ctx))
 	req.Header.Set("Accept", "application/vnd.amazon.eventstream")
 	req.Header.Set("x-amzn-kiro-agent-mode", "spec")
 	req.Header.Set("x-amz-user-agent", "aws-sdk-js/1.0.18 KiroIDE-0.2.13")

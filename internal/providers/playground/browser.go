@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
+	chromedp "clash-of-tokens/internal/browserexec"
 	cdpRuntime "github.com/chromedp/cdproto/runtime"
-	"github.com/chromedp/chromedp"
 )
 
 type browserTransport struct {
@@ -21,7 +21,13 @@ type browserTransport struct {
 func (t *browserTransport) Close() error { t.once.Do(t.close); return nil }
 
 func (c *Client) startBrowser(ctx context.Context, id string, payload any) (frameTransport, error) {
-	allocator, acancel := chromedp.NewRemoteAllocator(context.Background(), c.browser.CDPURL)
+	return c.startBrowserAt(ctx, id, payload, origin)
+}
+
+// startBrowserAt permits local contract fixtures while production always uses
+// the fixed playground origin above.
+func (c *Client) startBrowserAt(ctx context.Context, id string, payload any, destination string) (frameTransport, error) {
+	allocator, acancel := chromedp.NewRemoteAllocator(context.Background(), c.browser.CDPURL, c.browser.Engine)
 	tab, tcancel := chromedp.NewContext(allocator)
 	turn, cancel := context.WithCancel(tab)
 	stop := context.AfterFunc(ctx, cancel)
@@ -35,10 +41,10 @@ func (c *Client) startBrowser(ctx context.Context, id string, payload any) (fram
 	}
 	setup, setupCancel := context.WithTimeout(turn, 30*time.Second)
 	defer setupCancel()
-	if err := chromedp.Run(setup, chromedp.Navigate(origin)); err != nil {
+	if err := chromedp.Run(setup, chromedp.Navigate(destination)); err != nil {
 		return fail()
 	}
-	args, _ := json.Marshal(map[string]any{"id": id, "payload": payload})
+	args, _ := json.Marshal(map[string]any{"id": id, "payload": payload, "origin": destination})
 	script := "(()=>{const args=" + string(args) + ";" + openSocket + "})()"
 	var ready bool
 	if err := chromedp.Run(setup, chromedp.Evaluate(script, &ready)); err != nil || !ready {
@@ -77,11 +83,12 @@ func (t *browserTransport) Next(ctx context.Context) (string, error) {
 // It uses the installed browser's normal transport; no TLS fingerprint
 // fabrication, CAPTCHA solver or challenge response generator is involved.
 const openSocket = `
-if(location.origin!=='https://playground.ai.cloudflare.com') return false;
+if(location.origin!==args.origin) return false;
 const state={queue:[],bytes:0,error:'',closed:false,notify:null};
 const encoder=new TextEncoder();
 const room='playground-'+crypto.randomUUID().replaceAll('-','').slice(0,25);
-const socket=new WebSocket('wss://playground.ai.cloudflare.com/agents/playground/'+room+'?_pk='+crypto.randomUUID());
+const socketURL=new URL('/agents/playground/'+room+'?_pk='+crypto.randomUUID(),args.origin);socketURL.protocol=socketURL.protocol==='https:'?'wss:':'ws:';
+const socket=new WebSocket(socketURL);
 state.socket=socket;
 const signal=()=>{if(state.notify){const f=state.notify;state.notify=null;f();}};
 socket.onopen=()=>{

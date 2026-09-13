@@ -23,6 +23,8 @@ type Account struct {
 	Enabled                bool      `json:"enabled"`
 	AutoApproved           bool      `json:"auto_approved"`
 	CredentialRef          string    `json:"credential_ref,omitempty"`
+	LoginCredentialRef     string    `json:"login_credential_ref,omitempty"`
+	ExpectedIdentity       string    `json:"expected_identity,omitempty"`
 	CredentialTypeOverride bool      `json:"credential_type_override,omitempty"`
 	BrowserProfileID       string    `json:"browser_profile_id,omitempty"`
 	BaseURL                string    `json:"base_url,omitempty"`
@@ -82,6 +84,7 @@ func validateAccountMetadata(a Account) error {
 	}{
 		{"organization", a.Organization},
 		{"project", a.Project},
+		{"expected_identity", a.ExpectedIdentity},
 	} {
 		if len(field.value) > 256 || strings.ContainsAny(field.value, "\r\n\x00") {
 			return fmt.Errorf("account %s: invalid %s", a.ID, field.name)
@@ -126,7 +129,7 @@ func (c Config) ValidateAccounts() error {
 		if !providers[a.ProviderID] {
 			return fmt.Errorf("account %s: unknown provider", a.ID)
 		}
-		if !ValidCredentialRef(a.CredentialRef) {
+		if !ValidCredentialRef(a.CredentialRef) || !ValidCredentialRef(a.LoginCredentialRef) {
 			return fmt.Errorf("account %s: invalid credential reference", a.ID)
 		}
 		if err := validateAccountMetadata(a); err != nil {

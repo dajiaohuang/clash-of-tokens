@@ -11,9 +11,8 @@ import (
 	"sync"
 	"time"
 
-	cdpNetwork "github.com/chromedp/cdproto/network"
+	chromedp "clash-of-tokens/internal/browserexec"
 	cdpRuntime "github.com/chromedp/cdproto/runtime"
-	"github.com/chromedp/chromedp"
 )
 
 // metasoBrowserStream uses the configured, already authenticated Chrome via
@@ -36,7 +35,7 @@ func (c *Client) metasoBrowserStream(parent context.Context, base, token, meta, 
 		"is-mini-webview": {"0"}, "token": {meta},
 	}
 	endpoint := base + "/api/searchV2?" + values.Encode()
-	allocator, allocatorCancel := chromedp.NewRemoteAllocator(context.Background(), cdpURL)
+	allocator, allocatorCancel := chromedp.NewRemoteAllocator(context.Background(), cdpURL, c.browser.Engine)
 	// WithNewBrowserContext gives every request an isolated incognito context;
 	// cookies set for one source account cannot bleed into another Client.
 	tab, tabCancel := chromedp.NewContext(allocator, chromedp.WithNewBrowserContext())
@@ -47,10 +46,10 @@ func (c *Client) metasoBrowserStream(parent context.Context, base, token, meta, 
 	if err := chromedp.Run(turn); err != nil {
 		return fail(errors.New("china remaining web adapter: cannot connect to Metaso browser"))
 	}
-	if err := chromedp.Run(turn, cdpNetwork.SetCookie("uid", strings.SplitN(token, "-", 2)[0]).WithDomain(baseURL.Hostname()).WithSecure(baseURL.Scheme == "https")); err != nil {
+	if err := chromedp.Run(turn, chromedp.SetCookie("uid", strings.SplitN(token, "-", 2)[0], baseURL.Hostname(), "/", baseURL.Scheme == "https")); err != nil {
 		return fail(errors.New("china remaining web adapter: cannot set Metaso uid cookie"))
 	}
-	if err := chromedp.Run(turn, cdpNetwork.SetCookie("sid", strings.SplitN(token, "-", 2)[1]).WithDomain(baseURL.Hostname()).WithSecure(baseURL.Scheme == "https")); err != nil {
+	if err := chromedp.Run(turn, chromedp.SetCookie("sid", strings.SplitN(token, "-", 2)[1], baseURL.Hostname(), "/", baseURL.Scheme == "https")); err != nil {
 		return fail(errors.New("china remaining web adapter: cannot set Metaso sid cookie"))
 	}
 	setup, setupCancel := context.WithTimeout(turn, 30*time.Second)

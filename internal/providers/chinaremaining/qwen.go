@@ -25,11 +25,8 @@ type qwenCredential struct {
 	ModelAccounts map[string]int `json:"model_accounts,omitempty"`
 }
 
-func (c *Client) qwenCredential(model string) (qwenAccount, error) {
-	if strings.TrimSpace(c.source.KeyEnv) == "" {
-		return qwenAccount{}, ErrCredential
-	}
-	raw := c.source.CredentialValue()
+func (c *Client) qwenCredential(model string, contexts ...context.Context) (qwenAccount, error) {
+	raw := c.source.CredentialValue(contexts...)
 	if len(raw) == 0 || len(raw) > maxCredentialBytes || strings.ContainsAny(raw, "\r\n\x00") {
 		return qwenAccount{}, ErrCredential
 	}
@@ -83,7 +80,7 @@ func validQwenValue(value string, max int) bool {
 }
 
 func (c *Client) doQwenCN(ctx context.Context, model string, req chatRequest) (*http.Response, error) {
-	cred, err := c.qwenCredential(model)
+	cred, err := c.qwenCredential(model, ctx)
 	if err != nil {
 		return nil, err
 	}

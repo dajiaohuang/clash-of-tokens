@@ -37,7 +37,7 @@ func (c *Client) Discover(ctx context.Context) (Discovery, error) {
 	if c.http == nil || (adapter != "openai" && adapter != "anthropic" && adapter != "gemini") {
 		return out, errors.New("model discovery is not implemented for this adapter")
 	}
-	key := c.source.CredentialValue()
+	key := c.source.CredentialValue(ctx)
 	if !c.source.Local && key == "" {
 		return out, errors.New("source credential is unavailable")
 	}

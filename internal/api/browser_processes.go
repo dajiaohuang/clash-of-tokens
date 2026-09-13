@@ -20,18 +20,24 @@ type browserProcessView struct {
 	State      string     `json:"state"`
 }
 type ownedBrowserProcess struct {
-	view browserProcessView
-	cmd  *exec.Cmd
-	done chan struct{}
+	view           browserProcessView
+	cmd            *exec.Cmd
+	done           chan struct{}
+	stopProcess    func() error
+	closeOwnership func()
 }
 type browserProcesses struct {
-	mu    sync.Mutex
-	items map[string]*ownedBrowserProcess
+	mu     sync.Mutex
+	items  map[string]*ownedBrowserProcess
+	closed bool
 }
 
 func (b *browserProcesses) start(profile string, cmd *exec.Cmd) (browserProcessView, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
+	if b.closed {
+		return browserProcessView{}, errors.New("browser launcher is closed")
+	}
 	if b.items == nil {
 		b.items = map[string]*ownedBrowserProcess{}
 	}
@@ -47,7 +53,8 @@ func (b *browserProcesses) start(profile string, cmd *exec.Cmd) (browserProcessV
 	if running >= 64 {
 		return browserProcessView{}, errors.New("owned browser process limit reached")
 	}
-	if err := cmd.Start(); err != nil {
+	stopProcess, closeOwnership, err := startOwnedBrowser(cmd)
+	if err != nil {
 		return browserProcessView{}, errors.New("cannot start login browser")
 	}
 	if len(b.items) >= 128 {
@@ -62,10 +69,12 @@ func (b *browserProcesses) start(profile string, cmd *exec.Cmd) (browserProcessV
 		}
 	}
 	p := &ownedBrowserProcess{view: browserProcessView{ID: rand.Text(), Profile: profile, PID: cmd.Process.Pid, StartedAt: time.Now().UTC(), State: "running"}, cmd: cmd, done: make(chan struct{})}
+	p.stopProcess, p.closeOwnership = stopProcess, closeOwnership
 	b.items[p.view.ID] = p
 	go func() {
 		_ = cmd.Wait()
 		b.mu.Lock()
+		p.closeOwnership()
 		now := time.Now().UTC()
 		p.view.FinishedAt = &now
 		if p.view.State == "stop_requested" {
@@ -108,7 +117,7 @@ func (b *browserProcesses) stop(id string) error {
 	}
 	// Use the retained os.Process handle, never a looked-up PID, process name,
 	// port owner or CDP Browser.close (which could target an external browser).
-	if err := p.cmd.Process.Kill(); err != nil {
+	if err := p.stopProcess(); err != nil {
 		b.mu.Unlock()
 		return errors.New("owned browser process could not be stopped; refresh its state")
 	}
@@ -120,6 +129,18 @@ func (b *browserProcesses) stop(id string) error {
 	case <-time.After(time.Second):
 	}
 	return nil
+}
+
+func (b *browserProcesses) close() {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.closed = true
+	for _, process := range b.items {
+		if process.view.FinishedAt == nil {
+			process.view.State = "stop_requested"
+			_ = process.stopProcess()
+		}
+	}
 }
 
 func (p *ControlPlane) browserProcessesAdmin(w http.ResponseWriter, r *http.Request) bool {

@@ -47,7 +47,7 @@ const (
 
 var (
 	ErrUnsupported  error = unsupportedError{}
-	ErrCredential         = errors.New("china web adapter: source credential environment variable is not set")
+	ErrCredential         = errors.New("china web adapter: source credential is unavailable")
 	ErrSessionLimit       = errors.New("china web adapter: session capacity exceeded")
 	ErrTruncated          = errors.New("china web adapter: truncated upstream response")
 )
@@ -180,7 +180,7 @@ func (c *Client) Do(ctx context.Context, proto, model string, stream bool, body 
 	if closed {
 		return nil, errors.New("china web adapter: client is closed")
 	}
-	key, e := c.credential()
+	key, e := c.credential(ctx)
 	if e != nil {
 		return nil, e
 	}
@@ -242,11 +242,8 @@ func (c *Client) Do(ctx context.Context, proto, model string, stream bool, body 
 	return converted, nil
 }
 
-func (c *Client) credential() (string, error) {
-	if strings.TrimSpace(c.source.KeyEnv) == "" {
-		return "", ErrCredential
-	}
-	v := c.source.CredentialValue()
+func (c *Client) credential(contexts ...context.Context) (string, error) {
+	v := c.source.CredentialValue(contexts...)
 	if v == "" {
 		return "", ErrCredential
 	}

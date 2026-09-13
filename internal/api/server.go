@@ -26,6 +26,7 @@ import (
 )
 
 type Server struct {
+	imports credentials.PreviewStore
 	*metrics
 	vault            *credentials.Store
 	cfg              config.Config
@@ -77,6 +78,7 @@ func NewWithCredentials(c config.Config, key, admin string, resolver func(string
 	return s, nil
 }
 func (s *Server) Close() {
+	s.imports.Close()
 	for i := range s.clients {
 		slot := &s.clients[i]
 		slot.once.Do(func() {})
@@ -503,9 +505,10 @@ func retryAfter(v string) time.Duration {
 }
 func (s *Server) models(w http.ResponseWriter) {
 	type modelEntry struct {
-		ID      string `json:"id"`
-		Object  string `json:"object"`
-		OwnedBy string `json:"owned_by"`
+		ID        string   `json:"id"`
+		Object    string   `json:"object"`
+		OwnedBy   string   `json:"owned_by"`
+		Protocols []string `json:"protocols,omitempty"`
 	}
 	states := s.Router.Status()
 	count := len(s.cfg.Groups)
@@ -523,11 +526,11 @@ func (s *Server) models(w http.ResponseWriter) {
 			if m.Enabled != nil && !*m.Enabled {
 				continue
 			}
-			out = append(out, modelEntry{src.ID + "/" + m.ID, "model", src.Provider})
+			out = append(out, modelEntry{src.ID + "/" + m.ID, "model", src.Provider, m.Protocols})
 		}
 	}
 	for _, g := range s.cfg.Groups {
-		out = append(out, modelEntry{g.ID, "model", "clash-tokens"})
+		out = append(out, modelEntry{g.ID, "model", "clash-tokens", nil})
 	}
 	reply(w, struct {
 		Object string       `json:"object"`

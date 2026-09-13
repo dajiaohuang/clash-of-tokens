@@ -11,9 +11,8 @@ import (
 	"strings"
 	"time"
 
-	cdpNetwork "github.com/chromedp/cdproto/network"
+	chromedp "clash-of-tokens/internal/browserexec"
 	cdpRuntime "github.com/chromedp/cdproto/runtime"
-	"github.com/chromedp/chromedp"
 
 	"clash-of-tokens/internal/config"
 )
@@ -47,7 +46,7 @@ func (c *Client) doDoubao(parent context.Context, model string, stream bool, bod
 	if err != nil {
 		return nil, err
 	}
-	cookie, custom, err := doubaoCookie(c.source)
+	cookie, custom, err := doubaoCookie(c.source, parent)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +55,7 @@ func (c *Client) doDoubao(parent context.Context, model string, stream bool, bod
 	}
 	defer c.doubaoGate.Unlock()
 
-	allocator, stopAllocator := chromedp.NewRemoteAllocator(context.Background(), c.browser.CDPURL)
+	allocator, stopAllocator := chromedp.NewRemoteAllocator(context.Background(), c.browser.CDPURL, c.browser.Engine)
 	defer stopAllocator()
 	var tab context.Context
 	var stopTab context.CancelFunc
@@ -136,11 +135,11 @@ func decodeDoubaoRequest(body []byte, model string) (chatRequest, error) {
 	return request, nil
 }
 
-func doubaoCookie(source config.Source) (string, bool, error) {
-	if strings.TrimSpace(source.KeyEnv) == "" {
+func doubaoCookie(source config.Source, contexts ...context.Context) (string, bool, error) {
+	if strings.TrimSpace(source.KeyEnv) == "" && source.CredentialRef == "" {
 		return "", false, nil
 	}
-	raw := strings.TrimSpace(source.CredentialValue())
+	raw := strings.TrimSpace(source.CredentialValue(contexts...))
 	if raw == "" || len(raw) > maxDoubaoCookie || strings.ContainsAny(raw, "\r\n\x00") {
 		return "", true, ErrCredential
 	}
@@ -189,7 +188,7 @@ func setDoubaoCookies(ctx context.Context, base, cookie string) error {
 		if len(pair) != 2 {
 			return ErrCredential
 		}
-		action := cdpNetwork.SetCookie(pair[0], pair[1]).WithDomain(host).WithPath("/").WithSecure(secure)
+		action := chromedp.SetCookie(pair[0], pair[1], host, "/", secure)
 		if err := chromedp.Run(ctx, action); err != nil {
 			return errors.New("china next web adapter: cannot set Doubao browser cookie")
 		}

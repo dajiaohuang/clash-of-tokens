@@ -30,7 +30,7 @@ func (c *Client) doGeminiBusiness(ctx context.Context, req chatRequest) (*http.R
 	if isGeminiBusinessMediaModel(req.Model) {
 		return nil, &unsupportedError{"business web adapter: Gemini Business text adapter does not support image or video models"}
 	}
-	cred, err := credential(c.source)
+	cred, err := credential(c.source, ctx)
 	if err != nil {
 		return nil, err
 	}

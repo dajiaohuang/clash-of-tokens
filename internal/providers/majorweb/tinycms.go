@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
+	chromedp "clash-of-tokens/internal/browserexec"
 	"github.com/chromedp/cdproto/runtime"
-	"github.com/chromedp/chromedp"
 )
 
 //go:embed tinycms-signer.js
@@ -46,7 +46,7 @@ func (c *Client) tinySign(parent context.Context, uuid, stamp, nonce, ip string,
 	if !c.browser.Enabled || c.browser.CDPURL == "" {
 		return out, &HTTPError{Status: 503, What: "TinyCMS signing requires configured Chrome"}
 	}
-	a, stopA := chromedp.NewRemoteAllocator(context.Background(), c.browser.CDPURL)
+	a, stopA := chromedp.NewRemoteAllocator(context.Background(), c.browser.CDPURL, c.browser.Engine)
 	defer stopA()
 	tab, stopTab := chromedp.NewContext(a)
 	defer stopTab()

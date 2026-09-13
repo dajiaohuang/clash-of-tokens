@@ -2,6 +2,7 @@ package config
 
 import (
 	"clash-of-tokens/internal/providerdef"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -41,6 +42,8 @@ type Device struct {
 	ClipboardSyncMS int    `json:"clipboard_sync_ms"`
 }
 type Browser struct {
+	ExpectedIdentity  string `json:"-"`
+	Engine            string `json:"engine,omitempty"`
 	Enabled           bool   `json:"enabled"`
 	CDPURL            string `json:"cdp_url"`
 	StateFile         string `json:"state_file"`
@@ -62,33 +65,34 @@ type Runtime struct {
 	BodyReadTimeoutMS int   `json:"body_read_timeout_ms"`
 }
 type Source struct {
-	Weight                 int                 `json:"weight,omitempty"`
-	CredentialResolver     func(string) string `json:"-"`
-	AccountID              string              `json:"account_id,omitempty"`
-	CredentialRef          string              `json:"credential_ref,omitempty"`
-	CredentialTypeOverride bool                `json:"credential_type_override,omitempty"`
-	SourceKind             string              `json:"source_kind,omitempty"`
-	ExecutionLocation      string              `json:"execution_location,omitempty"`
-	InferenceLocation      string              `json:"inference_location,omitempty"`
-	BillingMode            string              `json:"billing_mode,omitempty"`
-	CredentialMode         string              `json:"credential_mode,omitempty"`
-	ID                     string              `json:"id"`
-	Provider               string              `json:"provider"`
-	Adapter                string              `json:"adapter"`
-	BaseURL                string              `json:"base_url"`
-	KeyEnv                 string              `json:"key_env,omitempty"`
-	AccountIDEnv           string              `json:"account_id_env,omitempty"`
-	Organization           string              `json:"organization,omitempty"`
-	Project                string              `json:"project,omitempty"`
-	Enabled                bool                `json:"enabled"`
-	AutoApproved           bool                `json:"auto_approved"`
-	Local                  bool                `json:"local"`
-	Anonymous              bool                `json:"anonymous,omitempty"`
-	Paid                   bool                `json:"paid"`
-	MaxInflight            int                 `json:"max_inflight"`
-	QuotaDomain            string              `json:"quota_domain"`
-	QuotaMaxInflight       int                 `json:"quota_max_inflight"`
-	Models                 []Model             `json:"models"`
+	Weight                    int                                           `json:"weight,omitempty"`
+	CredentialResolver        func(string) string                           `json:"-"`
+	CredentialResolverContext func(context.Context, string) (string, error) `json:"-"`
+	AccountID                 string                                        `json:"account_id,omitempty"`
+	CredentialRef             string                                        `json:"credential_ref,omitempty"`
+	CredentialTypeOverride    bool                                          `json:"credential_type_override,omitempty"`
+	SourceKind                string                                        `json:"source_kind,omitempty"`
+	ExecutionLocation         string                                        `json:"execution_location,omitempty"`
+	InferenceLocation         string                                        `json:"inference_location,omitempty"`
+	BillingMode               string                                        `json:"billing_mode,omitempty"`
+	CredentialMode            string                                        `json:"credential_mode,omitempty"`
+	ID                        string                                        `json:"id"`
+	Provider                  string                                        `json:"provider"`
+	Adapter                   string                                        `json:"adapter"`
+	BaseURL                   string                                        `json:"base_url"`
+	KeyEnv                    string                                        `json:"key_env,omitempty"`
+	AccountIDEnv              string                                        `json:"account_id_env,omitempty"`
+	Organization              string                                        `json:"organization,omitempty"`
+	Project                   string                                        `json:"project,omitempty"`
+	Enabled                   bool                                          `json:"enabled"`
+	AutoApproved              bool                                          `json:"auto_approved"`
+	Local                     bool                                          `json:"local"`
+	Anonymous                 bool                                          `json:"anonymous,omitempty"`
+	Paid                      bool                                          `json:"paid"`
+	MaxInflight               int                                           `json:"max_inflight"`
+	QuotaDomain               string                                        `json:"quota_domain"`
+	QuotaMaxInflight          int                                           `json:"quota_max_inflight"`
+	Models                    []Model                                       `json:"models"`
 }
 type Model struct {
 	InputUSDPerMillion  *float64 `json:"input_usd_per_million,omitempty"`

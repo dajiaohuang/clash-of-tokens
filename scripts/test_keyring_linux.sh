@@ -5,6 +5,11 @@ if [ "${1:-}" != --inside ]; then
     exec dbus-run-session -- sh "$0" --inside "$@"
 fi
 shift
+task_artifact=0
+if [ "${1:-}" = --artifact ]; then
+    task_artifact=1
+    shift
+fi
 task_test_binary=$(realpath "${1:-.clash-tokens/credentials-linux.test}")
 task_scratch=$(mktemp -d /tmp/cot-keyring-test-XXXXXXXX)
 export XDG_DATA_HOME="$task_scratch/data"
@@ -29,4 +34,8 @@ until dbus-send --session --dest=org.freedesktop.secrets --type=method_call --pr
     fi
     sleep 0.1
 done
-COT_TEST_NATIVE_KEYRING=1 "$task_test_binary" -test.v -test.timeout=30s
+if [ "$task_artifact" = 1 ]; then
+    python3 "$(dirname "$0")/artifact_vault_smoke.py" "$task_test_binary"
+else
+    COT_TEST_NATIVE_KEYRING=1 "$task_test_binary" -test.v -test.timeout=30s
+fi

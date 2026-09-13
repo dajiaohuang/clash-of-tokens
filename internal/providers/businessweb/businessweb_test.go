@@ -389,7 +389,7 @@ window.fetch = (input, init) => {
 		}
 	}))
 	defer s.Close()
-	c := New(config.Source{Adapter: AdapterAIStudioBuild, BaseURL: s.URL + "/apps/fixture"}, config.Browser{Enabled: true, CDPURL: cdp})
+	c := New(config.Source{Adapter: AdapterAIStudioBuild, BaseURL: s.URL + "/apps/fixture"}, config.Browser{Enabled: true, CDPURL: cdp, Engine: os.Getenv("COT_TEST_BROWSER_ENGINE")})
 	defer c.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()

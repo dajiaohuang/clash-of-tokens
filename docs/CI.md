@@ -13,8 +13,18 @@ manual dispatch runs:
 - the full Linux race detector suite;
 - a cgo-enabled macOS test against the native Keychain backend using only a
   synthetic temporary vault entry; and
-- reproducible `CGO_ENABLED=0` gateway builds for Linux amd64, Windows amd64
-  and macOS arm64, retained as workflow artifacts.
+- native gateway builds for Linux amd64 and Windows amd64 with `CGO_ENABLED=0`,
+and macOS arm64 with `CGO_ENABLED=1` so the shipped binary includes Keychain;
+- create/restart/read/rotate/delete/canary checks against the exact binary
+uploaded by each build job, using isolated native storage;
+- real Chromium/Firefox provider fixtures and UI regression against a real Go
+Admin API, with synthetic upstreams and test-only storage on hosted Linux;
+- pinned `govulncheck@v1.1.4`, artifact SHA-256, embedded build metadata and
+license notices for dependencies actually present in the binary.
+
+These are workflow definitions, not a claim that this working tree has passed
+hosted CI. Local evidence and remaining release gates are tracked in
+[the next-release status](NEXT_RELEASE_STATUS.md).
 
 The native Keychain job does not import a user account, read an existing
 credential, or contact an upstream provider. It is deliberately separate from

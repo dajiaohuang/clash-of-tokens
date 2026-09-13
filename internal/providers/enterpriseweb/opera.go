@@ -19,7 +19,7 @@ func (c *Client) doOperaAria(ctx context.Context, req chatRequest) (*http.Respon
 	if req.Model != "aria" && req.Model != "aria-legacy" {
 		return nil, ErrUnsupported
 	}
-	cred, _, err := c.credential()
+	cred, _, err := c.credential(ctx)
 	if err != nil || (cred.AccessToken == "" && cred.RefreshToken == "") {
 		return nil, ErrCredential
 	}

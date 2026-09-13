@@ -8,6 +8,7 @@ package codingmore
 import (
 	"bufio"
 	"bytes"
+	"clash-of-tokens/internal/config"
 	"context"
 	"encoding/json"
 	"errors"
@@ -216,14 +217,10 @@ func devinTextContent(raw json.RawMessage) (string, error) {
 	return out.String(), nil
 }
 
-func devinCredential(sourceKeyEnv string) (string, error) {
-	keyEnv := strings.TrimSpace(sourceKeyEnv)
-	value := ""
-	if keyEnv != "" {
-		value = strings.TrimSpace(os.Getenv(keyEnv))
-	}
-	if value == "" {
-		value = strings.TrimSpace(os.Getenv("WINDSURF_API_KEY"))
+func devinCredential(source config.Source, contexts ...context.Context) (string, error) {
+	value := strings.TrimSpace(source.CredentialValue(contexts...))
+	if source.CredentialRef != "" && value == "" {
+		return "", ErrCredential
 	}
 	if len(value) > maxHeaderValue || strings.ContainsAny(value, "\r\n") {
 		return "", ErrCredential
@@ -617,7 +614,7 @@ func (c *Client) doDevin(ctx context.Context, model string, stream bool, body []
 	if err != nil {
 		return nil, err
 	}
-	token, err := devinCredential(c.source.KeyEnv)
+	token, err := devinCredential(c.source, ctx)
 	if err != nil {
 		return nil, err
 	}

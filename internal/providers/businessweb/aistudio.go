@@ -21,7 +21,7 @@ const makerSuiteBase = "https://alkalimakersuite-pa.clients6.google.com/$rpc/goo
 // Credentials may contain the dynamic browser headers captured from AI
 // Studio: cookie, x_goog_api_key, visit_id, authuser and proof.
 func (c *Client) doAIStudioPlayground(ctx context.Context, req chatRequest) (*http.Response, error) {
-	cred, err := credential(c.source)
+	cred, err := credential(c.source, ctx)
 	if err != nil {
 		return nil, err
 	}

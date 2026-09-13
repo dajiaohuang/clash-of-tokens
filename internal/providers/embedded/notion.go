@@ -27,7 +27,7 @@ func (c *Client) doNotion(ctx context.Context, protocol, model string, stream bo
 	if protocol != "chat" {
 		return nil, errors.New("notion-web adapter supports only chat protocol")
 	}
-	cookie, err := c.credential()
+	cookie, err := c.credential(ctx)
 	if err != nil {
 		return nil, err
 	}

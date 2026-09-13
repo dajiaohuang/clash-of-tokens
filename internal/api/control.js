@@ -8,7 +8,7 @@ const pages = [
  ['System',['config','logs','implementation','about']]
 ];
 const labels = {overview:'Overview',providers:'Providers',accounts:'Accounts',credentials:'Credentials',sources:'Sources',models:'Models',groups:'Groups',routing:'Routing',health:'Health',metrics:'Metrics',browsers:'Browsers',devices:'Devices',sessions:'Sessions',config:'Configuration',logs:'Activity',implementation:'Implementation',about:'About'};
-const names = {id:'ID',provider_id:'Provider',account_id:'Account',credential_ref:'Credential',credential_type_override:'Reviewed credential type override',base_url:'Base URL',key_env:'Legacy credential environment variable',account_id_env:'Legacy account ID environment variable',organization:'Organization',auto_approved:'Allow Auto routing',allow_paid:'Legacy paid-source policy',allow_unknown_cost:'Allow unknown costs',max_inflight:'Concurrent requests',quota_max_inflight:'Shared quota concurrency',quota_domain:'Quota domain',max_input_bytes:'Maximum input bytes',cdp_url:'Browser connection URL',source_kind:'Source type',tools:'Tool capability',local:'Loopback / local transport',paid:'Legacy paid flag'};
+const names = {id:'ID',provider_id:'Provider',account_id:'Account',credential_ref:'Credential',login_credential_ref:'Login material',expected_identity:'Expected browser identity',credential_type_override:'Reviewed credential type override',base_url:'Base URL',key_env:'Legacy credential environment variable',account_id_env:'Legacy account ID environment variable',organization:'Organization',auto_approved:'Allow Auto routing',allow_paid:'Legacy paid-source policy',allow_unknown_cost:'Allow unknown costs',max_inflight:'Concurrent requests',quota_max_inflight:'Shared quota concurrency',quota_domain:'Quota domain',max_input_bytes:'Maximum input bytes',cdp_url:'Browser connection URL',source_kind:'Source type',tools:'Tool capability',local:'Loopback / local transport',paid:'Legacy paid flag'};
 const browserEngines = ['chrome','edge','brave','firefox','opera','vivaldi','chromium','arc'];
 const title = text => names[text] || text.replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase());
 const clone = value => JSON.parse(JSON.stringify(value));
@@ -47,12 +47,53 @@ function select(values,value,empty=false){
  input.value=value??'';return input;
 }
 async function api(path,options={}){
+ if(options.method==='POST' && (/^\/admin\/(sources\/[^/]+\/(validate|discover)|accounts\/[^/]+\/(validate|check-login|login)|providers\/[^/]+\/validate|credentials\/[^/]+\/(check|refresh))$/.test(path)||['/admin/device/check','/admin/discovery/accounts','/admin/browser_profiles/status','/admin/browser_profiles/discover','/admin/browser_profiles/setup-login','/admin/credentials/import-browser'].includes(path)))return managementJob(path,options);
  if(!S.token)throw Error('Connect with your admin key first.');
  const response=await fetch(path,{...options,headers:{Authorization:'Bearer '+S.token,'Content-Type':'application/json',...(options.headers||{})},cache:'no-store'});
  const data=await response.json();
  if(!response.ok)throw Error(data.error?.message||'Request failed ('+response.status+').');
  return data;
 }
+const activeJobs=new Map();
+async function managementJob(path,options){
+ const submitted=await api('/admin/jobs',{method:'POST',body:JSON.stringify({path,input:options.body?JSON.parse(options.body):{}})});
+ const id=submitted.job_id;activeJobs.set(id,path);
+ const cancel=()=>{api('/admin/jobs/'+encodeURIComponent(id),{method:'DELETE'}).catch(()=>{})};
+ options.signal?.addEventListener('abort',cancel,{once:true});
+ if(options.signal?.aborted)cancel();
+ message('Management job started. Open Activity to cancel it.');
+ try{
+  for(;;){
+   await new Promise(resolve=>setTimeout(resolve,document.hidden?2000:300));
+   options.signal?.throwIfAborted();
+   const job=await api('/admin/jobs/'+encodeURIComponent(id),{signal:options.signal});
+   if(job.state==='running')continue;
+   if(job.state!=='completed')throw Error(job.state==='stale'?'Configuration or credentials changed. Run this check again.':job.result?.error?.message||'Management job '+job.state+'.');
+   return job.result;
+  }
+ }finally{options.signal?.removeEventListener('abort',cancel);activeJobs.delete(id)}
+}
+let runtimeTimer;
+async function refreshRuntime(){
+ clearTimeout(runtimeTimer);
+ try{
+  if(S.token && !document.hidden){
+   const token=S.token,status=await api('/admin/status');
+   if(token!==S.token)return;
+   S.status=status;
+   for(const cell of document.querySelectorAll('[data-live-status]'))cell.refreshStatus?.();
+   $('access').textContent='Connected · '+new Date().toLocaleTimeString();
+   if(status.revision!==S.revision)message('Configuration changed in another tab. Refresh before editing; unsaved changes are preserved.');
+   // Keep all editable/filterable DOM intact. Passive overview widgets may refresh.
+   if((location.hash||'#overview')==='#overview' && !$('dialog').open && !document.activeElement?.matches('input,textarea,select,button')){
+    const x=scrollX,y=scrollY;render();scrollTo(x,y);
+   }
+  }
+ }catch(error){if(S.token)$('access').textContent='Status stale · reconnecting'}
+ finally{runtimeTimer=setTimeout(refreshRuntime,document.hidden?30000:3000)}
+}
+document.addEventListener('visibilitychange',()=>{clearTimeout(runtimeTimer);runtimeTimer=setTimeout(refreshRuntime,document.hidden?30000:0)});
+runtimeTimer=setTimeout(refreshRuntime,3000);
 async function refresh(){
  const [current,catalog,descriptors,schema,status,credentials,history,evidence]=await Promise.all([
   api('/admin/config'),api('/admin/catalog'),api('/admin/descriptors'),api('/admin/config/schema'),api('/admin/status'),api('/admin/credentials'),api('/admin/config/history'),api('/admin/evidence')
@@ -79,10 +120,22 @@ function pageHead(name,description,...actions){return h('div',{class:'page-head'
 function table(headers,rows,empty='No entries yet.'){
  if(!rows.length)return h('div',{class:'table-wrap empty'},empty);
  const head=h('thead',{},h('tr',{},headers.map(x=>h('th',{},x))));
- const body=h('tbody',{},rows.map(row=>h('tr',{},row.map(x=>h('td',{},x??'—')))));
- return h('div',{class:'table-wrap'},h('table',{},head,body));
+ const body=h('tbody',{}),element=h('table',{},head,body),wrap=h('div',{class:'table-wrap'},element);
+ if(rows.length<=100){body.append(...rows.map(row=>h('tr',{},row.map(x=>h('td',{},x??'—')))));return wrap}
+ const search=h('input',{type:'search','aria-label':'Filter table rows',placeholder:'Filter table rows'}),info=h('span',{'aria-live':'polite'});
+ let page=0;
+ const text=v=>v instanceof Node?v.textContent:Array.isArray(v)?v.map(text).join(' '):String(v??'');
+ const indexed=rows.map(row=>({row,text:row.map(text).join(' ').toLocaleLowerCase()}));
+ const back=button('Previous page',()=>{page--;draw()}),next=button('Next page',()=>{page++;draw()});
+ function draw(){const filtered=indexed.filter(x=>x.text.includes(search.value.toLocaleLowerCase())),pages=Math.max(1,Math.ceil(filtered.length/100));page=Math.max(0,Math.min(page,pages-1));body.replaceChildren(...filtered.slice(page*100,page*100+100).map(x=>h('tr',{},x.row.map(value=>h('td',{},value??'—')))));back.disabled=page===0;next.disabled=page===pages-1;info.textContent=filtered.length+' rows · Page '+(page+1)+' / '+pages;for(const cell of body.querySelectorAll('[data-live-status]'))cell.refreshStatus?.()}
+ search.oninput=()=>{page=0;draw()};wrap.prepend(h('div',{class:'toolbar'},search,back,info,next));draw();return wrap;
 }
-function state(source){
+function liveStatus(read){
+ const cell=h('span',{'data-live-status':''});
+ cell.refreshStatus=()=>cell.replaceChildren(read());cell.refreshStatus();return cell;
+}
+function state(source){return liveStatus(()=>sourceState(source))}
+function sourceState(source){
  const status=S.status.sources.find(x=>x.id===source.id);
  const health=status?.health;
  const labels={healthy:'Healthy',disabled:'Disabled',blocked:'Blocked',cooldown:'Cooldown',exhausted:'Exhausted',broken:'Broken',degraded:'Degraded',untested:'Not tested'};
@@ -107,6 +160,8 @@ async function preview(next,summary,back,base=clone(S.config),revision=S.revisio
  if(!changes.length){message('No changes to apply.');return}
  const result=await api('/admin/config/preview',{method:'POST',body:JSON.stringify({revision,config:next})});
  const body=[h('p',{},summary),diffTable(changes)];
+ const destinations=result.impact?.credential_destinations||[],confirmDestinations=h('input',{type:'checkbox'});
+ if(destinations.length)body.push(h('h3',{},'Credential destinations changed'),table(['Resource','Before','After'],destinations.map(v=>[v.resource,v.before,v.after])),field('I authorize sending the bound credentials to these destinations',confirmDestinations));
  if(result.restart_required.length)body.unshift(h('div',{class:'warning'},'Restart required for: '+result.restart_required.join(', ')+'. Other valid source and routing changes apply immediately.'));
  if(result.impact){
   const rows=(result.impact.groups||[]).map(row=>[row.group,row.protocol,row.before_eligible,row.after_eligible]);
@@ -115,7 +170,8 @@ async function preview(next,summary,back,base=clone(S.config),revision=S.revisio
  }
  body.push(h('p',{class:'muted'},'Provider, account and source switches affect new requests. Active requests can finish.'));
  dialog('Review changes',body,[button('Back',back||(()=> $('dialog').close())),button('Apply changes',async()=>{
-  await api('/admin/config',{method:'PATCH',body:JSON.stringify({revision,config:next,summary})});
+  if(destinations.length&&!confirmDestinations.checked)throw Error('Confirm the changed credential destinations before applying.');
+  await api('/admin/config',{method:'PATCH',body:JSON.stringify({revision,config:next,summary,confirm_credential_destinations:confirmDestinations.checked})});
   $('dialog').close();await refresh();message('Changes saved. Revision '+S.revision+'.');
   await applied?.();
  },'primary')]);
@@ -185,8 +241,9 @@ function formField(schema,value,label=schema.name,context={}){
  if(['provider','provider_id'].includes(schema.name))choices=[...new Set([...S.catalog.map(p=>p.id),...(S.config.providers||[]).map(p=>p.id),...(value?[value]:[])])].sort();
  if(schema.name==='adapter')choices=S.descriptors.map(d=>d.id);
  if(schema.name==='account_id')choices=(S.config.accounts||[]).map(a=>a.id);
- if(schema.name==='credential_ref'){
-  const credentials=context.allowIncompatible?S.credentials:context.credentialModes?.length?S.credentials.filter(c=>context.credentialModes.includes(c.kind)||c.id===value):S.credentials;
+ if(schema.name==='credential_ref'||schema.name==='login_credential_ref'){
+  const candidates=S.credentials.filter(c=>schema.name==='login_credential_ref'?c.kind==='username_password':c.kind!=='username_password');
+  const credentials=schema.name==='login_credential_ref'||context.allowIncompatible?candidates:context.credentialModes?.length?candidates.filter(c=>context.credentialModes.includes(c.kind)||c.id===value):candidates;
   choices=[...new Set([...credentials.map(c=>c.id),...(value?[value]:[])])];
  }
  if(schema.name==='browser_profile_id')choices=(S.config.browser_profiles||[]).map(p=>p.id);
@@ -332,13 +389,15 @@ function accountWizard(draft={}){
  const allowedModes=()=>{const d=providerDescriptor();return d?.credential_modes?.length?d.credential_modes:null};
  const supports=(...modes)=>{const allowed=allowedModes();return !allowed||modes.some(mode=>allowed.includes(mode))};
  const credentialOverride=h('input',{type:'checkbox',checked:!!draft.credential_type_override,'aria-label':'Reviewed credential type override'});
- const compatibleCredentials=()=>{const allowed=allowedModes();return S.credentials.filter(c=>credentialOverride.checked||!allowed||allowed.includes(c.kind))};
+ const compatibleCredentials=()=>{const allowed=providerDescriptor()?.invoke_credentials;return S.credentials.filter(c=>c.kind!=='username_password'&&(credentialOverride.checked||!allowed||allowed.includes(c.kind)))};
  const credential=select(compatibleCredentials().map(c=>({value:c.id,label:c.id+' · '+c.kind})),draft.credential_ref||'',true);
+ const expectedIdentity=h('input',{value:draft.expected_identity||'',placeholder:'Expected browser user ID or email (when supported)'});
+ const loginCredential=select(S.credentials.filter(c=>c.kind==='username_password').map(c=>({value:c.id,label:c.id})),draft.login_credential_ref||'',true);
  const available=[...(S.config.browser_profiles||[]),...(draft.newProfile?[draft.newProfile]:[])];
  const profile=select(available.map(p=>({value:p.id,label:p.id+(p===draft.newProfile?' (new isolated profile)':'')})),draft.browser_profile_id||'',true);
  const hints=h('p',{class:'muted'});
  const authNotice=h('p',{},draft.authenticated?'Login detected for this selected profile. Review and save the account.':'Choose a protected credential or a browser profile. Import actions return here with the new reference.');
- const capture=()=>({...draft,id:id.value.trim(),display_name:name.value.trim(),quota_domain:quota.value.trim(),provider_id:provider.value,credential_ref:credential.value,credential_type_override:credentialOverride.checked,browser_profile_id:profile.value,base_url:baseURL.value.trim(),organization:organization.value.trim(),project:project.value.trim(),newProfile:draft.newProfile?.id===profile.value?draft.newProfile:undefined});
+ const capture=()=>({...draft,id:id.value.trim(),display_name:name.value.trim(),quota_domain:quota.value.trim(),provider_id:provider.value,credential_ref:credential.value,login_credential_ref:loginCredential.value,expected_identity:expectedIdentity.value.trim(),credential_type_override:credentialOverride.checked,browser_profile_id:profile.value,base_url:baseURL.value.trim(),organization:organization.value.trim(),project:project.value.trim(),newProfile:draft.newProfile?.id===profile.value?draft.newProfile:undefined});
  const hint=()=>{const modes=allowedModes()||[];hints.textContent='Compatible credential types: '+(modes.join(', ')||'any declared type')+'. '+(credentialOverride.checked?'Reviewed override is enabled; incompatible protected references may be selected and the server keeps the explicit risk flag. ':'Incompatible protected references are hidden until reviewed override is enabled. ')+'Password imports are login material, not API keys. Base URL, organization and project are optional account defaults; a source may override them. Accounts are saved disabled and excluded from Auto routing.'};
  const updateCredentialOptions=()=>{const current=credential.value,options=compatibleCredentials();credential.replaceChildren(h('option',{value:''},'Choose…'),...options.map(c=>h('option',{value:c.id},c.id+' · '+c.kind)));credential.value=options.some(c=>c.id===current)?current:''};
  credentialOverride.addEventListener('change',()=>{updateCredentialOptions();hint()});
@@ -356,19 +415,19 @@ function accountWizard(draft={}){
  const setupActions=[newCredentialAction,passwordImportAction,tokenImportAction,browserCookieAction,newProfileAction,loginAction];
  const updateSetupActions=()=>{const d=providerDescriptor(),browser=!!(d?.browser_required||d?.browser_auth_check||allowedModes()?.includes('browser_profile'));passwordImportAction.hidden=!supports('username_password');tokenImportAction.hidden=!supports('api_key','oauth');browserCookieAction.hidden=!(browser&&supports('cookie'));newProfileAction.hidden=!browser;loginAction.hidden=!browser;newCredentialAction.hidden=!!allowedModes()&&(!allowedModes().length||!d?.credential_fields?.length)};
  provider.onchange=()=>{draft.authenticated=false;updateCredentialOptions();authNotice.textContent='Selection changed. Check login again for this selection.';hint();updateSetupActions()};profile.onchange=()=>{draft.authenticated=false;authNotice.textContent='Selection changed. Check login again for this selection.'};hint();updateSetupActions();
- const imported=saved=>{const next=capture(),items=Array.isArray(saved)?saved:[saved];if(items.length===1)next.credential_ref=items[0].id;accountWizard(next)};
- dialog('Set up account',[h('div',{class:'form-grid'},field('Provider',provider),field('ID',id),field('Display Name',name),field('Quota domain',quota),field('Base URL',baseURL),field('Organization',organization),field('Project',project),field('Credential',credential),field('Browser Profile Id',profile),h('label',{class:'boolean'},credentialOverride,'Reviewed credential type override')),hints,authNotice,h('div',{class:'toolbar'},setupActions)],[button('Review changes',async()=>{
+ const imported=saved=>{const next=capture(),items=Array.isArray(saved)?saved:[saved];if(items.length===1)next[items[0].kind==="username_password"?"login_credential_ref":"credential_ref"]=items[0].id;accountWizard(next)};
+ dialog('Set up account',[h('div',{class:'form-grid'},field('Provider',provider),field('ID',id),field('Display Name',name),field('Quota domain',quota),field('Base URL',baseURL),field('Organization',organization),field('Project',project),field('Credential',credential),field('Login material',loginCredential),field('Expected browser identity',expectedIdentity),field('Browser Profile Id',profile),h('label',{class:'boolean'},credentialOverride,'Reviewed credential type override')),hints,authNotice,h('div',{class:'toolbar'},setupActions)],[button('Review changes',async()=>{
   const next=clone(S.config),value=capture();
   if(!value.id||!value.provider_id||!value.quota_domain)throw new Error('Enter account ID, provider and quota domain.');
   if((next.accounts||[]).some(a=>a.id===value.id))throw new Error('This account ID already exists.');
   if(value.newProfile){next.browser_profiles=next.browser_profiles||[];next.browser_profiles.push(value.newProfile)}
   next.providers=next.providers||[];if(!next.providers.some(p=>p.id===value.provider_id))next.providers.push({id:value.provider_id,enabled:true,auto_approved:false,pool_strategy:'round-robin'});
-  next.accounts=next.accounts||[];next.accounts.push({id:value.id,provider_id:value.provider_id,display_name:value.display_name,base_url:value.base_url,organization:value.organization,project:value.project,quota_domain:value.quota_domain,credential_ref:value.credential_ref,credential_type_override:value.credential_type_override,browser_profile_id:value.browser_profile_id,enabled:false,auto_approved:false,max_inflight:1,weight:1,created_at:new Date().toISOString()});
+  next.accounts=next.accounts||[];next.accounts.push({id:value.id,provider_id:value.provider_id,display_name:value.display_name,base_url:value.base_url,organization:value.organization,project:value.project,quota_domain:value.quota_domain,credential_ref:value.credential_ref,login_credential_ref:value.login_credential_ref,expected_identity:value.expected_identity,credential_type_override:value.credential_type_override,browser_profile_id:value.browser_profile_id,enabled:false,auto_approved:false,max_inflight:1,weight:1,created_at:new Date().toISOString()});
   await preview(next,'Add account '+value.id,()=>accountWizard(value),clone(S.config),S.revision,value.authenticated?async()=>{await api('/admin/accounts/'+encodeURIComponent(value.id)+'/check-login',{method:'POST'});await refresh()}:undefined);
  },'primary')]);
  }
  function credentialDescriptor(credential){
-  const account=(S.config.accounts||[]).find(a=>a.credential_ref===credential.id);
+  const account=(S.config.accounts||[]).find(a=>(a.credential_ref===credential.id||a.login_credential_ref===credential.id));
   const source=(S.config.sources||[]).find(s=>s.credential_ref===credential.id||(!s.credential_ref&&account&&s.account_id===account.id));
   const providerID=account?.provider_id||source?.provider;
   const provider=S.catalog.find(p=>p.id===providerID);
@@ -428,7 +487,7 @@ function credentialForm(existing,onSaved,allowedModes,descriptor){
  };
  const saveButton=button('Save credential',async()=>{
   if(existing&&!confirmed){
-   const accountRows=(S.config.accounts||[]).filter(a=>a.credential_ref===existing.id).map(a=>({id:a.id,label:a.display_name||a.id}));
+   const accountRows=(S.config.accounts||[]).filter(a=>(a.credential_ref===existing.id||a.login_credential_ref===existing.id)).map(a=>({id:a.id,label:a.display_name||a.id}));
    const accounts=accountRows.map(a=>a.label);
    const sources=(S.config.sources||[]).filter(s=>s.credential_ref===existing.id||((!s.credential_ref)&&accountRows.some(a=>a.id===s.account_id))).map(s=>s.id);
    confirmed=true;
@@ -545,6 +604,15 @@ async function launchAccountLogin(a){
  const result=await api('/admin/accounts/'+encodeURIComponent(a.id)+'/login',{method:'POST'});
  loginEvidence(a,true,result.message);
 }
+function acquireAccountSession(a){
+ const provider=S.catalog.find(p=>p.id===a.provider_id);
+ const sources=(S.config.sources||[]).filter(s=>s.account_id===a.id&&!s.credential_ref);
+ dialog('Bind authenticated session',[h('p',{},'Account: '+a.id+' · Profile: '+a.browser_profile_id),h('p',{},'Expected identity: '+(a.expected_identity||'Not set')+' · Organization: '+(a.organization||'Not set')),h('p',{},'Destination: '+(provider?.base_url||'Unknown')),h('p',{},'Inheriting sources: '+(sources.map(s=>s.id).join(', ')||'None')),h('p',{class:'muted'},'Checks the expected account before binding. HTTP providers save applicable cookies in the encrypted vault. Shared SSO cookies can authorize other products on the same domain. The previous credential is retained. Generation is a separate explicit validation.')],[button('Confirm session binding',async()=>{
+  const result=await managementJob('/admin/accounts/'+encodeURIComponent(a.id)+'/acquire-session',{method:'POST',body:JSON.stringify({revision:S.revision,confirm:true})});
+  if(!result.session_ready)throw Error('Session not bound: '+result.status);
+  await refresh();dialog('Session ready',[h('p',{},'Invocation session bound at revision '+result.revision+'. No prompt has been submitted.')],[button('Open sources',()=>{$('dialog').close();location.hash='sources'})]);
+ },'primary')]);
+}
 function loginEvidence(a,watch=false,launchMessage='',setup){
  let live=true,busy=false,timer,deadline,controller;
  const progress=h('p',{role:'status'},watch?'Checking every 5 seconds after each result, for up to 5 minutes.':'Checking browser session…');
@@ -578,7 +646,7 @@ function accounts(){
  };
  return [pageHead('Accounts','Account switches and capacity apply across their sources.',button('Discover candidates',discoverAccounts),button('Account pools',accountPools),button('Refresh capacity',refresh),button('Add account',()=>addAccount(),'primary')),table(['Account','Provider','Health','Auth status','Browser authentication','Credential','Credential state','Routing defaults','Reviewed override','Quota / in flight','Auto','Actions'],(S.config.accounts||[]).map(a=>[
   a.display_name||a.id,a.provider_id,badge(healthFor(a).health||'untested',healthFor(a).health==='healthy'?'good':healthFor(a).health==='disabled'?'':'warn'),healthFor(a).auth_status||'not_checked',accountAuth(a),a.credential_ref||'Not bound',(healthFor(a).credential_state||'not_configured')+(healthFor(a).credential_version?' · v'+healthFor(a).credential_version:''),[a.base_url&&'Base URL: '+a.base_url,a.organization&&'Organization: '+a.organization,a.project&&'Project: '+a.project].filter(Boolean).join(' · ')||'Not set',a.credential_type_override?'Yes':'No',a.quota_domain+' · '+((S.status.accounts||[]).find(x=>x.id===a.id)?.active||0)+' / '+a.max_inflight,badge(a.auto_approved?'Approved':'Manual',a.auto_approved?'accent':''),
-   [button(a.enabled?'Disable':'Enable',()=>toggle('accounts',a)),button(a.auto_approved?'Remove Auto':'Allow Auto',()=>toggleAuto('accounts',a)),button('Edit',()=>edit('accounts',a)),button('Validate account',()=>validateAccount(a)),a.browser_profile_id?button('Re-authenticate',()=>launchAccountLogin(a)):null,a.browser_profile_id?button('Check login',()=>loginEvidence(a)):null,button('Delete',()=>removeAccount(a),'danger')]
+   [button(a.enabled?'Disable':'Enable',()=>toggle('accounts',a)),button(a.auto_approved?'Remove Auto':'Allow Auto',()=>toggleAuto('accounts',a)),button('Edit',()=>edit('accounts',a)),button('Validate account',()=>validateAccount(a)),a.browser_profile_id?button('Re-authenticate',()=>launchAccountLogin(a)):null,a.browser_profile_id?button('Check login',()=>loginEvidence(a)):null,a.browser_profile_id&&['chatgpt-web','claude-web'].includes(S.catalog.find(p=>p.id===a.provider_id)?.adapter)?button('Bind session',()=>acquireAccountSession(a)):null,button('Delete',()=>removeAccount(a),'danger')]
  ]),'No accounts. Add an account and bind a credential before enabling its sources.')];
 }
 async function discoverAccounts(){
@@ -637,50 +705,77 @@ function editQuota(domain){
 }
 function unbindCredential(credential){
  const base=clone(S.config),revision=S.revision;
- const accounts=(base.accounts||[]).filter(a=>a.credential_ref===credential.id);
+ const accounts=(base.accounts||[]).filter(a=>(a.credential_ref===credential.id||a.login_credential_ref===credential.id));
  const accountIDs=new Set(accounts.map(a=>a.id));
  const sources=(base.sources||[]).filter(s=>s.credential_ref===credential.id||(!s.credential_ref&&accountIDs.has(s.account_id)));
  if(!accounts.length&&!sources.length)throw Error('This credential is already unbound.');
  const next=clone(base);
- for(const account of next.accounts||[])if(account.credential_ref===credential.id)account.credential_ref='';
+ for(const account of next.accounts||[]){if(account.credential_ref===credential.id)account.credential_ref='';if(account.login_credential_ref===credential.id)account.login_credential_ref=''}
  for(const source of next.sources||[])if(source.credential_ref===credential.id)source.credential_ref='';
  dialog('Unbind credential',[h('p',{class:'warning'},'Remove '+credential.id+' from all accounts and sources? The protected value remains in the vault until you delete it.'),table(['Affected configuration','Entries'],[['Accounts',accounts.map(a=>a.display_name||a.id).join(', ')||'None'],['Sources',sources.map(s=>s.id).join(', ')||'None']])],[button('Cancel',()=>$('dialog').close()),button('Review unbind',()=>preview(next,'Unbind credential '+credential.id,()=>unbindCredential(credential),base,revision),'primary')]);
 }
 function reloginCredential(credential){
- const accounts=(S.config.accounts||[]).filter(a=>a.credential_ref===credential.id&&a.browser_profile_id);
+ const accounts=(S.config.accounts||[]).filter(a=>(a.credential_ref===credential.id||a.login_credential_ref===credential.id)&&a.browser_profile_id);
  if(!accounts.length)throw Error('No browser-bound account uses '+credential.id+'.');
  dialog('Re-login account',h('p',{class:'muted'},'Choose a browser-bound account. The login browser is isolated to its configured profile; this does not reveal or export the credential value.'),accounts.map(a=>button(a.display_name||a.id,async()=>{await launchAccountLogin(a)})));
 }
 function credentials(){
- return [pageHead('Credentials','Protected values are stored separately from configuration.',h('div',{},button('Import export',importCredentials),button('Import token',importToken),button('Import browser cookies',importBrowserCookies),button('Add credential',()=>credentialForm(),'primary'))),table(['Credential','Type','Used by','Imported from','Updated','Last used','Actions'],S.credentials.map(c=>[
-   c.id,badge(c.kind),(()=>{const accounts=(S.config.accounts||[]).filter(a=>a.credential_ref===c.id),ids=accounts.map(a=>a.id);return [...ids,...S.config.sources.filter(s=>s.credential_ref===c.id||(!s.credential_ref&&accounts.some(a=>a.id===s.account_id))).map(s=>s.id)].join(', ')||'Unbound'})(),c.source,new Date(c.updated_at).toLocaleString(),c.last_used_at?new Date(c.last_used_at).toLocaleString():'Not used', [button('Replace',()=>editCredential(c)),(S.config.accounts||[]).some(a=>a.credential_ref===c.id&&a.browser_profile_id)?button('Re-login',()=>reloginCredential(c)):null,button('Unbind',()=>unbindCredential(c)),button('Delete',()=>deleteCredential(c),'danger')]
+ const integrations=h('div',{class:'actions'},button('Add external manager reference',()=>externalCredentialForm()),button('Add OAuth lifecycle',()=>oauthCredentialForm()));
+ return [pageHead('Credentials','Protected values are stored separately from configuration.',h('div',{},button('Import export',importCredentials),button('Import token',importToken),button('Import browser cookies',importBrowserCookies),button('Add credential',()=>credentialForm(),'primary'))),integrations,table(['Credential','Type','Used by','Imported from','Updated','Last used','Actions'],S.credentials.map(c=>[
+   c.id,[badge(c.kind),badge(c.state||'ready'),c.oauth?h('span',{},'Expires '+new Date(c.oauth.expires_at).toLocaleString()):null],(()=>{const accounts=(S.config.accounts||[]).filter(a=>a.credential_ref===c.id),ids=accounts.map(a=>a.id);return [...ids,...S.config.sources.filter(s=>s.credential_ref===c.id||(!s.credential_ref&&accounts.some(a=>a.id===s.account_id))).map(s=>s.id)].join(', ')||'Unbound'})(),c.source,new Date(c.updated_at).toLocaleString(),c.last_used_at?new Date(c.last_used_at).toLocaleString():'Not used', [button('Replace',()=>editCredential(c)),c.external?button('Check availability',async()=>{await api('/admin/credentials/'+encodeURIComponent(c.id.replace('cred://',''))+'/check',{method:'POST'});message('Selected field is available. Generation has not been verified.')}):null,c.oauth?.automatic_refresh?button('Refresh OAuth',async()=>{await api('/admin/credentials/'+encodeURIComponent(c.id.replace('cred://',''))+'/refresh',{method:'POST'});await refresh()}):null,(S.config.accounts||[]).some(a=>a.credential_ref===c.id&&a.browser_profile_id)?button('Re-login',()=>reloginCredential(c)):null,button('Unbind',()=>unbindCredential(c)),button('Delete',()=>deleteCredential(c),'danger')]
  ]),'No credentials. Add a key or session, then bind its reference to an account.')];
+}
+function externalCredentialForm(){
+ const id=h('input',{autocomplete:'off'}),manager=select(['1password','bitwarden'],'1password'),reference=h('input',{autocomplete:'off',placeholder:'op://vault/item/field or Bitwarden item UUID'}),kind=select(['api_key','oauth','cookie'],'api_key'),managerField=select(['','password','username'],'');
+ dialog('External manager reference',[field('Credential ID',id),field('Official manager',manager),field('Selected reference',reference),field('Bitwarden field',managerField),field('Invocation credential type',kind),h('p',{},'Only this selected field is read using the official CLI. Saving does not open or enumerate a vault. Use Check availability to authorize access after saving.')],[button('Save reference',async()=>{
+  if(!id.value.trim())throw Error('Enter a credential ID.');
+  await api('/admin/credentials/'+encodeURIComponent(id.value.trim()),{method:'PUT',body:JSON.stringify({kind:kind.value,external:{manager:manager.value,reference:reference.value.trim(),field:manager.value==='bitwarden'?managerField.value:''}})});
+  $('dialog').close();await refresh();
+ },'primary')]);
+}
+function oauthCredentialForm(){
+ const id=h('input',{autocomplete:'off'}),access=h('input',{type:'password',autocomplete:'off'}),refreshToken=h('input',{type:'password',autocomplete:'off'}),endpoint=h('input',{type:'url',autocomplete:'off'}),client=h('input',{autocomplete:'off'}),secret=h('input',{type:'password',autocomplete:'off'}),expiry=h('input',{type:'datetime-local'}),scope=h('input',{}),identity=h('input',{autocomplete:'off'});
+ dialog('OAuth lifecycle',[field('Credential ID',id),field('Access token',access),field('Refresh token (optional)',refreshToken),field('Authorized token endpoint',endpoint),field('OAuth client ID',client),field('OAuth client secret (optional)',secret),field('Access token expiry (local time)',expiry),field('Granted scopes',scope),field('Upstream account ID',identity),h('p',{},'Use the provider’s authorized OAuth grant. Expired tokens refresh through the exact endpoint entered here. Without a refresh grant, expiry requires reauthorization. Tokens remain in the encrypted vault.')],[button('Save OAuth grant',async()=>{
+  if(!id.value.trim()||!expiry.value)throw Error('Credential ID and token expiry are required.');
+  await api('/admin/credentials/'+encodeURIComponent(id.value.trim()),{method:'PUT',body:JSON.stringify({kind:'oauth',source:'explicit-oauth-grant',oauth:{access_token:access.value,refresh_token:refreshToken.value,token_url:endpoint.value.trim(),client_id:client.value.trim(),client_secret:secret.value,expires_at:new Date(expiry.value).toISOString(),scope:scope.value,account_id:identity.value}})});
+  $('dialog').close();await refresh();
+ },'primary')]);
+ dialogCleanup=()=>{access.value='';refreshToken.value='';secret.value=''};
 }
 function importCredentials(onSaved){
  const file=h('input',{type:'file',accept:'.csv,.json'});
- const formatChoice=select(['auto','bitwarden-json','bitwarden-csv','1password-csv','keepassxc-csv','protonpass-csv','dashlane-csv','nordpass-csv','apple-passwords-csv','google-passwords-csv'],'auto');
+ const formatChoice=select(['auto','chrome-csv','edge-csv','brave-csv','firefox-csv','opera-csv','vivaldi-csv','chromium-csv','arc-csv','safari-csv','apple-passwords-csv','google-passwords-csv','bitwarden-json','bitwarden-csv','1password-csv','keepass-csv','keepassxc-csv','protonpass-csv','dashlane-csv','nordpass-csv','lastpass-csv','enpass-csv'],'auto');
  dialog('Import selected export',[field('Export format',formatChoice),field('CSV or JSON file',file),h('p',{class:'muted'},'Auto accepts CSV columns name (optional), url, username, password, or a JSON array with those fields. Choose the matching manager format for its native export. Up to 4 MiB and 1,000 login candidates. Notes, TOTP, cards and password history are not imported.')],[button('Preview entries',async()=>{
   const chosen=file.files[0];if(!chosen)throw new Error('Choose an export file.');
   if(chosen.size>4*1024*1024)throw new Error('Export exceeds 4 MiB.');
   const format=formatChoice.value==='auto'?(chosen.name.toLowerCase().endsWith('.json')?'json':'csv'):formatChoice.value;
   let data=await chosen.text();
   const report=await api('/admin/credentials/import',{method:'POST',body:JSON.stringify({format,data})}),rows=report.items;
+  data='';
   const selected=new Set();
-  dialog('Select credentials to import',[h('p',{class:'muted'},'Skipped '+report.skipped+' non-web or non-password records. Only checked entries will be saved. Existing credentials will not be replaced. Bind the new references from Accounts after importing.'),table(['Select','Name','Domain','Type','Provider match'],rows.map(row=>[h('input',{type:'checkbox','aria-label':'Import entry '+(row.index+1),onchange:e=>{if(e.target.checked)selected.add(row.index);else selected.delete(row.index)}}),row.name,row.domain,row.kind,(row.matches||[]).map(m=>m.provider+(m.compatible?' (compatible)':' (login or different credential required)')).join(', ')||'No exact domain match']))],[button('Cancel',()=>{data='';$('dialog').close()}),button('Import selected',async()=>{
+  const choices=new Map();
+  const conflictChoice=row=>{
+   const options=[{value:'new',label:'New credential'}];
+   for(const c of row.conflicts||[])for(const action of ['keep','replace'])options.push({value:action+':'+c.id,label:title(action)+' '+c.id+' · v'+c.version});
+   const input=select(options,'new');choices.set(row.index,input);return input;
+  };
+  dialog('Select credentials to import',[h('p',{class:'muted'},'Skipped '+report.skipped+' non-web or non-password records. Only checked entries will be saved. Preview expires in 5 minutes. Keep or replace only matches the exact login URL and username; different products are never merged automatically.'),table(['Select','Name','Domain','Type','Provider match','Conflict action'],rows.map(row=>[h('input',{type:'checkbox','aria-label':'Import entry '+(row.index+1),onchange:e=>{if(e.target.checked)selected.add(row.index);else selected.delete(row.index)}}),row.name,row.domain,row.kind,(row.matches||[]).map(m=>m.provider+(m.compatible?' (compatible)':' (login or different credential required)')).join(', ')||'No exact domain match',conflictChoice(row)]))],[button('Cancel',()=>{$('dialog').close()}),button('Import selected',async()=>{
    if(!selected.size)throw new Error('Select at least one entry.');
-   const saved=await api('/admin/credentials/import',{method:'POST',body:JSON.stringify({format,data,selected:[...selected],apply:true})});
+   const selections=[...selected].map(index=>{const value=choices.get(index).value;if(value==='new')return {index,action:'new'};const split=value.indexOf(':'),action=value.slice(0,split),reference=value.slice(split+1),meta=rows.find(r=>r.index===index).conflicts.find(c=>c.id===reference);return {index,action,reference,version:meta.version}});
+   const saved=await api('/admin/credentials/import',{method:'POST',body:JSON.stringify({ticket:report.ticket,choices:selections,apply:true})});
    const selectedRows=rows.filter(row=>selected.has(row.index));
    const suggested=selectedRows.length===1?(selectedRows[0].matches||[]).find(match=>match.compatible)?.provider||'':'';
    data='';$('dialog').close();await refresh();
    if(saved.length===1&&suggested&&!onSaved){
     message('Imported credential. Review the suggested provider binding before saving the account.');
     onSaved?.(saved);
-    accountWizard({credential_ref:saved[0].id,provider_id:suggested});
+    accountWizard({[saved[0].kind==='username_password'?'login_credential_ref':'credential_ref']:saved[0].id,provider_id:suggested});
    }else{
     message('Imported '+saved.length+' credentials. Bind their references from Accounts.');
     onSaved?.(saved);
    }
   },'primary')]);
+  dialogCleanup=()=>{data='';api('/admin/credentials/import-preview/'+encodeURIComponent(report.ticket),{method:'DELETE'}).catch(()=>{})};
  },'primary')]);
 }
 function sources(){
@@ -852,8 +947,11 @@ function configuration(section='runtime'){
  return [pageHead('Configuration','Every configuration field is available as a form.',button('Version history',()=>historyDialog())),S.restart.length?h('div',{class:'warning'},'Restart required: '+S.restart.join(', ')):null,tabs,body];
 }
 function historyDialog(){
- dialog('Configuration history',table(['Revision','Time','Change',''],[...S.history].reverse().map(v=>[v.revision,new Date(v.created_at).toLocaleString(),v.summary,button('Compare / restore',()=>{
-  dialog('Restore revision '+v.revision,[diffTable(diff(S.config,v.config)),h('p',{class:'muted'},'Restoring creates a new revision. Credentials are not copied or restored.')],[button('Back',historyDialog),button('Restore',async()=>{await api('/admin/config/rollback',{method:'POST',body:JSON.stringify({revision:S.revision,target_revision:v.revision})});$('dialog').close();await refresh()},'primary')]);
+ dialog('Configuration history',table(['Revision','Time','Change',''],[...S.history].reverse().map(v=>[v.revision,new Date(v.created_at).toLocaleString(),v.summary,button('Compare / restore',async()=>{
+  const revision=S.revision,latest=await api('/admin/config'),result=await api('/admin/config/preview',{method:'POST',body:JSON.stringify({revision:latest.revision,config:v.config})}),destinations=result.impact?.credential_destinations||[],confirm=h('input',{type:'checkbox'});
+  const content=[diffTable(diff(S.config,v.config)),h('p',{class:'muted'},'Restoring creates a new revision. Credentials are not copied or restored.')];
+  if(destinations.length)content.push(table(['Resource','Before','After'],destinations.map(x=>[x.resource,x.before,x.after])),field('I authorize restoring these credential destinations',confirm));
+  dialog('Restore revision '+v.revision,content,[button('Back',historyDialog),button('Restore',async()=>{if(destinations.length&&!confirm.checked)throw Error('Confirm restored credential destinations.');await api('/admin/config/rollback',{method:'POST',body:JSON.stringify({revision,target_revision:v.revision,confirm_credential_destinations:confirm.checked})});$('dialog').close();await refresh()},'primary')]);
  })])));
 }
 function environment(type){
@@ -925,10 +1023,15 @@ function sessions(){
  return [pageHead('Sessions','Inspect and manage local conversation references.',button('Refresh sessions',load)),target];
 }
 function activity(){
+ const jobs=h('section',{},h('h2',{},'Management jobs'),button('View jobs',showManagementJobs));
  const events=[...(S.status.execution_events||[])].reverse(),source=select(['all',...new Set(events.map(e=>e.source))],'all'),outcome=select(['all','succeeded','failed','canceled'],'all'),eventTable=h('div',{});
  const draw=()=>eventTable.replaceChildren(table(['Sequence / time','Source / model','Protocol / purpose','Outcome','Release / upstream HTTP','Duration / first output','Declared tokens','Error category'],events.filter(e=>(source.value==='all'||e.source===source.value)&&(outcome.value==='all'||e.outcome===outcome.value)).map(e=>[e.sequence+' / '+new Date(e.finished_at).toLocaleString(),e.source+' / '+e.model,e.protocol+' / '+(e.validation?'Validation':'Dispatch'),e.outcome,e.status+' / '+(e.execution?.upstream_status||'Not observed'),e.duration_ms.toFixed(1)+' ms / '+(e.ttft_ms>0?e.ttft_ms.toFixed(1)+' ms':'Not observed'),e.execution?.usage_known?[Number(e.execution.input_tokens||0).toLocaleString()+' / '+Number(e.execution.output_tokens||0).toLocaleString()+' / '+Number(e.execution.total_tokens||0).toLocaleString()]:'Unknown',e.execution?.upstream_error||'None']),'No matching execution events.'));
- source.onchange=draw;outcome.onchange=draw;draw();
+ source.onchange=draw;outcome.onchange=draw;draw();eventTable.prepend(jobs);
  return [pageHead('Activity','Runtime execution events, persisted checks and configuration history.',button('Refresh history',refresh)),h('h2',{},'Execution events'),h('p',{class:'muted'},'Latest 1,000 released execution attempts, newest first. Kept in memory across hot updates; cleared on process restart. Retries are separate attempts. Rejections before a source is acquired and administrative-only releases are not included. No prompts, response bodies, URLs or credentials are recorded.'),field('Event source',source),field('Event outcome',outcome),eventTable,h('h2',{},'Checks'),table(['Time','Kind','Source / model','Configuration revision','Status','Method'],[...(S.evidence||[])].reverse().map(v=>[new Date(v.checked_at).toLocaleString(),v.kind,v.resource+(v.model?' / '+v.model:''),v.revision+(v.revision===S.revision?' (current)':' (historical)'),v.status,v.method]),'No recorded checks.'),h('h2',{},'Configuration changes'),table(['Revision','Time','Change'],[...S.history].reverse().map(v=>[v.revision,new Date(v.created_at).toLocaleString(),v.summary]))];
+}
+async function showManagementJobs(){
+ const jobs=await api('/admin/jobs');
+ dialog('Management jobs',table(['Operation','State','Started','Actions'],(jobs||[]).slice().reverse().map(job=>[job.path,job.state,new Date(job.created_at).toLocaleString(),job.state==='running'?button('Cancel job',async()=>{await api('/admin/jobs/'+encodeURIComponent(job.id),{method:'DELETE'});await showManagementJobs()}):null]),'No management jobs.'),[button('Refresh jobs',showManagementJobs)]);
 }
 function launchBrowserProfile(profile){
  const choices=S.catalog.filter(p=>p.base_url.startsWith('https://')).map(p=>p.id),account=(S.config.accounts||[]).find(a=>a.browser_profile_id===profile.id),provider=select(choices,account?.provider_id||'chatgpt-web');

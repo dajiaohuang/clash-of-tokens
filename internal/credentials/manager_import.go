@@ -70,13 +70,13 @@ func ParseExport(format string, data []byte) ([]ImportEntry, int, error) {
 				}
 			}
 		}
-	case "bitwarden-csv", "1password-csv", "keepassxc-csv", "protonpass-csv", "dashlane-csv", "nordpass-csv", "apple-passwords-csv", "google-passwords-csv":
+	case "bitwarden-csv", "1password-csv", "keepassxc-csv", "keepass-csv", "protonpass-csv", "dashlane-csv", "nordpass-csv", "lastpass-csv", "enpass-csv", "apple-passwords-csv", "safari-csv", "google-passwords-csv", "chrome-csv", "edge-csv", "brave-csv", "firefox-csv", "opera-csv", "vivaldi-csv", "chromium-csv", "arc-csv":
 		r := csv.NewReader(bytes.NewReader(data))
 		header, err := r.Read()
 		if err != nil {
 			return nil, 0, errors.New("invalid manager CSV header")
 		}
-		aliases := map[string]string{"title": "name", "website": "url"}
+		aliases := map[string]string{"title": "name", "website": "url", "user name": "username", "web site": "url", "account": "name", "login name": "username"}
 		if format == "bitwarden-csv" {
 			aliases = map[string]string{"login_uri": "url", "login_username": "username", "login_password": "password"}
 		}

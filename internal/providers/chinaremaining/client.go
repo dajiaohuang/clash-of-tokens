@@ -195,7 +195,7 @@ func (c *Client) Do(ctx context.Context, proto, model string, stream bool, body 
 	}()
 	var cred credential
 	if c.source.Adapter == AdapterEmohaa || c.source.Adapter == AdapterSpark {
-		cred, err = c.credential()
+		cred, err = c.credential(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -247,11 +247,8 @@ func supportedModel(adapter, model string) bool {
 	}
 }
 
-func (c *Client) credential() (credential, error) {
-	if strings.TrimSpace(c.source.KeyEnv) == "" {
-		return credential{}, ErrCredential
-	}
-	raw := c.source.CredentialValue()
+func (c *Client) credential(contexts ...context.Context) (credential, error) {
+	raw := c.source.CredentialValue(contexts...)
 	if len(raw) == 0 || len(raw) > maxCredentialBytes || strings.ContainsAny(raw, "\r\n\x00") {
 		return credential{}, ErrCredential
 	}

@@ -269,11 +269,8 @@ func textContent(v any) (string, bool) {
 	return "", false
 }
 
-func credential(source config.Source) (map[string]string, error) {
-	if strings.TrimSpace(source.KeyEnv) == "" {
-		return nil, ErrCredential
-	}
-	raw := strings.TrimSpace(source.CredentialValue())
+func credential(source config.Source, contexts ...context.Context) (map[string]string, error) {
+	raw := strings.TrimSpace(source.CredentialValue(contexts...))
 	if raw == "" || len(raw) > maxResponseBytes || strings.ContainsAny(raw, "\r\n\x00") {
 		return nil, ErrCredential
 	}

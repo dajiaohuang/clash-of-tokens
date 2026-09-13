@@ -211,11 +211,8 @@ func parseChat(body []byte, model string, stream bool) (chatRequest, error) {
 	return chatRequest{Model: model, Messages: raw.Messages, Stream: stream}, nil
 }
 
-func (c *Client) credential() (credentialJSON, string, error) {
-	if strings.TrimSpace(c.source.KeyEnv) == "" {
-		return credentialJSON{}, "", ErrCredential
-	}
-	raw := strings.TrimSpace(c.source.CredentialValue())
+func (c *Client) credential(contexts ...context.Context) (credentialJSON, string, error) {
+	raw := strings.TrimSpace(c.source.CredentialValue(contexts...))
 	if raw == "" || len(raw) > maxResponseBytes {
 		return credentialJSON{}, "", ErrCredential
 	}

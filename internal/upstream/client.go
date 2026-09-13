@@ -53,13 +53,18 @@ func (c *Client) Do(ctx context.Context, protocol, model string, stream bool, bo
 	if c.initError != nil {
 		return nil, c.initError
 	}
+	var credentialErr error
+	ctx, credentialErr = c.source.ResolveForRequest(ctx)
+	if credentialErr != nil {
+		return nil, credentialErr
+	}
 	if c.adapter != nil {
 		return c.adapter.Do(ctx, protocol, model, stream, body, clientHeaders)
 	}
 	if c.web != nil {
 		return c.web.Do(ctx, protocol, model, body, clientHeaders)
 	}
-	key := c.source.CredentialValue()
+	key := c.source.CredentialValue(ctx)
 	if !c.source.Local && key == "" {
 		return nil, errors.New("source credential environment variable is not set")
 	}

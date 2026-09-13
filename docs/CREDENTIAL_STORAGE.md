@@ -4,6 +4,12 @@ Account and source configuration contains `cred://` references. Credential
 values live in a separate atomic vault file and are never included in the
 configuration journal or credential-list responses.
 
+Deleting a credential now retains only a non-secret revoked-reference tombstone
+inside the encrypted vault. The same ID cannot be recreated after restart;
+create a new reference instead. This prevents configuration rollback and late
+OAuth refreshes from reviving a deleted local credential. Local deletion does
+not revoke the credential at the upstream provider.
+
 | Platform | Protection | Runtime requirement |
 | --- | --- | --- |
 | Windows | Current-user DPAPI | The Windows user that created the vault |

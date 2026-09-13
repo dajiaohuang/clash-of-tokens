@@ -26,7 +26,7 @@ func (c *Client) doWordPress(ctx context.Context, protocol, model string, stream
 	if protocol != "chat" {
 		return nil, &requestError{"WordPress chat supports only chat protocol"}
 	}
-	key, err := c.credential()
+	key, err := c.credential(ctx)
 	if err != nil {
 		return nil, err
 	}

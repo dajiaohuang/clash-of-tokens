@@ -13,10 +13,11 @@ func TestCredentialBindingUsesEffectiveReference(t *testing.T) {
 		t.Fatal("password accepted as API key")
 	}
 	c.Accounts[0].CredentialTypeOverride = true
-	if err := validateCredentialBindings(c, metadata); err != nil {
-		t.Fatal("reviewed account override rejected:", err)
+	if err := validateCredentialBindings(c, metadata); err == nil {
+		t.Fatal("reviewed override allowed password invocation")
 	}
 	c.Accounts[0].CredentialTypeOverride = false
+	c.Accounts[0].CredentialRef = ""
 	c.Sources[0].CredentialRef = "cred://key"
 	if err := validateCredentialBindings(c, metadata); err != nil {
 		t.Fatal(err)
@@ -27,8 +28,27 @@ func TestCredentialBindingUsesEffectiveReference(t *testing.T) {
 	}
 	c.Sources[0].CredentialRef = "cred://login"
 	c.Sources[0].CredentialTypeOverride = true
-	if err := validateCredentialBindings(c, metadata); err != nil {
-		t.Fatal("reviewed source override rejected:", err)
+	if err := validateCredentialBindings(c, metadata); err == nil {
+		t.Fatal("source override allowed password invocation")
+	}
+}
+
+func TestLoginMaterialIsSeparateFromInvocation(t *testing.T) {
+	c := config.Config{Accounts: []config.Account{{ID: "a", ProviderID: "claude-web", LoginCredentialRef: "cred://login", CredentialRef: "cred://session"}}, Sources: []config.Source{{ID: "s", AccountID: "a", Adapter: "claude-web"}}}
+	m := []credentials.Metadata{{ID: "cred://login", Kind: "username_password"}, {ID: "cred://session", Kind: "cookie"}}
+	if err := validateCredentialBindings(c, m); err != nil {
+		t.Fatal(err)
+	}
+	if got := c.SourceCredentialRef(c.Sources[0]); got != "cred://session" {
+		t.Fatalf("wrong invocation reference %s", got)
+	}
+	c.Accounts[0].CredentialRef = ""
+	if got := c.SourceCredentialRef(c.Sources[0]); got != "" {
+		t.Fatal("login material inherited into invocation")
+	}
+	c.Accounts[0].LoginCredentialRef = "cred://session"
+	if validateCredentialBindings(c, m) == nil {
+		t.Fatal("cookie accepted as password material")
 	}
 }
 

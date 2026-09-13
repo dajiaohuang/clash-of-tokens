@@ -21,11 +21,22 @@ class SyntheticUpstream(BaseHTTPRequestHandler):
         self.wfile.write(b'{"data":[{"id":"test-model"},{"id":"discovered-model"}]}')
 
     def do_POST(self):
-        self.rfile.read(int(self.headers.get("Content-Length", "0")))
+        body=json.loads(self.rfile.read(int(self.headers.get("Content-Length", "0"))))
         self.send_response(200)
         self.send_header("Content-Type", "text/event-stream")
         self.end_headers()
-        self.wfile.write(b'data: {"choices":[{"delta":{"content":"OK"}}]}\n\ndata: {"choices":[],"usage":{"prompt_tokens":2,"completion_tokens":1,"total_tokens":3}}\n\ndata: [DONE]\n\n')
+        if self.path.endswith('/responses'):
+            assert 'input' in body and 'messages' not in body
+            output='event: response.output_text.delta\ndata: {"type":"response.output_text.delta","delta":"OK"}\n\nevent: response.completed\ndata: {"type":"response.completed","response":{"status":"completed"}}\n\n'
+        elif self.path.endswith('/messages'):
+            assert body['max_tokens']==1024 and self.headers.get('anthropic-version')
+            output='event: content_block_delta\ndata: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"OK"}}\n\nevent: message_delta\ndata: {"type":"message_delta","delta":{"stop_reason":"end_turn"}}\n\nevent: message_stop\ndata: {"type":"message_stop"}\n\n'
+        elif ':streamGenerateContent' in self.path:
+            assert 'contents' in body and 'messages' not in body
+            output='data: {"candidates":[{"content":{"role":"model","parts":[{"text":"OK"}]},"finishReason":"STOP"}]}\n\n'
+        else:
+            output='data: {"choices":[{"delta":{"content":"OK"}}]}\n\ndata: {"choices":[],"usage":{"prompt_tokens":2,"completion_tokens":1,"total_tokens":3}}\n\ndata: [DONE]\n\n'
+        self.wfile.write(output.encode())
 
 root = Path(__file__).resolve().parents[1]
 binary = root / ".clash-tokens" / "ui-test.exe"
@@ -55,7 +66,9 @@ with tempfile.TemporaryDirectory(prefix="cot-ui-") as directory:
                     if process.poll() is not None or time.monotonic() > deadline:
                         raise RuntimeError("Isolated gateway did not start")
                     time.sleep(0.1)
-            subprocess.run([sys.executable, str(root / "scripts" / "ui_regression.py")], check=True, env=env)
+            if '--protocols-only' not in sys.argv:
+                subprocess.run([sys.executable, str(root / "scripts" / "ui_regression.py")], check=True, env=env)
+            subprocess.run([sys.executable, str(root / "scripts" / "ui_protocols.py")], check=True, env=env)
         else:
             process.wait()
     finally:

@@ -161,7 +161,7 @@ func (c *Client) Do(ctx context.Context, proto, model string, stream bool, body 
 			c.gate.Unlock()
 		}
 	}()
-	credential, err := c.credential()
+	credential, err := c.credential(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -322,11 +322,8 @@ func tencentModelID(model string) (string, error) {
 	}
 }
 
-func (c *Client) credential() (string, error) {
-	if strings.TrimSpace(c.source.KeyEnv) == "" {
-		return "", ErrCredential
-	}
-	value := strings.TrimSpace(c.source.CredentialValue())
+func (c *Client) credential(contexts ...context.Context) (string, error) {
+	value := strings.TrimSpace(c.source.CredentialValue(contexts...))
 	if len(value) >= len("Cookie:") && strings.EqualFold(value[:len("Cookie:")], "Cookie:") {
 		value = strings.TrimSpace(value[len("Cookie:"):])
 	}

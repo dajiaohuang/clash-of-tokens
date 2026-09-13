@@ -13,7 +13,7 @@ import (
 const maxAIBase = "https://api.maxai.me"
 
 func (c *Client) doMaxAI(ctx context.Context, req chatRequest) (*http.Response, error) {
-	cred, _, err := c.credential()
+	cred, _, err := c.credential(ctx)
 	if err != nil || !validMaxAICredential(cred) {
 		return nil, ErrCredential
 	}

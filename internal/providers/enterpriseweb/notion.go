@@ -15,7 +15,7 @@ import (
 const notionBase = "https://app.notion.com"
 
 func (c *Client) doNotion(ctx context.Context, req chatRequest) (*http.Response, error) {
-	cred, _, err := c.credential()
+	cred, _, err := c.credential(ctx)
 	if err != nil {
 		return nil, ErrCredential
 	}

@@ -109,7 +109,7 @@ func TestGigaChatWebBrowserFixture(t *testing.T) {
 	defer server.Close()
 
 	for _, stream := range []bool{false, true} {
-		c := New(config.Source{Adapter: AdapterGigaChatWeb, BaseURL: server.URL}, config.Browser{Enabled: true, CDPURL: cdp})
+		c := New(config.Source{Adapter: AdapterGigaChatWeb, BaseURL: server.URL}, config.Browser{Enabled: true, CDPURL: cdp, Engine: os.Getenv("COT_TEST_BROWSER_ENGINE")})
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		resp, err := c.Do(ctx, "chat", "web", stream, []byte(`{"messages":[{"role":"user","content":"`+prompt+`"}]}`), nil)
 		cancel()

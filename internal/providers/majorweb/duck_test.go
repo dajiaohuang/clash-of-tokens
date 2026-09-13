@@ -52,7 +52,7 @@ func TestDuckBrowserFixture(t *testing.T) {
 		io.WriteString(w, "data: {\"message\":\"fixture answer\"}\n\ndata: [DONE]\n\n")
 	}))
 	defer s.Close()
-	c := New(config.Source{Adapter: "duckduckgo-web", BaseURL: s.URL}, config.Browser{Enabled: true, CDPURL: cdp})
+	c := New(config.Source{Adapter: "duckduckgo-web", BaseURL: s.URL}, config.Browser{Enabled: true, CDPURL: cdp, Engine: os.Getenv("COT_TEST_BROWSER_ENGINE")})
 	defer c.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()

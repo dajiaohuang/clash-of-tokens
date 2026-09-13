@@ -24,7 +24,7 @@ type graphResponse struct {
 }
 
 func (c *Client) doPromptQL(ctx context.Context, req chatRequest) (*http.Response, error) {
-	cred, err := credential(c.source)
+	cred, err := credential(c.source, ctx)
 	if err != nil {
 		return nil, err
 	}

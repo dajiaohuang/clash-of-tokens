@@ -49,6 +49,16 @@ jobs:
       - name: Run race tests with isolated test keyring
         run: go test -race -tags=cot_test_keyring ./...
 
+  vulnerabilities:
+    name: Reachable Go vulnerabilities
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
+
   native-keychain:
     name: macOS native Keychain
     runs-on: macos-latest
@@ -76,9 +86,38 @@ jobs:
           security default-keychain -s "$keychain_path"
           COT_TEST_KEYCHAIN="$keychain" COT_TEST_KEYCHAIN_TRUST=1 COT_TEST_NATIVE_KEYRING=1 go test ./internal/credentials -run '^TestNativeKeyringRoundTrip$' -count=1
 
+  browser-product:
+    name: Real backend UI and browser engines
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -m pip install playwright==1.55.0
+      - run: python -m playwright install --with-deps chromium firefox
+      - name: Build isolated UI fixture
+        run: go build -tags=cot_test_keyring -o .clash-tokens/ui-test.exe ./cmd/clash-tokens
+      - name: UI regression against real Go Admin API
+        run: python scripts/ui_fixture.py --test
+      - name: Real Chromium and Firefox local contract tests
+        run: python scripts/browser_engine_tests.py
+      - name: Provider fixtures on both real engines
+        run: python scripts/browser_provider_tests.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-product-evidence
+          path: .clash-tokens/ui-artifacts/*
+          if-no-files-found: warn
+
   build:
     name: Build (${{ matrix.goos }}/${{ matrix.goarch }})
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
@@ -86,12 +125,18 @@ jobs:
           - goos: linux
             goarch: amd64
             suffix: ''
+            runner: ubuntu-latest
+            cgo: '0'
           - goos: windows
             goarch: amd64
             suffix: '.exe'
+            runner: windows-latest
+            cgo: '0'
           - goos: darwin
             goarch: arm64
             suffix: ''
+            runner: macos-latest
+            cgo: '1'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -103,10 +148,37 @@ jobs:
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
-          CGO_ENABLED: '0'
+          CGO_ENABLED: ${{ matrix.cgo }}
         run: go build -trimpath -ldflags='-s -w' -o "dist/clash-tokens${{ matrix.suffix }}" ./cmd/clash-tokens
+      - name: Test Windows distribution vault
+        if: runner.os == 'Windows'
+        run: python scripts/artifact_vault_smoke.py dist/clash-tokens.exe
+      - name: Test macOS distribution vault
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -euo pipefail
+          keychain="$RUNNER_TEMP/cot-artifact.keychain"
+          password="$(uuidgen)"
+          trap 'security delete-keychain "$keychain" >/dev/null 2>&1 || true' EXIT
+          security create-keychain -p "$password" "$keychain"
+          security unlock-keychain -p "$password" "$keychain"
+          security list-keychains -d user -s "$keychain"
+          security default-keychain -s "$keychain"
+          COT_TEST_KEYCHAIN="$RUNNER_TEMP/cot-artifact" COT_TEST_KEYCHAIN_TRUST=1 python3 scripts/artifact_vault_smoke.py dist/clash-tokens
+      - name: Install Linux native keyring
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y gnome-keyring dbus-x11
+      - name: Test Linux distribution vault
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sh scripts/test_keyring_linux.sh --artifact dist/clash-tokens
+      - name: Record artifact checksum
+        shell: bash
+        run: python scripts/release_metadata.py "dist/clash-tokens${{ matrix.suffix }}"
       - uses: actions/upload-artifact@v4
         with:
           name: clash-tokens-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: dist/clash-tokens${{ matrix.suffix }}
+          path: dist/*
           if-no-files-found: error

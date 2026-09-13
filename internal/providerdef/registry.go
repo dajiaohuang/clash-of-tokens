@@ -23,6 +23,12 @@ type Descriptor struct {
 	BrowserRequired        bool                         `json:"browser_required"`
 	BrowserAuthCheck       bool                         `json:"browser_auth_check"`
 	CredentialModes        []string                     `json:"credential_modes"`
+	LoginMaterials         []string                     `json:"login_materials"`
+	InvokeCredentials      []string                     `json:"invoke_credentials"`
+	LoginFlow              string                       `json:"login_flow"`
+	SessionAcquisition     string                       `json:"session_acquisition"`
+	RefreshStrategy        string                       `json:"refresh_strategy"`
+	AllowedOrigins         []string                     `json:"allowed_origins"`
 	CredentialFields       []CredentialField            `json:"credential_fields"`
 	CredentialFieldsByMode map[string][]CredentialField `json:"credential_fields_by_mode,omitempty"`
 	DefaultMaxInflight     int                          `json:"default_max_inflight"`
@@ -135,6 +141,39 @@ func build() map[string]Descriptor {
 		"device_session": {{Name: "value", Label: "Device session reference", Required: true}},
 	}
 	out["app-device"] = d
+	for id, d := range out {
+		d.LoginMaterials = []string{}
+		d.InvokeCredentials = []string{}
+		for _, kind := range d.CredentialModes {
+			if kind == "username_password" {
+				d.LoginMaterials = append(d.LoginMaterials, kind)
+			} else {
+				d.InvokeCredentials = append(d.InvokeCredentials, kind)
+			}
+		}
+		d.LoginFlow, d.SessionAcquisition, d.RefreshStrategy = "manual_credential", "explicit_import", "replace_or_reauthorize"
+		if d.BrowserRequired || d.BrowserAuthCheck {
+			d.LoginFlow = "interactive_browser"
+		}
+		if d.BrowserRequired {
+			d.SessionAcquisition = "bound_browser_profile"
+		}
+		if id == "claude-web" {
+			d.SessionAcquisition = "verified_cookie_and_organization"
+			d.AllowedOrigins = []string{"https://claude.ai"}
+		}
+		if id == "chatgpt-web" {
+			d.SessionAcquisition = "identity_checked_browser_profile"
+			d.AllowedOrigins = []string{"https://chatgpt.com"}
+		}
+		if id == "blackbox" {
+			d.AllowedOrigins = []string{"https://app.blackbox.ai"}
+		}
+		if slices.Contains(d.InvokeCredentials, "oauth") {
+			d.RefreshStrategy = "oauth_grant_if_configured_else_reauthorize"
+		}
+		out[id] = d
+	}
 	return out
 }
 func Lookup(id string) (Descriptor, bool) {
@@ -144,6 +183,9 @@ func Lookup(id string) (Descriptor, bool) {
 	}
 	d.Protocols = append([]string(nil), d.Protocols...)
 	d.CredentialModes = append([]string(nil), d.CredentialModes...)
+	d.LoginMaterials = append([]string{}, d.LoginMaterials...)
+	d.InvokeCredentials = append([]string{}, d.InvokeCredentials...)
+	d.AllowedOrigins = append([]string{}, d.AllowedOrigins...)
 	d.CredentialFields = append([]CredentialField(nil), d.CredentialFields...)
 	if d.CredentialFieldsByMode != nil {
 		fields := make(map[string][]CredentialField, len(d.CredentialFieldsByMode))

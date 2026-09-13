@@ -16,9 +16,11 @@ browser remains open under the user's control.
 
 The registry accepts all eight discovered browser families. Chromium-family
 launches use an isolated `--user-data-dir`; Firefox uses an isolated
-`--profile` directory. The gateway still requires an explicit loopback CDP
-endpoint, and selecting a family does not verify installation, CDP
-compatibility, or provider authentication.
+`--profile` directory. Chromium families use CDP; Firefox uses WebDriver BiDi
+at the explicit loopback endpoint's `/session` WebSocket. Selecting a family
+does not verify installation or provider authentication. Real Chromium and
+Firefox fixtures cover generation, cancellation and owned-tab cleanup; other
+browser brands and operating-system combinations still require separate tests.
 
 | Adapter | Authentication evidence |
 | --- | --- |
@@ -91,3 +93,27 @@ Canceling setup leaves any launched browser open and any already imported
 credential in the protected store, potentially unbound. It does not erase either
 resource. This wizard does not yet discover accounts automatically from all
 installed browser profiles or provide login detection for every provider.
+
+## Separate login material and invocation session
+
+`Account.login_credential_ref` holds protected username/password material.
+`Account.credential_ref` holds the invocation credential. A password reference
+cannot be used for invocation, including through a reviewed type override.
+Browser identities are checked against `expected_identity` when supported;
+unsupported identity checks fail explicitly rather than accepting a mismatch.
+
+**Accounts → Bind session** performs an explicit authenticated binding for
+ChatGPT Web and Claude Web. ChatGPT requires the expected user ID/email and
+retains the selected browser profile. Claude requires the expected organization,
+captures applicable cookies, verifies that exact cookie against the organization
+endpoint, and saves a new protected invocation reference. Login material stays
+separate. A failed configuration commit removes the newly created credential;
+if that compensation also fails, the response names the unbound reference for
+cleanup. The old reference is retained. A process crash between the two stores
+still requires orphan review; this is not a cross-store atomic transaction.
+
+Shared SSO cookies can authorize multiple products on the same cookie domain.
+Cookie acquisition is scoped to URL applicability, not a guarantee of exclusive
+product authorization. Blackbox still needs its supplementary invocation fields
+and has no automatic session-acquisition implementation. **Sources → Validate**
+is the separate, explicit minimal generation step for every binding.

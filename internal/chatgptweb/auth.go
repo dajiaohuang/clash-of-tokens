@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"time"
-
-	"github.com/chromedp/chromedp"
 )
 
 type AuthEvidence struct {
@@ -30,7 +28,7 @@ func (d *Driver) CheckAuth(ctx context.Context) AuthEvidence {
 	defer cancel()
 	stop := context.AfterFunc(ctx, cancel)
 	defer stop()
-	if err := chromedp.Run(check, chromedp.Navigate(d.origin+"/")); err != nil {
+	if err := browserNavigate(check, d.origin+"/"); err != nil {
 		evidence.Status = "browser_unavailable"
 		return evidence
 	}
@@ -38,7 +36,7 @@ func (d *Driver) CheckAuth(ctx context.Context) AuthEvidence {
 		Authenticated bool `json:"authenticated"`
 		Ready         bool `json:"ready"`
 	}
-	err := evaluate(check, `if(location.origin!==args.origin)return {authenticated:false,ready:false};await auth(); return {authenticated:true,ready:!!composer()};`, map[string]string{"origin": d.origin}, &result)
+	err := evaluate(check, `if(location.origin!==args.origin)return {authenticated:false,ready:false};const a=await auth();if(args.expected_identity&&args.expected_identity!==a.user.id&&args.expected_identity!==a.user.email)throw new Error('account_changed');return {authenticated:true,ready:!!composer()};`, map[string]string{"origin": d.origin, "expected_identity": d.cfg.ExpectedIdentity}, &result)
 	if err != nil {
 		var classified *Error
 		if errors.As(err, &classified) && classified.Code == 401 {
@@ -46,6 +44,9 @@ func (d *Driver) CheckAuth(ctx context.Context) AuthEvidence {
 		}
 		if errors.As(err, &classified) && classified.Code == 403 {
 			evidence.Status = "challenge_or_access_denied"
+			if classified.Message == "ChatGPT web: account_changed" {
+				evidence.Status = "account_mismatch"
+			}
 		}
 		if errors.As(err, &classified) && classified.Code == 429 {
 			evidence.Status = "rate_limited"

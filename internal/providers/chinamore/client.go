@@ -198,7 +198,7 @@ func (c *Client) Do(ctx context.Context, proto, model string, stream bool, body 
 	// The protocol argument is authoritative; a stale body model must not
 	// change the selected source target.
 	req.Model = model
-	credential, e := c.credential()
+	credential, e := c.credential(ctx)
 	if e != nil {
 		return nil, e
 	}
@@ -255,11 +255,8 @@ func (c *Client) Do(ctx context.Context, proto, model string, stream bool, body 
 	return response, nil
 }
 
-func (c *Client) credential() (string, error) {
-	if strings.TrimSpace(c.source.KeyEnv) == "" {
-		return "", ErrCredential
-	}
-	v := strings.TrimSpace(c.source.CredentialValue())
+func (c *Client) credential(contexts ...context.Context) (string, error) {
+	v := strings.TrimSpace(c.source.CredentialValue(contexts...))
 	if v == "" {
 		return "", ErrCredential
 	}

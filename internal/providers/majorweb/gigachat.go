@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
+	chromedp "clash-of-tokens/internal/browserexec"
 	cdpRuntime "github.com/chromedp/cdproto/runtime"
-	"github.com/chromedp/chromedp"
 )
 
 const (
@@ -43,7 +43,7 @@ func (c *Client) doGigaChatWeb(parent context.Context, protocol, model string, s
 		return nil, err
 	}
 
-	allocator, stopAllocator := chromedp.NewRemoteAllocator(context.Background(), c.browser.CDPURL)
+	allocator, stopAllocator := chromedp.NewRemoteAllocator(context.Background(), c.browser.CDPURL, c.browser.Engine)
 	defer stopAllocator()
 	tab, stopTab := chromedp.NewContext(allocator)
 	defer stopTab()

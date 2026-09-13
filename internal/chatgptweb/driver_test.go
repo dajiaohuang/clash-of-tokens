@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -109,8 +111,11 @@ func (f *fakeChatGPT) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 func browserFixture(t *testing.T) (*Driver, *fakeChatGPT) {
 	t.Helper()
+	if os.Getenv("COT_TEST_BROWSER_ENGINE") == "firefox" {
+		return firefoxFixture(t)
+	}
 	chrome := ""
-	for _, path := range []string{`C:\Program Files\Google\Chrome\Application\chrome.exe`, "google-chrome", "chromium", "chromium-browser"} {
+	for _, path := range []string{os.Getenv("COT_TEST_CHROME_BIN"), `C:\Program Files\Google\Chrome\Application\chrome.exe`, "google-chrome", "chromium", "chromium-browser"} {
 		if found, e := exec.LookPath(path); e == nil {
 			chrome = found
 			break
@@ -140,6 +145,49 @@ func browserFixture(t *testing.T) (*Driver, *fakeChatGPT) {
 	d.origin = server.URL
 	d.connect = func() (context.Context, context.CancelFunc) { return chromedp.NewContext(browser) }
 	return d, fake
+}
+func firefoxFixture(t *testing.T) (*Driver, *fakeChatGPT) {
+	t.Helper()
+	executable := os.Getenv("COT_TEST_FIREFOX_BIN")
+	if executable == "" {
+		t.Fatal("Firefox engine test requires COT_TEST_FIREFOX_BIN")
+	}
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	port := listener.Addr().(*net.TCPAddr).Port
+	listener.Close()
+	command := exec.Command(executable, "--headless", "--no-remote", "--profile", t.TempDir(), "--remote-debugging-port", fmt.Sprint(port), "about:blank")
+	if err = command.Start(); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { command.Process.Kill(); command.Wait() })
+	endpoint := fmt.Sprintf("127.0.0.1:%d", port)
+	deadline := time.Now().Add(15 * time.Second)
+	for {
+		conn, err := net.DialTimeout("tcp", endpoint, time.Second)
+		if err == nil {
+			conn.Close()
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("Firefox did not start")
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	fake := &fakeChatGPT{conversations: map[string]*fakeConversation{}, account: "account-a"}
+	server := httptest.NewServer(fake)
+	t.Cleanup(server.Close)
+	c := config.Default().Browser
+	c.Engine = "firefox"
+	c.Enabled = true
+	c.CDPURL = "http://" + endpoint
+	c.StateFile = filepath.Join(t.TempDir(), "sessions.json")
+	c.PollMS = 50
+	driver := New(c, "web")
+	driver.origin = server.URL
+	return driver, fake
 }
 func TestBrowserChatContinuationAndRestart(t *testing.T) {
 	d, fake := browserFixture(t)
@@ -217,6 +265,24 @@ func TestBrowserResponsesAndAccountBinding(t *testing.T) {
 	defer fake.mu.Unlock()
 	if fake.sends != 2 {
 		t.Fatal(fake.sends)
+	}
+}
+
+func TestExpectedIdentityBlocksFirstSubmission(t *testing.T) {
+	d, fake := browserFixture(t)
+	d.cfg.ExpectedIdentity = "different-account"
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	if result := d.CheckAuth(ctx); result.Status != "account_mismatch" {
+		t.Fatalf("mismatched login was not rejected: %+v", result)
+	}
+	if _, err := d.Do(ctx, "chat", "auto", []byte(`{"model":"auto","messages":[{"role":"user","content":"must not submit"}]}`), http.Header{}); err == nil {
+		t.Fatal("wrong identity accepted for first submission")
+	}
+	fake.mu.Lock()
+	defer fake.mu.Unlock()
+	if fake.sends != 0 {
+		t.Fatal("request submitted before identity check")
 	}
 }
 func TestBrowserWrongModelLeavesDirtySession(t *testing.T) {

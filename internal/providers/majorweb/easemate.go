@@ -2,11 +2,11 @@ package majorweb
 
 import (
 	"bytes"
+	chromedp "clash-of-tokens/internal/browserexec"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/chromedp/chromedp"
 	"io"
 	"net/http"
 	"strings"
@@ -32,7 +32,7 @@ func (c *Client) doEaseMate(parent context.Context, protocol, model string, stre
 	if strings.HasPrefix(base, "http://") {
 		target = base + "/api2/stream/exec_operation"
 	}
-	allocator, stopAllocator := chromedp.NewRemoteAllocator(context.Background(), c.browser.CDPURL)
+	allocator, stopAllocator := chromedp.NewRemoteAllocator(context.Background(), c.browser.CDPURL, c.browser.Engine)
 	defer stopAllocator()
 	tab, stopTab := chromedp.NewContext(allocator)
 	defer stopTab()

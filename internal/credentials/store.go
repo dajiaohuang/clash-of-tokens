@@ -2,6 +2,7 @@
 package credentials
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -16,26 +17,34 @@ import (
 )
 
 type Metadata struct {
-	Version    uint64     `json:"version"`
-	ID         string     `json:"id"`
-	Kind       string     `json:"kind"`
-	Source     string     `json:"source"`
-	Domain     string     `json:"domain,omitempty"`
-	CreatedAt  time.Time  `json:"created_at"`
-	UpdatedAt  time.Time  `json:"updated_at"`
-	LastUsedAt *time.Time `json:"last_used_at,omitempty"`
+	External   *ExternalReference `json:"external,omitempty"`
+	OAuthInfo  *OAuthMetadata     `json:"oauth,omitempty"`
+	State      string             `json:"state,omitempty"`
+	Version    uint64             `json:"version"`
+	ID         string             `json:"id"`
+	Kind       string             `json:"kind"`
+	Source     string             `json:"source"`
+	Domain     string             `json:"domain,omitempty"`
+	CreatedAt  time.Time          `json:"created_at"`
+	UpdatedAt  time.Time          `json:"updated_at"`
+	LastUsedAt *time.Time         `json:"last_used_at,omitempty"`
 }
 type record struct {
 	Metadata
-	Value string `json:"value"`
+	Revoked   bool        `json:"revoked,omitempty"`
+	Value     string      `json:"value"`
+	OAuth     *OAuthGrant `json:"oauth_grant,omitempty"`
+	ImportURL string      `json:"import_url,omitempty"`
 }
 type Store struct {
-	mu        sync.RWMutex
-	path      string
-	records   map[string]record
-	lastUsed  map[string]time.Time
-	protect   func([]byte) ([]byte, error)
-	unprotect func([]byte) ([]byte, error)
+	refreshes      map[string]*refreshFlight
+	refreshBackoff map[string]time.Time
+	mu             sync.RWMutex
+	path           string
+	records        map[string]record
+	lastUsed       map[string]time.Time
+	protect        func([]byte) ([]byte, error)
+	unprotect      func([]byte) ([]byte, error)
 }
 
 func Open(path string) (*Store, error) {
@@ -76,6 +85,28 @@ func (s *Store) List() []Metadata {
 	defer s.mu.RUnlock()
 	out := make([]Metadata, 0, len(s.records))
 	for _, r := range s.records {
+		if r.Revoked {
+			continue
+		}
+		r.State = "ready"
+		if r.External != nil {
+			copy := *r.External
+			r.External = &copy
+			r.State = "external_authorization_required"
+		}
+		if r.OAuthInfo != nil {
+			copy := *r.OAuthInfo
+			r.OAuthInfo = &copy
+			if !copy.ExpiresAt.IsZero() && time.Now().After(copy.ExpiresAt) {
+				r.State = "expired"
+			}
+			if s.refreshes[r.ID] != nil {
+				r.State = "refreshing"
+			}
+			if time.Now().Before(s.refreshBackoff[r.ID]) {
+				r.State = "needs_reauthorization"
+			}
+		}
 		if used, ok := s.lastUsed[r.ID]; ok {
 			r.LastUsedAt = &used
 		}
@@ -85,11 +116,37 @@ func (s *Store) List() []Metadata {
 	return out
 }
 func (s *Store) Resolve(id string) string {
+	value, _ := s.ResolveContext(context.Background(), id)
+	return value
+}
+func (s *Store) ResolveContext(ctx context.Context, id string) (string, error) {
+	s.mu.Lock()
+	r, ok := s.records[id]
+	if !ok || r.Revoked {
+		s.mu.Unlock()
+		return "", errors.New("credential is missing or revoked")
+	}
+	s.mu.Unlock()
+	if r.External != nil {
+		value, err := ReadExternal(ctx, *r.External)
+		s.mu.RLock()
+		current, exists := s.records[id]
+		s.mu.RUnlock()
+		if !exists || current.Revoked || current.Version != r.Version {
+			return "", errors.New("external credential result is stale")
+		}
+		return value, err
+	}
+	if r.OAuth != nil && !r.OAuth.ExpiresAt.IsZero() && time.Now().Add(30*time.Second).After(r.OAuth.ExpiresAt) {
+		if err := s.refreshOAuth(ctx, id, false); err != nil {
+			return "", err
+		}
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	r, ok := s.records[id]
-	if !ok {
-		return ""
+	r, ok = s.records[id]
+	if !ok || r.Revoked {
+		return "", errors.New("credential is revoked")
 	}
 	if s.lastUsed == nil {
 		s.lastUsed = make(map[string]time.Time)
@@ -98,10 +155,13 @@ func (s *Store) Resolve(id string) string {
 	s.lastUsed[id] = used
 	r.Metadata.LastUsedAt = &used
 	s.records[id] = r
-	return r.Value
+	return r.Value, nil
 }
 func (s *Store) Put(id, kind, source, value string) error {
-	if id == "" || !config.ValidCredentialRef(id) || !ValidKind(kind) || value == "" || len(value) > 1<<20 || len(source) > 256 {
+	return s.putRecord(id, kind, source, value, nil, nil)
+}
+func (s *Store) putRecord(id, kind, source, value string, external *ExternalReference, oauth *OAuthGrant) error {
+	if id == "" || !config.ValidCredentialRef(id) || !ValidKind(kind) || (value == "" && external == nil) || len(value) > 1<<20 || len(source) > 256 {
 		return errors.New("invalid credential reference, type or size")
 	}
 	if err := validateValue(kind, value); err != nil {
@@ -114,17 +174,26 @@ func (s *Store) Put(id, kind, source, value string) error {
 	created := now
 	version := uint64(1)
 	if old, ok := next[id]; ok {
+		if old.Revoked {
+			return errors.New("credential reference is revoked; create a new reference")
+		}
 		created = old.CreatedAt
 		version = old.Version + 1
 		if version == 0 {
 			return errors.New("credential version exhausted")
 		}
 	}
-	next[id] = record{Metadata: Metadata{Version: version, ID: id, Kind: kind, Source: source, CreatedAt: created, UpdatedAt: now}, Value: value}
+	next[id] = record{Metadata: Metadata{Version: version, ID: id, Kind: kind, Source: source, CreatedAt: created, UpdatedAt: now, External: external}, Value: value, OAuth: oauth}
+	if oauth != nil {
+		record := next[id]
+		record.OAuthInfo = &OAuthMetadata{ExpiresAt: oauth.ExpiresAt, Scope: oauth.Scope, AccountID: oauth.AccountID, AutomaticRefresh: oauth.RefreshToken != ""}
+		next[id] = record
+	}
 	if err := s.save(next); err != nil {
 		return err
 	}
 	delete(s.lastUsed, id)
+	delete(s.refreshBackoff, id)
 	return nil
 }
 
@@ -146,11 +215,14 @@ func validateValue(kind, value string) error {
 func (s *Store) Delete(id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if _, ok := s.records[id]; !ok {
+	old, ok := s.records[id]
+	if !ok || old.Revoked {
 		return errors.New("unknown credential")
 	}
 	next := s.copy()
-	delete(next, id)
+	// Retain only a non-secret tombstone. Reusing a deleted ID could otherwise
+	// revive old configuration references or let an old refresh overwrite it.
+	next[id] = record{Metadata: Metadata{ID: id, Version: old.Version, UpdatedAt: time.Now().UTC()}, Revoked: true}
 	if err := s.save(next); err != nil {
 		return err
 	}

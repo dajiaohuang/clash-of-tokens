@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/chromedp/chromedp"
+	chromedp "clash-of-tokens/internal/browserexec"
 )
 
 const googleBase = "https://google.com"
@@ -77,7 +77,7 @@ func (c *Client) googleAIModeTextAt(ctx context.Context, query, base string) (st
 	if err := ctx.Err(); err != nil {
 		return "", err
 	}
-	allocator, allocatorCancel := chromedp.NewRemoteAllocator(context.Background(), c.browser.CDPURL)
+	allocator, allocatorCancel := chromedp.NewRemoteAllocator(context.Background(), c.browser.CDPURL, c.browser.Engine)
 	tab, tabCancel := chromedp.NewContext(allocator)
 	turn, turnCancel := context.WithCancel(tab)
 	stop := context.AfterFunc(ctx, turnCancel)

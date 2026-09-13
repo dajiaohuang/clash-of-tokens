@@ -275,6 +275,10 @@ func (p *ControlPlane) resourceAdmin(w http.ResponseWriter, r *http.Request, ser
 		fail(w, 400, err.Error())
 		return
 	}
+	if len(credentialDestinationChanges(p.service.Current().Config, c)) > 0 && r.Header.Get("X-COT-Confirm-Credential-Destinations") != "true" {
+		fail(w, 409, "credential destination changed; use configuration preview and explicitly confirm destinations")
+		return
+	}
 	updated, err := p.service.Apply(expected, c, method+" "+kind+"/"+id)
 	if err != nil {
 		status := 400

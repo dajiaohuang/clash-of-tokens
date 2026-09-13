@@ -30,6 +30,7 @@ function conversationID() { const match = location.pathname.match(/^\/c\/([a-zA-
 
 const inspectPage = `
  const a = await auth(); const el = composer();
+ if(args?.expected_identity && args.expected_identity!==a.user.id && args.expected_identity!==a.user.email)throw new Error('account_changed');
  return {account:a.user.id, ready:!!el, draft:el?composerText(el):'', conversation:conversationID()};
 `
 

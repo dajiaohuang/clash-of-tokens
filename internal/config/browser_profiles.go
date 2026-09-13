@@ -21,6 +21,15 @@ type BrowserProfile struct {
 var BrowserEngines = []string{"chrome", "edge", "brave", "firefox", "opera", "vivaldi", "chromium", "arc"}
 
 func (c Config) ValidateBrowserProfiles() error {
+	if c.Browser.Engine != "" && !containsBrowserEngine(c.Browser.Engine) {
+		return fmt.Errorf("unsupported default browser engine")
+	}
+	if c.Browser.Engine == "firefox" {
+		u, err := url.Parse(c.Browser.CDPURL)
+		if err != nil || u.Port() == "" || (u.Path != "" && u.Path != "/") {
+			return fmt.Errorf("Firefox default browser requires a port and no endpoint path")
+		}
+	}
 	if len(c.BrowserProfiles) > 64 {
 		return fmt.Errorf("browser registry exceeds 64 profiles")
 	}
@@ -76,6 +85,8 @@ func (c Config) SourceBrowser(s Source) Browser {
 				b := c.Browser
 				b.Enabled = p.Enabled
 				b.CDPURL = p.CDPURL
+				b.Engine = p.Engine
+				b.ExpectedIdentity = a.ExpectedIdentity
 				b.StateFile = filepath.Join(filepath.Dir(c.Browser.StateFile), "profiles", p.ID, "sessions.json")
 				return b
 			}

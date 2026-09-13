@@ -18,6 +18,11 @@ verification.
 This is an experimental 0.1.0-dev build. The evidence boundary is part of the
 product contract:
 
+The table below records the earlier baseline. The current next-release work,
+local checks and unclosed release gates are tracked separately in
+[Next release status](docs/NEXT_RELEASE_STATUS.md). It is not a completed release
+or a claim that the new working tree has passed hosted CI.
+
 | Layer | Current evidence |
 | --- | --- |
 | Original strict scope | 93/93 source paths are registered; 2/93 have a real upstream check |

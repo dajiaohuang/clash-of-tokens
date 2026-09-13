@@ -129,32 +129,6 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     expect(connection_dialog).to_contain_text("Session limit")
     expect(connection_dialog.get_by_role("cell", name="ui-profile", exact=True)).to_be_visible()
     page.get_by_role("button", name="Close", exact=True).click()
-    setup_login_requests = []
-    def synthetic_setup_login(route):
-        payload = route.request.post_data_json or {}
-        setup_login_requests.append(payload)
-        authenticated = payload.get("action") == "check"
-        route.fulfill(status=200, content_type="application/json", body=json.dumps({
-            "status": "authenticated" if authenticated else "login_required",
-            "profile": payload.get("profile", {}).get("id", "ui-profile"),
-            "checked_at": "2026-01-01T00:00:00Z",
-            "revision": 1,
-            "method": "synthetic-browser-check",
-            "history_recorded": authenticated,
-        }))
-    def synthetic_account_check(route):
-        route.fulfill(status=200, content_type="application/json", body=json.dumps({
-            "status": "authenticated", "profile": "ui-profile", "checked_at": "2026-01-01T00:00:00Z",
-            "revision": 1, "method": "synthetic-browser-check", "history_recorded": True,
-        }))
-    def synthetic_account_login(route):
-        route.fulfill(status=200, content_type="application/json", body=json.dumps({
-            "status": "login_required", "profile_id": "ui-profile", "pid": 1234,
-            "launch_id": "synthetic-launch", "message": "Synthetic re-authentication launch.",
-        }))
-    page.route("**/admin/browser_profiles/setup-login", synthetic_setup_login)
-    page.route("**/admin/accounts/claude-account/check-login", synthetic_account_check)
-    page.route("**/admin/accounts/claude-account/login", synthetic_account_login)
     page.get_by_role("link", name="Accounts", exact=True).click()
     page.get_by_role("button", name="Add account", exact=True).click()
     page.get_by_label("Provider", exact=True).select_option("claude-web")
@@ -162,16 +136,17 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     page.get_by_label("Quota domain", exact=True).fill("claude-quota")
     page.get_by_label("Browser Profile Id", exact=True).select_option("ui-profile")
     page.get_by_role("button", name="Login with selected profile", exact=True).click()
-    expect(page.get_by_role("heading", name="Set up account", exact=True)).to_be_visible()
+    expect(page.get_by_role("heading", name="Browser port occupied", exact=True)).to_be_visible()
+    page.get_by_role("button", name="Use running browser", exact=True).click()
     expect(page.get_by_role("dialog")).to_contain_text("Login detected for this selected profile.")
     page.get_by_role("button", name="Review changes", exact=True).click()
     page.get_by_role("button", name="Apply changes", exact=True).click()
     expect(page.get_by_role("dialog")).not_to_be_visible()
     claude_account_row = page.get_by_role("row").filter(has=page.get_by_text("claude-account", exact=True))
-    expect(claude_account_row).to_contain_text("Not checked")
-    claude_account_row.get_by_role("button", name="Re-authenticate", exact=True).click()
+    expect(claude_account_row).to_contain_text("authenticated")
+    claude_account_row.get_by_role("button", name="Check login", exact=True).click()
     expect(page.get_by_role("heading", name="Login evidence", exact=True)).to_be_visible()
-    expect(page.get_by_role("dialog")).to_contain_text("Synthetic re-authentication launch.")
+    expect(page.get_by_role("dialog")).to_contain_text("authenticated")
     page.get_by_role("button", name="Close", exact=True).click()
     page.get_by_role("link", name="Providers", exact=True).click()
     page.get_by_role("searchbox", name="Filter providers").fill("claude-web")
@@ -188,11 +163,6 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     page.get_by_role("button", name="Review deletion", exact=True).click()
     expect(page.get_by_role("alert")).to_contain_text("still has bound accounts")
     page.get_by_role("button", name="Cancel", exact=True).click()
-    assert any(item.get("action") == "launch" for item in setup_login_requests)
-    assert any(item.get("action") == "check" for item in setup_login_requests)
-    page.unroute("**/admin/browser_profiles/setup-login", synthetic_setup_login)
-    page.unroute("**/admin/accounts/claude-account/check-login", synthetic_account_check)
-    page.unroute("**/admin/accounts/claude-account/login", synthetic_account_login)
     # Password-manager import launched from the account wizard returns one
     # protected reference to the same draft, allowing an end-to-end bind.
     page.get_by_role("link", name="Accounts", exact=True).click()
@@ -208,7 +178,7 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     page.get_by_role("checkbox", name="Import entry 1", exact=True).check()
     page.get_by_role("button", name="Import selected", exact=True).click()
     expect(page.get_by_role("heading", name="Set up account", exact=True)).to_be_visible()
-    assert page.get_by_label("Credential", exact=True).input_value().startswith("cred://")
+    assert page.get_by_label("Login material", exact=True).input_value().startswith("cred://")
     assert "synthetic-claude-password" not in page.content()
     page.get_by_role("button", name="Review changes", exact=True).click()
     page.get_by_role("button", name="Apply changes", exact=True).click()
@@ -404,10 +374,13 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     page.get_by_role("button", name="Close", exact=True).click()
     # A failed sample must stop the run instead of blindly consuming all three.
     benchmark_requests = []
+    def synthetic_job_submission(route):
+        route.fulfill(status=202, content_type="application/json", body='{"job_id":"synthetic-failed-sample"}')
     def failed_sample(route):
         benchmark_requests.append(route.request.url)
-        route.fulfill(status=200, content_type="application/json", body='{"verified":false,"history_recorded":false}')
-    page.route("**/admin/sources/openai/validate", failed_sample)
+        route.fulfill(status=200, content_type="application/json", body='{"state":"completed","result":{"verified":false,"history_recorded":false}}')
+    page.route("**/admin/jobs/*", failed_sample)
+    page.route("**/admin/jobs", synthetic_job_submission)
     page.get_by_role("button", name="openai", exact=True).click()
     page.get_by_role("button", name="Benchmark", exact=True).click()
     page.get_by_role("button", name="Run 3 samples", exact=True).click()
@@ -415,14 +388,22 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     expect(page.get_by_role("button", name="Run 3 samples", exact=True)).to_be_enabled()
     assert len(benchmark_requests) == 1
     page.get_by_role("button", name="Close", exact=True).click()
-    page.unroute("**/admin/sources/openai/validate", failed_sample)
+    page.unroute("**/admin/jobs/*", failed_sample)
+    page.unroute("**/admin/jobs", synthetic_job_submission)
     # Hold a synthetic request until the UI aborts it; no upstream is contacted.
     page.evaluate("""() => {
       window.benchmarkFetch = window.fetch;
       window.heldSamples = 0;
       window.fetch = (url, options) => {
-        if (String(url).endsWith('/admin/sources/openai/validate')) {
+        if (String(url)==='/admin/jobs' && options.method==='POST') {
+          return Promise.resolve(new Response(JSON.stringify({job_id:'synthetic-held-sample'}),{status:202,headers:{'Content-Type':'application/json'}}));
+        }
+        if (String(url).includes('/admin/jobs/synthetic-held-sample') && options.method==='DELETE') {
+          return Promise.resolve(new Response(JSON.stringify({state:'cancellation_requested'}),{status:200,headers:{'Content-Type':'application/json'}}));
+        }
+        if (String(url).includes('/admin/jobs/') && options.method !== 'DELETE') {
           window.heldSamples++;
+          document.documentElement.dataset.heldSamples = String(window.heldSamples);
           return new Promise((resolve, reject) => options.signal.addEventListener('abort', () => reject(new DOMException('Canceled', 'AbortError')), {once:true}));
         }
         return window.benchmarkFetch(url, options);
@@ -432,14 +413,14 @@ with tempfile.TemporaryDirectory(prefix="cot-browser-test-") as profile_dir, syn
     page.get_by_role("button", name="Benchmark", exact=True).click()
     page.get_by_role("button", name="Run 3 samples", exact=True).click()
     expect(page.get_by_role("button", name="Run 3 samples", exact=True)).to_be_disabled()
+    expect(page.locator('html')).to_have_attribute('data-held-samples', '1')
     page.get_by_role("button", name="Stop samples", exact=True).click()
     expect(page.get_by_role("button", name="Run 3 samples", exact=True)).to_be_enabled()
     assert page.evaluate("window.heldSamples") == 1
     page.get_by_role("button", name="Run 3 samples", exact=True).click()
     expect(page.get_by_role("button", name="Run 3 samples", exact=True)).to_be_disabled()
+    expect(page.locator("html")).to_have_attribute("data-held-samples", "2")
     page.get_by_role("button", name="Close", exact=True).click()
-    page.wait_for_timeout(100)
-    assert page.evaluate("window.heldSamples") == 2
     page.evaluate("window.fetch = window.benchmarkFetch; delete window.benchmarkFetch")
     page.get_by_role("link", name="Providers", exact=True).click()
     page.get_by_role("searchbox", name="Filter providers").fill("openai")
