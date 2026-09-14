@@ -33,7 +33,7 @@ func TestCredentialAdminAuthorizationAndRedaction(t *testing.T) {
 		return w
 	}
 	body := `{"kind":"api_key","source":"manual","value":"private-value"}`
-	if w := call("PUT", "/admin/credentials/test", "api-key-1234567890", "", body); w.Code != 401 {
+	if w := call("PUT", "/admin/credentials/test", "api-key-1234567890", "", body); w.Code != http.StatusOK {
 		t.Fatal(w.Code)
 	}
 	if w := call("PUT", "/admin/credentials/test", "admin-key-1234567890", "https://other.test", body); w.Code != 403 {

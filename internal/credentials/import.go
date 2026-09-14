@@ -139,7 +139,11 @@ func (s *Store) ImportSelected(entries []ImportEntry, selected []int) ([]Metadat
 	return s.ImportWithConflicts(entries, choices)
 }
 func (s *Store) ImportWithConflicts(entries []ImportEntry, selected []ImportSelection) ([]Metadata, error) {
-	if len(selected) == 0 || len(selected) > 1000 {
+	return s.importWithConflicts(entries, selected, 1000, "selected-export")
+}
+
+func (s *Store) importWithConflicts(entries []ImportEntry, selected []ImportSelection, limit int, source string) ([]Metadata, error) {
+	if len(selected) == 0 || len(selected) > limit {
 		return nil, errors.New("select 1 to 1000 entries")
 	}
 	s.mu.Lock()
@@ -192,7 +196,7 @@ func (s *Store) ImportWithConflicts(entries []ImportEntry, selected []ImportSele
 			Username string `json:"username"`
 			Password string `json:"password"`
 		}{e.Email, e.Username, e.Password})
-		m := Metadata{Version: version, ID: id, Kind: "username_password", Source: "selected-export", Domain: strings.ToLower(u.Hostname()), CreatedAt: created, UpdatedAt: now}
+		m := Metadata{Version: version, ID: id, Kind: "username_password", Source: source, Domain: strings.ToLower(u.Hostname()), CreatedAt: created, UpdatedAt: now}
 		next[id] = record{Metadata: m, Value: string(value), ImportURL: e.URL}
 		clear(value)
 		out = append(out, m)

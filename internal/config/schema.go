@@ -19,7 +19,7 @@ func Schema() []FieldSchema {
 	fields := schemaFields(reflect.TypeOf(Config{}))
 	for i := range fields {
 		switch fields[i].Name {
-		case "listen", "api_key_env", "admin_key_env", "runtime", "browser", "device":
+		case "listen", "runtime", "browser", "device":
 			fields[i].RestartRequired = true
 		}
 	}

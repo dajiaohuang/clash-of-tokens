@@ -40,7 +40,7 @@ and the [51-section control-plane audit](docs/CONTROL_PLANE_AUDIT.md).
 ## What works today
 
 - OpenAI Chat Completions and Responses, Anthropic Messages, and Gemini
-  request paths share one authenticated gateway.
+request paths share one local gateway.
 - Provider, source, account, model, group, quota-domain, and credential
   references are validated through a persistent configuration service with
   optimistic revisions, preview/apply, history, and rollback.
@@ -153,20 +153,22 @@ or cross-protocol fields are rejected explicitly.
 | Anthropic Messages | POST /v1/messages |
 | Gemini native | POST /v1beta/models/{model}:generateContent or :streamGenerateContent |
 | Models | GET /v1/models |
-| Control plane | / with authenticated /admin/* actions |
+| Control plane | / with local /admin/* actions |
 
 An endpoint existing does not imply that every configured source supports that
 protocol. Choose a source whose descriptor declares the needed capability.
 
 ## Quick start
 
-Go 1.27.1 is selected by the repository toolchain. Build the gateway:
+Build and install from source (the script obtains and verifies Go 1.27.1 if needed):
 
 ~~~powershell
 git clone https://github.com/dajiaohuang/clash-of-tokens.git
 cd clash-of-tokens
-go build -trimpath -ldflags="-s -w" -o dist/clash-tokens.exe ./cmd/clash-tokens
+powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -Install
 ~~~
+
+Linux/macOS: `bash build.sh --install`. Release-only installation: `powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1` or `bash install.sh`. See [Build and install](docs/INSTALL.md) for standalone download commands, pinned versions, offline installation, dependencies and release availability. Release installation requires a published compatible Release; source installation is available immediately from this checkout.
 
 Create a disabled-by-default HTTP source and validate it with the account's
 real upstream model ID:
@@ -200,19 +202,10 @@ sampling parameters.
 
 ## Calling the gateway
 
-keys creates or reads separate gateway API and admin keys. You may supply
-COT_API_KEY and COT_ADMIN_KEY instead; both must be at least 16 characters.
-
-~~~powershell
-$keys = ./dist/clash-tokens.exe keys | ConvertFrom-Json
-$headers = @{ Authorization = "Bearer $($keys.api_key)" }
-Invoke-RestMethod http://127.0.0.1:8317/v1/models -Headers $headers
-~~~
-
-For an OpenAI-compatible client use http://127.0.0.1:8317/v1 (or the port
-from your configuration), the gateway API key, and a model ID returned by
-/v1/models. Gateway keys and upstream account credentials are different
-secrets.
+The local gateway does not require a gateway API key or admin key. Open
+`http://127.0.0.1:8317/` (or the port from your configuration) to manage it,
+and use `/v1/models` to inspect enabled models. Provider credentials remain
+separate and are still stored in the protected credential vault.
 
 ## Verification, performance, and limits
 
@@ -421,13 +414,15 @@ Quota Domain 将多个账号和模型共享的权益
 
 ## 快速开始
 
-仓库 toolchain 选择 Go 1.27.1。构建网关：
+从源码一键构建安装（缺少所需 Go 1.27.1 时自动下载并校验）：
 
 ~~~powershell
 git clone https://github.com/dajiaohuang/clash-of-tokens.git
 cd clash-of-tokens
-go build -trimpath -ldflags="-s -w" -o dist/clash-tokens.exe ./cmd/clash-tokens
+powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -Install
 ~~~
+
+Linux/macOS：`bash build.sh --install`。仅安装 Release：`powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1` 或 `bash install.sh`。独立下载执行、固定版本、离线安装、依赖和发布可用性见[构建与安装](docs/INSTALL.md#中文构建与安装)。Release 安装需要已发布的兼容版本；当前源码目录可直接构建安装。
 
 创建默认禁用的 HTTP 来源，并使用账号真实的上游模型 ID 验证：
 
@@ -457,18 +452,12 @@ Copy-Item config.example.json config.json
 
 ## 调用网关
 
-keys 会创建或读取分开的网关 API key 与 admin key。也可以设置 COT_API_KEY
-和 COT_ADMIN_KEY，两者都至少 16 个字符。
-
-~~~powershell
-$keys = ./dist/clash-tokens.exe keys | ConvertFrom-Json
-$headers = @{ Authorization = "Bearer $($keys.api_key)" }
-Invoke-RestMethod http://127.0.0.1:8317/v1/models -Headers $headers
-~~~
+本地网关不再要求 gateway API key 或 admin key。打开
+`http://127.0.0.1:8317/`（或配置中的端口）即可管理，并可通过 `/v1/models`
+查看已启用模型。Provider 凭据仍与网关访问分离，并继续保存在受保护的凭据 vault 中。
 
 支持 OpenAI 自定义地址的客户端使用 http://127.0.0.1:8317/v1（或配置中的
-端口）、网关 API key 以及 /v1/models 返回的模型 ID。网关 key 与上游账号
-凭证是两类不同 secret。
+端口）以及 /v1/models 返回的模型 ID。网关不再添加额外访问 key。
 
 ## 验证、性能与限制
 

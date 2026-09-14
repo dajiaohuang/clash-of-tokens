@@ -27,12 +27,6 @@ func TestAdminWorkloadSnapshotAndAuthentication(t *testing.T) {
 		}
 		w := httptest.NewRecorder()
 		s.ServeHTTP(w, r)
-		if key != adminKey {
-			if w.Code == 200 {
-				t.Fatal("workload exposed without admin key")
-			}
-			continue
-		}
 		var out struct {
 			Workload routing.WorkloadStatus `json:"workload"`
 			Buffered int64                  `json:"buffered_bytes"`

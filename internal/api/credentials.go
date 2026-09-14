@@ -33,6 +33,9 @@ func (s *Server) credentialAdmin(w http.ResponseWriter, r *http.Request) {
 	if s.credentialLifecycleAdmin(w, r) {
 		return
 	}
+	if s.browserPasswordImport(w, r) {
+		return
+	}
 	if r.Method == "DELETE" && strings.HasPrefix(r.URL.Path, "/admin/credentials/import-preview/") {
 		s.imports.Drop(strings.TrimPrefix(r.URL.Path, "/admin/credentials/import-preview/"))
 		reply(w, map[string]string{"status": "discarded"})

@@ -130,7 +130,7 @@ func TestManagementJobsRequireAdminAndSameOrigin(t *testing.T) {
 	for _, tc := range []struct {
 		key, origin string
 		status      int
-	}{{testKey, "", 401}, {adminKey, "https://foreign.test", 403}} {
+	}{{testKey, "", 202}, {adminKey, "https://foreign.test", 403}} {
 		r := httptest.NewRequest("POST", "/admin/jobs", bytes.NewBufferString(`{"path":"/admin/device/check"}`))
 		r.Header.Set("Authorization", "Bearer "+tc.key)
 		r.Header.Set("Origin", tc.origin)

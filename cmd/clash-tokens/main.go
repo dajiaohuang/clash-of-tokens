@@ -19,8 +19,10 @@ import (
 	"clash-of-tokens/internal/config"
 	"clash-of-tokens/internal/credentials"
 	"clash-of-tokens/internal/providers/appdevice"
-	"clash-of-tokens/internal/secrets"
 )
+
+// version is set by the source/release build scripts using -ldflags.
+var version = "0.1.0-dev"
 
 func main() {
 	if e := run(); e != nil {
@@ -76,11 +78,11 @@ func run() error {
 		return enc.Encode(c)
 	}
 	if command == "version" {
-		fmt.Println("clash-tokens 0.1.0-dev")
+		fmt.Println("clash-tokens " + version)
 		return nil
 	}
-	if command != "serve" && command != "validate" && command != "browser-login" && command != "doctor" && command != "device-doctor" && command != "keys" {
-		return fmt.Errorf("usage: clash-tokens {init|providers|validate|serve|browser-login|doctor|device-doctor|keys|version} [-config path]")
+	if command != "serve" && command != "validate" && command != "browser-login" && command != "doctor" && command != "device-doctor" {
+		return fmt.Errorf("usage: clash-tokens {init|providers|validate|serve|browser-login|doctor|device-doctor|version} [-config path]")
 	}
 	c, e := config.Load(*path)
 	if e != nil {
@@ -107,27 +109,11 @@ func run() error {
 		}
 		return json.NewEncoder(os.Stdout).Encode(data)
 	}
-	keys := secrets.Keys{API: os.Getenv(c.APIKeyEnv), Admin: os.Getenv(c.AdminKeyEnv)}
-	if keys.API == "" || keys.Admin == "" {
-		saved, e := secrets.LoadOrCreate(filepath.Join(filepath.Dir(c.Browser.StateFile), "gateway-keys"))
-		if e != nil {
-			return e
-		}
-		if keys.API == "" {
-			keys.API = saved.API
-		}
-		if keys.Admin == "" {
-			keys.Admin = saved.Admin
-		}
-	}
-	if command == "keys" {
-		return json.NewEncoder(os.Stdout).Encode(keys)
-	}
 	vault, e := credentials.Open(filepath.Join(filepath.Dir(c.Browser.StateFile), "credentials.vault"))
 	if e != nil {
 		return e
 	}
-	handler, e := api.NewControlPlane(*path, c, keys.API, keys.Admin, vault)
+	handler, e := api.NewControlPlane(*path, c, "", "", vault)
 	if e != nil {
 		return e
 	}

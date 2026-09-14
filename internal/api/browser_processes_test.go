@@ -86,7 +86,6 @@ func TestBrowserProcessStopRequiresAdminOriginAndConfirmation(t *testing.T) {
 		key, origin, body string
 		want              int
 	}{
-		{"", "", `{"confirm":true}`, 401},
 		{adminKey, "https://elsewhere.test", `{"confirm":true}`, 403},
 		{adminKey, "", `{"confirm":false}`, 400},
 		{adminKey, "", `{"confirm":true}`, 200},

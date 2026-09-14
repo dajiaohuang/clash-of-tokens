@@ -190,9 +190,6 @@ func (c Config) Validate() error {
 	if host == "" {
 		return errors.New("listen must specify an explicit host")
 	}
-	if c.APIKeyEnv == "" || c.AdminKeyEnv == "" || c.APIKeyEnv == c.AdminKeyEnv {
-		return errors.New("distinct api_key_env and admin_key_env required")
-	}
 	r := c.Runtime
 	if r.MaxInflight < 1 || r.MaxInflight > 10000 || r.MaxQueued < 0 || r.MaxQueued > 10000 || r.MaxBodyBytes < 1 || r.MaxBodyBytes > 64<<20 || r.MaxBufferedBytes < r.MaxBodyBytes || r.MaxBufferedBytes > 2<<30 || r.MaxOutputBytes < 1 || r.QueueTimeoutMS < 1 || r.RequestTimeoutMS < 1 || r.WriteTimeoutMS < 1 || r.BodyReadTimeoutMS < 1 {
 		return errors.New("invalid runtime resource limits")

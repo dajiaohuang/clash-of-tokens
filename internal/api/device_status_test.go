@@ -25,7 +25,6 @@ func TestDeviceCheckAdminIsAuthenticatedReadOnlyAndRedacted(t *testing.T) {
 		key, origin, method string
 		want                int
 	}{
-		{"", "", "POST", 401},
 		{adminKey, "https://elsewhere.test", "POST", 403},
 		{adminKey, "", "GET", 405},
 		{adminKey, "", "POST", 200},

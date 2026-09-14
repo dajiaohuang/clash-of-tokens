@@ -1,6 +1,6 @@
 'use strict';
 const $ = id => document.getElementById(id);
-const S = {token:'', config:null, revision:0, catalog:[], descriptors:[], schema:[], credentials:[], status:{sources:[]}, history:[], restart:[]};
+const S = {config:null, revision:0, catalog:[], descriptors:[], schema:[], credentials:[], status:{sources:[]}, history:[], restart:[]};
 const pages = [
  ['Workspace',['overview','providers','accounts','credentials','sources','models']],
  ['Traffic',['groups','routing','health','metrics']],
@@ -9,6 +9,48 @@ const pages = [
 ];
 const labels = {overview:'Overview',providers:'Providers',accounts:'Accounts',credentials:'Credentials',sources:'Sources',models:'Models',groups:'Groups',routing:'Routing',health:'Health',metrics:'Metrics',browsers:'Browsers',devices:'Devices',sessions:'Sessions',config:'Configuration',logs:'Activity',implementation:'Implementation',about:'About'};
 const names = {id:'ID',provider_id:'Provider',account_id:'Account',credential_ref:'Credential',login_credential_ref:'Login material',expected_identity:'Expected browser identity',credential_type_override:'Reviewed credential type override',base_url:'Base URL',key_env:'Legacy credential environment variable',account_id_env:'Legacy account ID environment variable',organization:'Organization',auto_approved:'Allow Auto routing',allow_paid:'Legacy paid-source policy',allow_unknown_cost:'Allow unknown costs',max_inflight:'Concurrent requests',quota_max_inflight:'Shared quota concurrency',quota_domain:'Quota domain',max_input_bytes:'Maximum input bytes',cdp_url:'Browser connection URL',source_kind:'Source type',tools:'Tool capability',local:'Loopback / local transport',paid:'Legacy paid flag'};
+const languageKey='clash-tokens-language';
+let language=localStorage.getItem(languageKey)==='zh'?'zh':'en';
+const translations={
+ zh:{
+  'Workspace':'工作区','Traffic':'流量','Environment':'环境','System':'系统','Overview':'概览','Providers':'服务商','Accounts':'账号','Credentials':'凭据','Sources':'来源','Models':'模型','Groups':'分组','Routing':'路由','Health':'健康','Metrics':'指标','Browsers':'浏览器','Devices':'设备','Sessions':'会话','Configuration':'配置','Activity':'活动','Implementation':'实现状态','About':'关于',
+  'Management':'管理','Local provider control':'本地服务商控制台','Open chat':'打开聊天','Search everything':'搜索全部内容','Provider, account, source, group…':'服务商、账号、来源、分组…','Refresh':'刷新','Local':'本地','Close':'关闭','Cancel':'取消','Save':'保存','Edit':'编辑','Delete':'删除','Add account':'添加账号','Add source':'添加来源','Add credential':'添加凭据',
+  'Overview':'概览','A direct view of your provider pool.':'服务商池的直接概览。','One-click import':'一键导入','Bring credentials into the protected vault, then bind them to an account.':'将凭据导入受保护的凭据库，再绑定到账号。','Import login export':'导入登录导出文件','Import token':'导入令牌','Import browser cookies':'导入浏览器 Cookie','Open credentials':'打开凭据','Providers':'服务商','Accounts':'账号','Sources':'来源','In flight':'处理中','configured':'已配置','enabled':'已启用','Needs attention':'需要关注','No recorded failures. Untested sources still need verification.':'暂无失败记录。尚未测试的来源仍需验证。','Routing groups':'路由分组','Workload and memory':'负载与内存','Current gateway':'当前网关',
+  'Credentials':'凭据','Protected values are stored separately from configuration.':'受保护的值与配置分开存储。','Import export':'导入导出文件','Import selected export':'导入选中的导出文件','Import token':'导入令牌','Import browser cookies':'导入浏览器 Cookie','No credentials. Add a key or session, then bind its reference to an account.':'暂无凭据。添加密钥或会话后，将其引用绑定到账号。','Preview entries':'预览条目','Select credentials to import':'选择要导入的凭据','Import selected':'导入所选项','Save imported token':'保存导入令牌','Token import preview':'令牌导入预览','Preview token':'预览令牌','Save cookies':'保存 Cookie','Browser cookie preview':'浏览器 Cookie 预览','Add external manager reference':'添加外部管理器引用','Add OAuth lifecycle':'添加 OAuth 生命周期',
+  'Import from':'导入来源','Export format':'导出格式','CSV or JSON file':'CSV 或 JSON 文件','Configured browser profile':'已配置的浏览器配置','Provider':'服务商','Choose…':'请选择…','Environment credential type':'环境凭据类型','CLI session JSON file':'CLI 会话 JSON 文件','Checking the configured physical device…':'正在检查已配置的物理设备…','No entries yet.':'暂无条目。','Actions':'操作','State':'状态','Type':'类型','Credential':'凭据','Updated':'更新时间','Last used':'最近使用','Used by':'使用方','Imported from':'导入来源',
+  'Updated at':'更新于','Revision':'版本','Healthy':'健康','Disabled':'已禁用','Blocked':'已阻止','Cooldown':'冷却中','Exhausted':'已耗尽','Broken':'故障','Degraded':'降级','Not tested':'未测试','Not configured':'未配置','Not bound':'未绑定','Not set':'未设置','Not used':'未使用','None':'无','Yes':'是','No':'否','Pass':'通过','Not ready':'未就绪','Unknown':'未知','Switch language':'切换语言','Listen':'监听地址','Measure':'指标','Value':'数值','Configuration':'配置','Sources with matching validation':'通过匹配验证的来源','Requests / rejected':'请求数 / 拒绝数','Restart pending':'待重启项','auto':'自动','Global in flight / limit':'全局处理中 / 限制','Routing queued / limit':'路由排队 / 限制','Ingress occupied / limit':'入口占用 / 限制','Reserved buffers / limit':'预留缓冲 / 限制','Go heap allocated':'Go 堆已分配','Go runtime memory obtained':'Go 运行时已获取内存','Goroutines':'协程数','Gateway uptime':'网关运行时长','Lifetime average request rate':'生命周期平均请求速率','Global source leases, including finishing old configurations':'全局来源租约，包括正在结束的旧配置','Live snapshots. Queue counts the current routing generation; active leases include finishing old generations. Reserved buffers are application accounting. Go memory is not total process RSS. Average request rate covers the gateway lifetime, not a recent interval.':'实时快照。队列统计当前路由代次；活动租约包含正在结束的旧代次。预留缓冲区属于应用统计，Go 内存不等于进程 RSS。平均请求速率覆盖网关整个生命周期，而非近期区间。','Detect local browsers and import channels first, then choose a safe credential source.':'先检测本机浏览器和导入渠道，再选择安全的凭据来源。','Scanning standard browser profile locations and checking which import channels are available…':'正在扫描标准浏览器配置位置并检查可用导入渠道…','Password manager detection is metadata-only; secrets are never opened or copied.':'密码管理器检测仅读取元数据，不会打开或复制机密。','Password managers on this machine':'本机密码管理器','Supported export formats':'支持的导出格式','No recognized password manager installation found. Use a manual CSV/JSON export if you have one.':'未发现可识别的密码管理器。若已有导出文件，可直接使用 CSV/JSON 导入。','No browser profiles or stored credential references detected yet.':'尚未检测到浏览器配置或已存储的凭据引用。','Read only':'只读','Scanned':'已扫描','Available':'可用','Manual export required':'需要手动导出','Configured sources only':'仅已配置来源','Configured profiles':'已配置配置文件','Password managers':'密码管理器','CLI sessions':'CLI 会话','Existing profiles':'已有配置文件','Detected state':'检测状态','Next step':'下一步','Boundary':'边界','Detected item':'检测到的项目','Location':'位置','Evidence':'证据','Provider suggestions':'服务商建议','Availability':'可用性','Next action':'后续操作','Binding':'绑定'
+ }
+};
+const reverseTranslations=Object.fromEntries(Object.entries(translations.zh).map(([en,zh])=>[zh,en]));
+function translate(value){
+ const zh=language==='zh'||document.documentElement.lang==='zh-CN';
+ if(zh){
+  if(translations.zh[value])return translations.zh[value];
+  return value.replace(/^(\d+) configured$/,'$1 已配置').replace(/^(\d+) enabled$/,'$1 已启用').replace(/^(\d+) sources auto$/,'$1 个来源自动').replace(/^Local ·/,'本地 ·').replace(/^Updated at (.+)\. Configuration revision (.+)\.$/,'更新于 $1。配置版本 $2。');
+ }
+ if(reverseTranslations[value])return reverseTranslations[value];
+ return value.replace(/^(\d+) 已配置$/,'$1 configured').replace(/^(\d+) 已启用$/,'$1 enabled').replace(/^(\d+) 个来源自动$/,'$1 sources auto').replace(/^本地 ·/,'Local ·').replace(/^更新于 (.+)。配置版本 (.+)。$/,'Updated at $1. Configuration revision $2.');
+}
+function localizeDOM(root=document.body){
+ const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let node;
+ while(node=walker.nextNode()){
+  if(node.parentElement?.matches('script,style'))continue;
+  const raw=node.nodeValue,trimmed=raw.trim();if(!trimmed)continue;
+  let next=translate(trimmed);
+  if(document.documentElement.lang==='zh-CN'){
+   if(/^\d+ configured$/.test(trimmed))next=trimmed.replace(' configured',' 已配置');
+   else if(/^\d+ enabled$/.test(trimmed))next=trimmed.replace(' enabled',' 已启用');
+   else if(/^\d+ sources$/.test(trimmed))next=trimmed.replace(' sources',' 个来源');
+   else if(/^\d+ sources auto$/.test(trimmed))next=trimmed.replace(' sources auto',' 个来源自动');
+   else if(/^\d+ seconds$/.test(trimmed))next=trimmed.replace(' seconds',' 秒');
+   else if(/^\d+(\.\d+)? requests\/s$/.test(trimmed))next=trimmed.replace(' requests/s',' 请求/秒');
+   else if(trimmed==='Global source leases, including finishing old configurations')next='全局来源租约，包括正在结束的旧配置';
+  }
+  if(next!==trimmed)node.nodeValue=raw.replace(trimmed,next)
+ }
+ for(const element of root.querySelectorAll?.('[placeholder],[aria-label],[title]')||[]){for(const attr of ['placeholder','aria-label','title'])if(element.hasAttribute(attr))element.setAttribute(attr,translate(element.getAttribute(attr)))}
+}
+function setLanguage(next){language=next;localStorage.setItem(languageKey,next);document.documentElement.lang=next==='zh'?'zh-CN':'en';$('language').textContent=next==='zh'?'English':'中文';render();localizeDOM()}
 const browserEngines = ['chrome','edge','brave','firefox','opera','vivaldi','chromium','arc'];
 const title = text => names[text] || text.replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase());
 const clone = value => JSON.parse(JSON.stringify(value));
@@ -25,8 +67,8 @@ function h(tag,attrs,...children) {
  return el;
 }
 function message(text,error=false){
- $('notice').textContent=text;$('notice').className=error?'error':'';
- const detail=$('dialog-error');if(detail)detail.textContent=error?text:'';
+ $('notice').textContent=translate(text);$('notice').className=error?'error':'';
+ const detail=$('dialog-error');if(detail)detail.textContent=error?translate(text):'';
 }
 function button(text,action,kind=''){
  return h('button',{type:'button',class:kind,onclick:async function(){
@@ -48,8 +90,7 @@ function select(values,value,empty=false){
 }
 async function api(path,options={}){
  if(options.method==='POST' && (/^\/admin\/(sources\/[^/]+\/(validate|discover)|accounts\/[^/]+\/(validate|check-login|login)|providers\/[^/]+\/validate|credentials\/[^/]+\/(check|refresh))$/.test(path)||['/admin/device/check','/admin/discovery/accounts','/admin/browser_profiles/status','/admin/browser_profiles/discover','/admin/browser_profiles/setup-login','/admin/credentials/import-browser'].includes(path)))return managementJob(path,options);
- if(!S.token)throw Error('Connect with your admin key first.');
- const response=await fetch(path,{...options,headers:{Authorization:'Bearer '+S.token,'Content-Type':'application/json',...(options.headers||{})},cache:'no-store'});
+	const response=await fetch(path,{...options,headers:{'Content-Type':'application/json',...(options.headers||{})},cache:'no-store'});
  const data=await response.json();
  if(!response.ok)throw Error(data.error?.message||'Request failed ('+response.status+').');
  return data;
@@ -77,19 +118,18 @@ let runtimeTimer;
 async function refreshRuntime(){
  clearTimeout(runtimeTimer);
  try{
-  if(S.token && !document.hidden){
-   const token=S.token,status=await api('/admin/status');
-   if(token!==S.token)return;
+  if(!document.hidden){
+   const status=await api('/admin/status');
    S.status=status;
    for(const cell of document.querySelectorAll('[data-live-status]'))cell.refreshStatus?.();
-   $('access').textContent='Connected · '+new Date().toLocaleTimeString();
+   $('access').textContent='Local · '+new Date().toLocaleTimeString();
    if(status.revision!==S.revision)message('Configuration changed in another tab. Refresh before editing; unsaved changes are preserved.');
    // Keep all editable/filterable DOM intact. Passive overview widgets may refresh.
    if((location.hash||'#overview')==='#overview' && !$('dialog').open && !document.activeElement?.matches('input,textarea,select,button')){
     const x=scrollX,y=scrollY;render();scrollTo(x,y);
    }
   }
- }catch(error){if(S.token)$('access').textContent='Status stale · reconnecting'}
+ }catch(error){$('access').textContent='Status stale'}
  finally{runtimeTimer=setTimeout(refreshRuntime,document.hidden?30000:3000)}
 }
 document.addEventListener('visibilitychange',()=>{clearTimeout(runtimeTimer);runtimeTimer=setTimeout(refreshRuntime,document.hidden?30000:0)});
@@ -99,14 +139,9 @@ async function refresh(){
   api('/admin/config'),api('/admin/catalog'),api('/admin/descriptors'),api('/admin/config/schema'),api('/admin/status'),api('/admin/credentials'),api('/admin/config/history'),api('/admin/evidence')
  ]);
  Object.assign(S,{config:current.config,revision:current.revision,restart:current.restart_required||[],catalog,descriptors,schema,status,credentials,history,evidence});
- $('access').textContent='Connected';render();message('Updated at '+new Date().toLocaleTimeString()+'. Configuration revision '+S.revision+'.');
+ $('access').textContent='Local';render();message('Updated at '+new Date().toLocaleTimeString()+'. Configuration revision '+S.revision+'.');
 }
-function connectView(){
- const key=h('input',{type:'password',autocomplete:'off','aria-label':'Admin key',placeholder:'Admin key'});
- const connect=async()=>{S.token=key.value;key.value='';try{await refresh()}catch(e){S.token='';throw e}};
- key.addEventListener('keydown',e=>{if(e.key==='Enter')buttonAction(connect)});
- return h('section',{class:'connection-panel'},h('h2',{},'Your sources, one place.'),h('p',{},'Manage accounts, models and routing on this gateway.'),field('Admin key',key),button('Connect',connect,'primary'),h('p',{},'The key stays in this tab’s memory. Disconnect or close the tab to clear it.'));
-}
+// The local control plane is always available; there is no gateway-key screen.
 async function buttonAction(fn){try{await fn()}catch(e){message(e.message,true)}}
 let dialogCleanup=null;
 $('dialog').addEventListener('close',()=>{dialogCleanup?.();dialogCleanup=null});
@@ -115,6 +150,7 @@ function dialog(name,body,actions=[]){
  const close=button('Close',()=> $('dialog').close());
  $('dialog-content').replaceChildren(h('div',{class:'dialog-head'},h('h2',{id:'dialog-title'},name),close),h('div',{id:'dialog-error',class:'warning',role:'alert'}),h('div',{class:'dialog-body'},body),h('div',{class:'dialog-footer'},actions));
  if(!$('dialog').open)$('dialog').showModal();
+ localizeDOM(document.body);
 }
 function pageHead(name,description,...actions){return h('div',{class:'page-head'},h('div',{},h('h1',{},name),h('p',{},description)),h('div',{class:'actions'},actions))}
 function table(headers,rows,empty='No entries yet.'){
@@ -563,21 +599,22 @@ async function validateProvider(provider){
 }
 function overview(){
  const c=S.config,status=S.status,sources=c.sources||[],accounts=c.accounts||[];
+ const importSpotlight=h('section',{class:'import-spotlight'},h('div',{},h('h2',{},importText('Import browser passwords','导入浏览器账密')),h('p',{},importText('Find your browsers automatically. Import every saved login with one confirmation.','自动发现本机浏览器，二次确认后整批导入已保存账密。'))),button('One-click import',oneClickImport,'primary'));
  const flow=h('div',{class:'flow'},[
-  ['Providers',S.catalog.length,(c.providers||[]).length+' configured'],
-  ['Accounts',accounts.length,accounts.filter(a=>a.enabled).length+' enabled'],
-  ['Sources',sources.length,status.sources.filter(s=>s.enabled).length+' enabled'],
-  ['In flight',status.workload?.active??0,'Global source leases, including finishing old configurations']
+  ['Providers',S.catalog.length,translate((c.providers||[]).length+' configured')],
+  ['Accounts',accounts.length,translate(accounts.filter(a=>a.enabled).length+' enabled')],
+  ['Sources',sources.length,translate(status.sources.filter(s=>s.enabled).length+' enabled')],
+  ['In flight',status.workload?.active??0,translate('Global source leases, including finishing old configurations')]
  ].map(([label,n,sub])=>h('div',{class:'flow-cell'},h('span',{},label),h('strong',{},n),h('p',{},sub))));
  const attention=status.sources.filter(s=>s.blocked||s.failures||Date.parse(s.cooldown)>Date.now());
- return [pageHead('Overview','A direct view of your provider pool.',button('Add account',()=>addAccount()),button('Add source',()=>addSource(),'primary')),flow,h('div',{class:'split'},
+ return [pageHead('Overview','A direct view of your provider pool.',button('Add account',()=>addAccount()),button('Add source',()=>addSource())),importSpotlight,flow,h('div',{class:'split'},
   h('section',{class:'panel'},h('h2',{},'Needs attention'),attention.length?attention.map(s=>h('div',{class:'stat-line'},s.id,s.blocked?badge('Authentication / policy','bad'):badge(s.failures+' failures','warn'))):h('p',{class:'muted'},'No recorded failures. Untested sources still need verification.')),
-  h('section',{class:'panel'},h('h2',{},'Routing groups'),c.groups.map(g=>h('div',{class:'stat-line'},h('a',{href:'#groups'},g.id),g.sources.length+' sources',badge(g.type))))
- ),h('section',{class:'panel'},h('h2',{},'Workload and memory'),workloadSummary(status)),h('section',{class:'panel'},h('h2',{},'Current gateway'),h('dl',{class:'key-value'},h('dt',{},'Listen'),h('dd',{},c.listen),h('dt',{},'Configuration'),h('dd',{},'Revision '+S.revision),h('dt',{},'Sources with matching validation'),h('dd',{},status.live_verified_sources||0),h('dt',{},'Requests / rejected'),h('dd',{},status.requests+' / '+status.rejected),h('dt',{},'Restart pending'),h('dd',{},S.restart.join(', ')||'No')))];
+  h('section',{class:'panel'},h('h2',{},'Routing groups'),c.groups.map(g=>h('div',{class:'stat-line'},h('a',{href:'#groups'},g.id),translate(g.sources.length+' sources'),badge(g.type))))
+ ),h('section',{class:'panel'},h('h2',{},'Workload and memory'),workloadSummary(status)),h('section',{class:'panel'},h('h2',{},'Current gateway'),h('dl',{class:'key-value'},h('dt',{},'Listen'),h('dd',{},c.listen),h('dt',{},'Configuration'),h('dd',{},translate('Revision')+' '+S.revision),h('dt',{},'Sources with matching validation'),h('dd',{},status.live_verified_sources||0),h('dt',{},'Requests / rejected'),h('dd',{},status.requests+' / '+status.rejected),h('dt',{},'Restart pending'),h('dd',{},S.restart.join(', ')||translate('No'))))];
 }
 function workloadSummary(s){
  const mib=value=>(Number(value||0)/1048576).toFixed(2)+' MiB',w=s.workload||{};
- return [h('p',{class:'muted'},'Live snapshots. Queue counts the current routing generation; active leases include finishing old generations. Reserved buffers are application accounting. Go memory is not total process RSS. Average request rate covers the gateway lifetime, not a recent interval.'),table(['Measure','Value'],[
+ return [h('p',{class:'muted'},translate('Live snapshots. Queue counts the current routing generation; active leases include finishing old generations. Reserved buffers are application accounting. Go memory is not total process RSS. Average request rate covers the gateway lifetime, not a recent interval.')),table(['Measure','Value'],[
   ['Global in flight / limit',(w.active??0)+' / '+(w.active_limit??0)],['Routing queued / limit',(w.queued??0)+' / '+(w.queue_limit??0)],['Ingress occupied / limit',(s.ingress_active??0)+' / '+(s.ingress_limit??0)],['Reserved buffers / limit',mib(s.buffered_bytes)+' / '+mib(s.buffered_limit_bytes)],['Go heap allocated',mib(s.go_heap_bytes)],['Go runtime memory obtained',mib(s.go_runtime_bytes)],['Goroutines',s.goroutines??0],['Gateway uptime',Math.floor(s.uptime_seconds||0)+' seconds'],['Lifetime average request rate',Number(s.average_requests_per_second||0).toFixed(3)+' requests/s']
  ])];
 }
@@ -657,6 +694,89 @@ async function discoverAccounts(){
   dialog('Account discovery',[h('p',{class:'muted'},'Candidates are metadata only. Secret values, cookies and passwords never leave the protected store. Browser scanning reads standard profile metadata only and does not launch a browser or test login.'),table(['Discovery channel','Status','Action','Read only'],(result.channels||[]).map(x=>[x.id,x.status,x.action,x.read_only?'Yes':'No'])),table(['Candidate','Type','Origin','Provider suggestions','Evidence','Availability','Next action','Binding'],rows,'No candidates found. Import a credential or configure a browser profile first.')],[button('Run again',run),button('Open credentials',()=>{$('dialog').close();location.hash='credentials'}),button('Open accounts',()=>{$('dialog').close();location.hash='accounts'})]);
  };
  dialog('Discover accounts',[field('Scan installed browser profile metadata',scan),h('p',{class:'muted'},'Stored credential references and configured environment names are included without exposing their values. Enable the scan only when you want to inspect local browser profile metadata.'),button('Discover',run,'primary')]);
+}
+function oneClickImport(){
+ const target=h('div',{class:'browser-import-list','aria-live':'polite'});
+ let live=true,busy=false;
+ const controller=new AbortController();
+ const run=async()=>{
+  if(busy)return;busy=true;
+  target.replaceChildren(h('p',{},importText('Finding browsers and saved logins…','正在发现浏览器和已保存的账密…')));
+  try{
+   const result=await api('/admin/credentials/browser-passwords/discover',{method:'POST',body:'{}',signal:controller.signal});
+   if(!live)return;
+   const browsers=result.browsers||[];
+   target.replaceChildren(...browsers.map(browser=>{
+    const direct=browser.status==='ready',empty=browser.status==='empty';
+    const action=button(direct?importText('Import all '+browser.count+' logins','导入全部 '+browser.count+' 项'):empty?importText('No saved passwords','没有已保存的密码'):importText('Import browser export','导出后全部导入'),()=>direct?previewBrowserImport(browser):browserExportImport(browser),'primary');
+    action.disabled=empty;
+    const countKnown=direct||empty||browser.status==='browser_protected_passwords';
+    const summary=countKnown?importText(browser.count+' saved logins',browser.count+' 条已保存账密'):importText('Login count unavailable','账密数量未知');
+    return h('section',{class:'browser-import-row'},h('div',{},h('h3',{},browser.name),h('p',{class:'muted'},importText(browser.profiles.length+' profiles · ',browser.profiles.length+' 个用户配置 · ')+summary),direct||empty?null:h('p',{class:'browser-import-reason'},browserImportError(browser.status))),action);
+   }));
+   if(!browsers.length)target.append(h('p',{},importText('No browser profiles found. You can import a browser export below.','未发现浏览器配置。可以通过下方入口导入浏览器导出文件。')));
+  }catch(error){if(live)target.replaceChildren(h('p',{class:'warning'},browserImportError(error.message)))}
+  finally{busy=false}
+ };
+ dialog('One-click import',[h('p',{},importText('Choose a browser. All its profiles are included; confirm once to import every saved login.','选择一个浏览器，包含其全部用户配置；二次确认后导入全部已保存账密。')),target],[button(importText('Scan again','重新发现'),run),button(importText('Import a CSV / JSON file','已有 CSV / JSON 文件'),()=>browserExportImport())]);
+ dialogCleanup=()=>{live=false;controller.abort()};run();
+}
+function importText(en,zh){return language==='zh'?zh:en}
+function browserImportError(code){
+ const messages={
+  browser_protected_passwords:['This browser requires its own password export. Export once, then confirm to import the entire file.','此浏览器的加密密码需要通过浏览器导出。导出一次后，可确认导入整个文件。'],
+  browser_export_required:['Use this browser’s password export to import all logins.','该浏览器需要先导出密码，再全部导入。'],
+  browser_database_unavailable:['The password store could not be read. Close this browser and scan again, or use its password export.','暂时无法读取密码库。关闭该浏览器后重新发现，或使用浏览器导出文件。'],
+  browser_import_limit:['This browser exceeds the import size limit; nothing was imported.','该浏览器的数据超过导入上限，尚未导入任何账密。'],
+  browser_not_found:['The selected browser was not found. Scan again.','所选浏览器已不可用，请重新发现。'],
+  browser_preview_expired:['This confirmation expired. Select the browser again.','本次确认已过期，请重新选择浏览器。']
+ };
+ return messages[code]?importText(...messages[code]):code;
+}
+async function previewBrowserImport(browser){
+ let live=true;const controller=new AbortController();
+ dialog(importText('Preparing '+browser.name+' import','准备导入 '+browser.name),h('p',{role:'status'},importText('Reading saved logins. Your confirmation is required before saving.','正在读取已保存账密，确认后才会写入。')));
+ dialogCleanup=()=>{live=false;controller.abort()};
+ try{
+  const report=await api('/admin/credentials/browser-passwords/preview',{method:'POST',body:JSON.stringify({browser:browser.id}),signal:controller.signal});
+  if(live)confirmBrowserImport(browser,report);
+ }catch(error){if(live)browserExportImport(browser,browserImportError(error.message))}
+}
+function confirmBrowserImport(browser,report){
+ if(!report.count){dialog(importText('Nothing to import','没有可导入的账密'),h('p',{},importText('No supported website passwords were found.','未发现可导入的网站账密。')),[button(importText('Choose another browser','选择其他浏览器'),oneClickImport)]);return}
+ const name=browser?.name||importText('Selected file','所选文件');
+ const count=report.count,existing=report.existing||0;
+ const body=[h('p',{class:'import-confirm-count'},importText('Import '+count+' logins from '+name+'?', '确认导入 '+name+' 的 '+count+' 项账密？')),h('p',{},importText('Existing logins for the same website and username are kept ('+existing+'). New logins are saved together.','相同网站和用户名的已有账密保留（'+existing+' 项），其余账密一次性保存。'))];
+ if(report.duplicates||report.skipped)body.push(h('p',{class:'muted'},importText((report.duplicates||0)+' duplicate logins combined; '+(report.skipped||0)+' non-website or empty records excluded.','已合并 '+(report.duplicates||0)+' 条重复账密，排除 '+(report.skipped||0)+' 条非网站或空记录。')));
+ const confirm=button(importText('Confirm import','确认全部导入'),async()=>{
+  try{
+   const result=await api('/admin/credentials/browser-passwords/apply',{method:'POST',body:JSON.stringify({ticket:report.ticket,confirm:true})});
+   await refresh().catch(()=>{});
+   dialog(importText('Import complete','导入完成'),h('p',{class:'import-confirm-count'},importText(result.imported+' imported · '+result.kept+' existing logins kept', '已导入 '+result.imported+' 项 · 保留已有 '+result.kept+' 项')),[button(importText('View credentials','查看已导入账密'),()=>{$('dialog').close();$('search').value='';location.hash='credentials';render()},'primary'),button(importText('Import another browser','继续导入其他浏览器'),oneClickImport)]);
+  }catch(error){message(browserImportError(error.message),true)}
+ },'primary');
+ dialog(importText('Confirm browser import','确认浏览器账密导入'),body,[button('Cancel',()=>$('dialog').close()),confirm]);
+ dialogCleanup=()=>{api('/admin/credentials/import-preview/'+encodeURIComponent(report.ticket),{method:'DELETE'}).catch(()=>{})};
+}
+function browserExportImport(browser,reason=''){
+ let live=true;const controller=new AbortController();
+ const file=h('input',{type:'file',accept:'.csv,.json','aria-label':importText('Browser password export','浏览器密码导出文件')});
+ const tips={firefox:'about:logins',edge:'edge://wallet/passwords',chrome:'chrome://password-manager/settings',brave:'brave://password-manager/settings',chromium:'chrome://password-manager/settings'};
+ const address=tips[browser?.id];
+ const body=[reason?h('p',{class:'warning'},reason):null,h('p',{},importText('Export passwords from your browser, then choose that file. Every login is selected automatically.','从浏览器导出密码后选择文件，系统自动选择全部账密。'))];
+ body.push(h('p',{class:'muted'},importText('Exports contain readable passwords. Keep the file private. For multiple browser profiles, export and import each profile.','导出文件包含明文密码，请妥善保管。若有多个浏览器用户配置，请分别导出并导入。')));
+ if(address)body.push(h('p',{},importText('Browser password settings: ','浏览器密码设置地址：'),h('code',{},address)));
+ if(address)body.push(button(importText('Open '+browser.name+' password manager','打开 '+browser.name+' 密码管理器'),async()=>{await api('/admin/credentials/browser-passwords/open-export',{method:'POST',body:JSON.stringify({browser:browser.id})})}));
+ body.push(field(importText('Password export file','密码导出文件'),file));
+ dialog(importText('Import all from '+(browser?.name||'file'),'从'+(browser?.name||'文件')+'全部导入'),body,[button(importText('Back','返回'),oneClickImport),button(importText('Continue','继续'),async()=>{
+  const chosen=file.files[0];if(!chosen)throw Error(importText('Choose a CSV or JSON file.','请选择 CSV 或 JSON 文件。'));
+  if(chosen.size>4*1024*1024)throw Error(importText('The export exceeds 4 MiB.','导出文件超过 4 MiB。'));
+  const format=chosen.name.toLowerCase().endsWith('.json')?'json':browser?.id?browser.id+'-csv':'csv';
+  const data=await chosen.text();if(!live)return;
+  const report=await api('/admin/credentials/browser-passwords/preview-file',{method:'POST',body:JSON.stringify({format,data}),signal:controller.signal});
+  if(live)confirmBrowserImport(browser,report);
+ },'primary')]);
+ dialogCleanup=()=>{live=false;controller.abort()};
 }
 function configureDiscoveredProfile(candidate){
  const engineName=browserEngines.includes(candidate.browser)?candidate.browser:'chrome';
@@ -1068,14 +1188,19 @@ function searchResults(query){
 function render(){
  const route=location.hash.slice(1).split('/')[0]||'overview';
  for(const a of $('navigation').querySelectorAll('a'))a.setAttribute('aria-current',a.hash==='#'+route?'page':'false');
- if(!S.config){$('view').replaceChildren(connectView());return}
+ if(!S.config){$('view').replaceChildren(h('section',{class:'connection-panel'},h('h2',{},'Loading local gateway...'),h('p',{},'Reading the local control plane.')));return}
  if($('search').value){$('view').replaceChildren(...searchResults($('search').value));return}
  const renderers={overview,providers,accounts,credentials,sources,models,groups,routing,health,metrics,config:configuration,logs:activity,implementation,about,browsers,devices,sessions};
  $('view').replaceChildren(...(renderers[route]||overview)().filter(x=>x!=null));
+ localizeDOM(document.body);
 }
 for(const [group,items] of pages){$('navigation').append(h('div',{class:'nav-group'},group),...items.map(id=>h('a',{href:'#'+id},labels[id])))}
-$('access').onclick=()=>{if(!S.token){$('view').replaceChildren(connectView());return}dialog('Gateway connection',h('p',{},'Disconnect to clear the management key and loaded configuration from this tab.'),[button('Disconnect',()=>{Object.assign(S,{token:'',config:null,credentials:[],history:[],catalog:[],status:{sources:[]}});$('access').textContent='Connect';$('dialog').close();message('Disconnected.');render()})])};
+$('access').textContent='Local';
+$('language').textContent=language==='zh'?'English':'中文';
+$('language').onclick=()=>setLanguage(language==='zh'?'en':'zh');
+document.documentElement.lang=language==='zh'?'zh-CN':'en';
 $('refresh').onclick=()=>buttonAction(refresh);
 $('search').oninput=render;
 window.addEventListener('hashchange',()=>{$('search').value='';render()});
 render();
+refresh().catch(error=>message(error.message,true));

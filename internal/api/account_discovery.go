@@ -4,6 +4,9 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
 	"strings"
 
 	"clash-of-tokens/catalog"
@@ -31,6 +34,58 @@ type discoveryChannel struct {
 	Status   string `json:"status"`
 	Action   string `json:"action"`
 	ReadOnly bool   `json:"read_only"`
+}
+
+type passwordManagerCandidate struct {
+	ID      string   `json:"id"`
+	Name    string   `json:"name"`
+	Status  string   `json:"status"`
+	Paths   []string `json:"paths,omitempty"`
+	Formats []string `json:"formats"`
+}
+
+func discoverPasswordManagers() []passwordManagerCandidate {
+	type spec struct {
+		id, name string
+		formats  []string
+		paths    []string
+	}
+	local, programFiles, programFilesX86 := os.Getenv("LOCALAPPDATA"), os.Getenv("PROGRAMFILES"), os.Getenv("PROGRAMFILES(X86)")
+	specs := []spec{
+		{id: "1password", name: "1Password", formats: []string{"1password-csv"}, paths: []string{filepath.Join(local, "1Password", "app", "8", "1Password.exe"), filepath.Join(local, "Programs", "1Password", "1Password.exe")}},
+		{id: "bitwarden", name: "Bitwarden", formats: []string{"bitwarden-json", "bitwarden-csv"}, paths: []string{filepath.Join(local, "Programs", "Bitwarden", "Bitwarden.exe")}},
+		{id: "keepass", name: "KeePass", formats: []string{"keepass-csv"}, paths: []string{filepath.Join(programFiles, "KeePass Password Safe 2", "KeePass.exe"), filepath.Join(programFilesX86, "KeePass Password Safe 2", "KeePass.exe")}},
+		{id: "keepassxc", name: "KeePassXC", formats: []string{"keepassxc-csv"}, paths: []string{filepath.Join(programFiles, "KeePassXC", "KeePassXC.exe"), filepath.Join(programFilesX86, "KeePassXC", "KeePassXC.exe")}},
+		{id: "proton-pass", name: "Proton Pass", formats: []string{"protonpass-csv"}, paths: []string{filepath.Join(local, "Programs", "Proton Pass", "Proton Pass.exe")}},
+		{id: "nordpass", name: "NordPass", formats: []string{"nordpass-csv"}, paths: []string{filepath.Join(local, "NordPass", "NordPass.exe")}},
+		{id: "dashlane", name: "Dashlane", formats: []string{"dashlane-csv"}, paths: []string{filepath.Join(local, "Dashlane", "Dashlane.exe")}},
+		{id: "lastpass", name: "LastPass", formats: []string{"lastpass-csv"}, paths: []string{filepath.Join(local, "LastPass", "LastPass.exe")}},
+	}
+	if runtime.GOOS != "windows" {
+		for i := range specs {
+			for _, command := range []string{specs[i].id, strings.ReplaceAll(specs[i].id, "-", "")} {
+				if path, err := exec.LookPath(command); err == nil {
+					specs[i].paths = append(specs[i].paths, path)
+				}
+			}
+		}
+	}
+	found := []passwordManagerCandidate{}
+	for _, item := range specs {
+		paths := []string{}
+		for _, path := range item.paths {
+			if path == "" {
+				continue
+			}
+			if _, err := os.Stat(path); err == nil {
+				paths = append(paths, path)
+			}
+		}
+		if len(paths) > 0 {
+			found = append(found, passwordManagerCandidate{ID: item.id, Name: item.name, Status: "detected", Paths: paths, Formats: item.formats})
+		}
+	}
+	return found
 }
 
 func candidateProviders(origin string, kind string, entries []catalog.Entry) []string {
@@ -126,7 +181,7 @@ func (p *ControlPlane) accountDiscoveryAdmin(w http.ResponseWriter, r *http.Requ
 	if len(items) > 512 {
 		items = items[:512]
 	}
-	reply(w, map[string]any{"items": items, "channels": channels, "browser_scan": input.ScanBrowsers, "secret_values": false})
+	reply(w, map[string]any{"items": items, "channels": channels, "browser_scan": input.ScanBrowsers, "password_managers": discoverPasswordManagers(), "secret_values": false})
 	return true
 }
 

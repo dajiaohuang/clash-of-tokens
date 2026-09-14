@@ -2,13 +2,10 @@ package api
 
 import (
 	"context"
-	"crypto/sha256"
-	"crypto/subtle"
 	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -28,13 +25,12 @@ import (
 type Server struct {
 	imports credentials.PreviewStore
 	*metrics
-	vault            *credentials.Store
-	cfg              config.Config
-	Router           *routing.Router
-	clients          []clientSlot
-	apiKey, adminKey [32]byte
-	ingress          chan struct{}
-	buffers          sync.Pool
+	vault   *credentials.Store
+	cfg     config.Config
+	Router  *routing.Router
+	clients []clientSlot
+	ingress chan struct{}
+	buffers sync.Pool
 }
 type metrics struct {
 	started                                       time.Time
@@ -55,7 +51,7 @@ func (s *Server) client(i int) *upstream.Client {
 	return slot.client
 }
 func New(c config.Config) (*Server, error) {
-	return NewWithKeys(c, os.Getenv(c.APIKeyEnv), os.Getenv(c.AdminKeyEnv))
+	return NewWithKeys(c, "", "")
 }
 func NewWithKeys(c config.Config, key, admin string) (*Server, error) {
 	return NewWithCredentials(c, key, admin, nil)
@@ -70,10 +66,11 @@ func NewWithCredentials(c config.Config, key, admin string, resolver func(string
 	if e := c.Validate(); e != nil {
 		return nil, e
 	}
-	if len(key) < 16 || len(admin) < 16 || key == admin {
-		return nil, errors.New("distinct API and admin secrets of at least 16 characters must be set")
-	}
-	s := &Server{metrics: &metrics{started: time.Now()}, cfg: c, Router: routing.New(c), apiKey: sha256.Sum256([]byte(key)), adminKey: sha256.Sum256([]byte(admin)), ingress: make(chan struct{}, c.Runtime.MaxInflight+c.Runtime.MaxQueued), clients: make([]clientSlot, len(c.Sources))}
+	// Gateway API/Admin keys were removed. Provider credentials remain in the
+	// protected vault and are resolved only when an upstream request needs them.
+	_ = key
+	_ = admin
+	s := &Server{metrics: &metrics{started: time.Now()}, cfg: c, Router: routing.New(c), ingress: make(chan struct{}, c.Runtime.MaxInflight+c.Runtime.MaxQueued), clients: make([]clientSlot, len(c.Sources))}
 	s.buffers.New = func() any { b := make([]byte, 32<<10); return &b }
 	return s, nil
 }
@@ -86,17 +83,6 @@ func (s *Server) Close() {
 			slot.client.Close()
 		}
 	}
-}
-func authorized(r *http.Request, key [32]byte) bool {
-	v := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
-	if v == "" {
-		v = r.Header.Get("x-api-key")
-	}
-	if v == "" {
-		v = r.Header.Get("x-goog-api-key")
-	}
-	h := sha256.Sum256([]byte(v))
-	return subtle.ConstantTimeCompare(h[:], key[:]) == 1
 }
 func fail(w http.ResponseWriter, status int, msg string) {
 	msg = publicError(msg)
@@ -147,16 +133,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		_, _ = io.WriteString(w, page)
 		return
 	}
-	admin := strings.HasPrefix(r.URL.Path, "/admin/")
-	key := s.apiKey
-	if admin {
-		key = s.adminKey
-	}
-	if !authorized(r, key) {
-		fail(w, 401, "authentication required")
-		return
-	}
-	if admin {
+	if strings.HasPrefix(r.URL.Path, "/admin/") {
 		s.admin(w, r)
 		return
 	}

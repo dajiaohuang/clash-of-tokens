@@ -154,10 +154,6 @@ func (p *ControlPlane) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	defer p.release(g)
 	if longOperation && r.Context().Value(jobReservedKey{}) != true {
-		if !authorized(r, g.server.adminKey) {
-			fail(w, 401, "authentication required")
-			return
-		}
 		if !sameOrigin(r) {
 			fail(w, 403, "same-origin management request required")
 			return
@@ -188,10 +184,6 @@ func (p *ControlPlane) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if strings.HasPrefix(r.URL.Path, "/admin/jobs") || strings.HasPrefix(r.URL.Path, "/admin/config") || managedResource(r.URL.Path) || r.URL.Path == "/admin/status" || credentialUnbindPath(r.URL.Path) {
 		w.Header().Set("Cache-Control", "no-store")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
-		if !authorized(r, g.server.adminKey) {
-			fail(w, 401, "authentication required")
-			return
-		}
 		if mutation && !sameOrigin(r) {
 			fail(w, 403, "cross-origin mutation rejected")
 			return
@@ -279,7 +271,7 @@ func restartFields(active, desired config.Config) []string {
 		name string
 		a, b any
 	}{
-		{"listen", active.Listen, desired.Listen}, {"api_key_env", active.APIKeyEnv, desired.APIKeyEnv}, {"admin_key_env", active.AdminKeyEnv, desired.AdminKeyEnv},
+		{"listen", active.Listen, desired.Listen},
 		{"runtime", active.Runtime, desired.Runtime}, {"browser", active.Browser, desired.Browser}, {"device", active.Device, desired.Device},
 	} {
 		if !reflect.DeepEqual(v.a, v.b) {

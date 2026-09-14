@@ -5,7 +5,6 @@ configured physical Android device. Press **Check device** to call:
 
 ```text
 POST /admin/device/check
-Authorization: Bearer <admin key>
 ```
 
 The endpoint requires the same-origin mutation policy as other admin actions

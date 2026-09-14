@@ -1,0 +1,98 @@
+name: Build and install distribution
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: Install (${{ matrix.os }}/${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: windows, arch: amd64, runner: windows-latest, suffix: '.exe'}
+          - {os: windows, arch: arm64, runner: windows-11-arm, suffix: '.exe'}
+          - {os: linux, arch: amd64, runner: ubuntu-24.04, suffix: ''}
+          - {os: linux, arch: arm64, runner: ubuntu-24.04-arm, suffix: ''}
+          - {os: darwin, arch: amd64, runner: macos-15-intel, suffix: ''}
+          - {os: darwin, arch: arm64, runner: macos-15, suffix: ''}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Build and install Windows source
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '0.1.0-dev' }}
+        run: ./build.ps1 -Test -Install -NoPath -InstallDir "$env:RUNNER_TEMP/cot bin" -Version $env:RELEASE_TAG -Output "dist/clash-tokens-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.suffix }}"
+      - name: Build and install Unix source
+        if: runner.os != 'Windows'
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '0.1.0-dev' }}
+        run: bash build.sh --test --install --install-dir "$RUNNER_TEMP/cot bin" --version "$RELEASE_TAG" --output "dist/clash-tokens-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.suffix }}"
+      - name: Test installation and rejection paths
+        run: python scripts/test_installers.py "dist/clash-tokens-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.suffix }}"
+      - name: Windows exact artifact vault
+        if: runner.os == 'Windows'
+        run: python scripts/artifact_vault_smoke.py dist/clash-tokens-windows-${{ matrix.arch }}.exe
+      - name: Linux exact artifact vault
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gnome-keyring dbus-x11
+          sh scripts/test_keyring_linux.sh --artifact dist/clash-tokens-linux-${{ matrix.arch }}
+      - name: macOS exact artifact vault
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -euo pipefail
+          keychain="$RUNNER_TEMP/cot-release.keychain"
+          password="$(uuidgen)"
+          trap 'security delete-keychain "$keychain" >/dev/null 2>&1 || true' EXIT
+          security create-keychain -p "$password" "$keychain"
+          security unlock-keychain -p "$password" "$keychain"
+          security list-keychains -d user -s "$keychain"
+          security default-keychain -s "$keychain"
+          COT_TEST_KEYCHAIN="$RUNNER_TEMP/cot-release" COT_TEST_KEYCHAIN_TRUST=1 python3 scripts/artifact_vault_smoke.py dist/clash-tokens-darwin-${{ matrix.arch }}
+      - name: Record exact distribution provenance
+        run: python scripts/release_metadata.py dist/clash-tokens-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.suffix }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.os }}-${{ matrix.arch }}
+          path: dist/*
+          if-no-files-found: error
+
+  draft-release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: package
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          path: packages
+      - name: Assemble release assets without overwriting platform metadata
+        run: python scripts/assemble_release.py packages release-assets
+      - name: Create reviewable draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: gh release create "$RELEASE_TAG" release-assets/* --verify-tag --draft --title "$RELEASE_TAG" --generate-notes
