@@ -127,7 +127,7 @@ func managementOperation(path string) bool {
 		case "sources":
 			return parts[3] == "validate" || parts[3] == "discover"
 		case "accounts":
-			return parts[3] == "validate" || parts[3] == "check-login" || parts[3] == "login" || parts[3] == "acquire-session"
+			return parts[3] == "verify-login" || parts[3] == "fill-login" || parts[3] == "verify" || parts[3] == "validate" || parts[3] == "check-login" || parts[3] == "login" || parts[3] == "acquire-session"
 		case "providers":
 			return parts[3] == "validate"
 		case "credentials":

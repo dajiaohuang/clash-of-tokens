@@ -17,23 +17,27 @@ type Provider struct {
 
 // Account contains references and operational policy, never credential values.
 type Account struct {
-	ID                     string    `json:"id"`
-	ProviderID             string    `json:"provider_id"`
-	DisplayName            string    `json:"display_name"`
-	Enabled                bool      `json:"enabled"`
-	AutoApproved           bool      `json:"auto_approved"`
-	CredentialRef          string    `json:"credential_ref,omitempty"`
-	LoginCredentialRef     string    `json:"login_credential_ref,omitempty"`
-	ExpectedIdentity       string    `json:"expected_identity,omitempty"`
-	CredentialTypeOverride bool      `json:"credential_type_override,omitempty"`
-	BrowserProfileID       string    `json:"browser_profile_id,omitempty"`
-	BaseURL                string    `json:"base_url,omitempty"`
-	Organization           string    `json:"organization,omitempty"`
-	Project                string    `json:"project,omitempty"`
-	QuotaDomain            string    `json:"quota_domain"`
-	MaxInflight            int       `json:"max_inflight"`
-	Weight                 int       `json:"weight"`
-	CreatedAt              time.Time `json:"created_at"`
+	VerificationState      string     `json:"verification_state,omitempty"`
+	VerificationVersion    uint64     `json:"verification_version,omitempty"`
+	VerificationBinding    string     `json:"verification_binding,omitempty"`
+	VerificationAt         *time.Time `json:"verification_at,omitempty"`
+	ID                     string     `json:"id"`
+	ProviderID             string     `json:"provider_id"`
+	DisplayName            string     `json:"display_name"`
+	Enabled                bool       `json:"enabled"`
+	AutoApproved           bool       `json:"auto_approved"`
+	CredentialRef          string     `json:"credential_ref,omitempty"`
+	LoginCredentialRef     string     `json:"login_credential_ref,omitempty"`
+	ExpectedIdentity       string     `json:"expected_identity,omitempty"`
+	CredentialTypeOverride bool       `json:"credential_type_override,omitempty"`
+	BrowserProfileID       string     `json:"browser_profile_id,omitempty"`
+	BaseURL                string     `json:"base_url,omitempty"`
+	Organization           string     `json:"organization,omitempty"`
+	Project                string     `json:"project,omitempty"`
+	QuotaDomain            string     `json:"quota_domain"`
+	MaxInflight            int        `json:"max_inflight"`
+	Weight                 int        `json:"weight"`
+	CreatedAt              time.Time  `json:"created_at"`
 }
 
 func ValidCredentialRef(ref string) bool {
@@ -123,6 +127,11 @@ func (c Config) ValidateAccounts() error {
 	}
 	accounts := map[string]Account{}
 	for _, a := range c.Accounts {
+		switch a.VerificationState {
+		case "", "verified", "unverified", "unfilled", "invalid":
+		default:
+			return fmt.Errorf("account %s: invalid verification state", a.ID)
+		}
 		if !identifier.MatchString(a.ID) || accounts[a.ID].ID != "" {
 			return fmt.Errorf("invalid or duplicate account id")
 		}

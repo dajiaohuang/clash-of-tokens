@@ -23,7 +23,6 @@ import (
 )
 
 type Server struct {
-	imports credentials.PreviewStore
 	*metrics
 	vault   *credentials.Store
 	cfg     config.Config
@@ -75,7 +74,6 @@ func NewWithCredentials(c config.Config, key, admin string, resolver func(string
 	return s, nil
 }
 func (s *Server) Close() {
-	s.imports.Close()
 	for i := range s.clients {
 		slot := &s.clients[i]
 		slot.once.Do(func() {})

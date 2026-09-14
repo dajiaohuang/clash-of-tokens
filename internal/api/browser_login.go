@@ -20,6 +20,9 @@ import (
 )
 
 func browserExecutable(engine string) (string, error) {
+	if !strings.Contains("|chrome|edge|brave|firefox|opera|vivaldi|chromium|arc|", "|"+engine+"|") || engine == "" {
+		return "", fmt.Errorf("unsupported browser engine")
+	}
 	paths := map[string][]string{
 		"chrome":   {"google-chrome", "google-chrome-stable"},
 		"edge":     {"microsoft-edge"},
@@ -124,14 +127,7 @@ func (p *ControlPlane) browserLoginAdmin(w http.ResponseWriter, r *http.Request)
 				origin = entry.BaseURL
 			}
 		}
-		var result browserauth.Evidence
-		if adapter == "chatgpt-web" {
-			driver := chatgptweb.New(c.SourceBrowser(config.Source{AccountID: account.ID}), "login-check")
-			v := driver.CheckAuth(r.Context())
-			result = browserauth.Evidence{Status: v.Status, Method: v.Method, CheckedAt: v.CheckedAt, ComposerReady: v.ComposerReady}
-		} else {
-			result = browserauth.CheckExpected(r.Context(), profile.CDPURL, origin, adapter, profile.Engine, account.ExpectedIdentity, account.Organization)
-		}
+		result := browserauth.CheckExpected(r.Context(), profile.CDPURL, origin, adapter, profile.Engine, account.ExpectedIdentity, account.Organization)
 		revision := p.service.Current().Revision
 		recorded := p.appendOperationEvidence(r, audit.Entry{Revision: revision, Kind: "authentication", Resource: account.ID, CheckedAt: result.CheckedAt, Method: result.Method, Status: result.Status, UpstreamStatus: result.UpstreamStatus}) == nil
 		reply(w, struct {
@@ -147,6 +143,14 @@ func (p *ControlPlane) browserLoginAdmin(w http.ResponseWriter, r *http.Request)
 	for _, entry := range catalog.All() {
 		if entry.ID == account.ProviderID {
 			destination = entry.BaseURL
+		}
+	}
+	if origin := p.vault.LoginOrigin(account.LoginCredentialRef); origin != "" {
+		for _, match := range catalog.MatchCredentials(origin, "username_password") {
+			if match.Provider == account.ProviderID {
+				destination = origin
+				break
+			}
 		}
 	}
 	args, err := loginArguments(profile, p.startup.Browser.StateFile, destination)
@@ -168,7 +172,16 @@ func (p *ControlPlane) browserLoginAdmin(w http.ResponseWriter, r *http.Request)
 		return true
 	}
 	cmd := exec.Command(executable, args...)
-	process, err := p.browsers.start(profile.ID, cmd)
+	var process browserProcessView
+	err = commitOperation(r, func() error {
+		profileDir := filepath.Join(filepath.Dir(p.startup.Browser.StateFile), "profiles", profile.ID, "browser-data")
+		if err := os.MkdirAll(profileDir, 0700); err != nil {
+			return fmt.Errorf("cannot prepare browser profile directory")
+		}
+		var err error
+		process, err = p.browsers.start(profile.ID, cmd)
+		return err
+	})
 	if err != nil {
 		fail(w, 503, err.Error())
 		return true

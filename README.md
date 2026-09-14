@@ -106,19 +106,22 @@ protected vault:
 - Unsupported or unavailable native protection fails closed; there is no
   plaintext file fallback.
 
-The control plane supports selected CSV/JSON exports from the named password
-managers, configured or explicitly named environment imports, selected OAuth/CLI token imports,
-browser profile metadata discovery, and selected CDP cookie import. Import is
-explicit and bounded: the user selects records, the preview is redacted, and
-only a new protected reference is persisted. Username/password material is
-stored as a bounded structured value. See [credential imports](docs/CREDENTIAL_IMPORTS.md),
-[credential binding](docs/CREDENTIAL_BINDING.md), and [storage](docs/CREDENTIAL_STORAGE.md).
+Password-manager CSV/JSON imports and direct browser password scanning have
+been removed. Existing encrypted account material and recovery backups are not
+deleted by this feature removal. New password import endpoints return HTTP 410.
 
-Browser login launches an existing or isolated profile and waits for a bounded,
-provider-specific authentication check. It does not fill 2FA, export a full
-browser database, or claim that launching a browser means authentication
-succeeded. See [browser login](docs/BROWSER_LOGIN.md), [browser processes](docs/BROWSER_PROCESSES.md),
-and [account discovery](docs/ACCOUNT_DISCOVERY.md).
+From Overview or Accounts, choose an installed browser, review the configured
+website accounts, and confirm once more to start the background login queue.
+Each account uses a persistent, isolated browser profile. The queue attempts to
+restore existing sessions and performs supported authentication checks without
+sending model prompts. It does not copy personal browser profiles or passwords.
+First sign-in, MFA, CAPTCHA and SSO approval remain interactive. Unsupported
+checks stay unverified; website authentication is not API/generation proof.
+Browser cookies and site storage are managed by the browser in its profile,
+not by the encrypted account-material file.
+
+See [login-state audit](docs/LOGIN_STATE_AUDIT.md),
+[browser login](docs/BROWSER_LOGIN.md), and [account storage](docs/CREDENTIAL_STORAGE.md).
 
 ## Routing and runtime behavior
 
@@ -370,16 +373,11 @@ Provider、Account、Source、Model 和 Auto 批准是独立开关。关闭父�
 - macOS 使用 AES-GCM vault，密钥放在原生 Keychain，需 cgo 构建。
 - 原生保护不可用时拒绝读写，不使用明文文件 fallback。
 
-控制面支持指定密码管理器的 CSV/JSON 导出、已配置来源或显式变量名的环境变量导入、部分
-OAuth/CLI token 导入、浏览器 Profile 元数据发现和选定 CDP Cookie 导入。
-导入必须由用户明确选择，预览会脱敏，只保存新的受保护引用。账密以有界
-结构值保存。详见[凭证导入](docs/CREDENTIAL_IMPORTS.md)、
-[凭证绑定](docs/CREDENTIAL_BINDING.md)和[存储](docs/CREDENTIAL_STORAGE.md)。
+已移除密码管理器 CSV/JSON 导入与浏览器密码扫描。功能删除不会清空已有账号的加密资料或恢复备份；旧账密导入接口返回 HTTP 410。
 
-浏览器登录会启动现有或隔离 Profile，并等待有界的 Provider 登录检查。
-它不会自动填写 2FA，不会导出整套浏览器数据库，也不会把“已启动浏览器”
-当成“已认证”。详见[浏览器登录](docs/BROWSER_LOGIN.md)、
-[浏览器进程](docs/BROWSER_PROCESSES.md)和[账号发现](docs/ACCOUNT_DISCOVERY.md)。
+从首页或账号页选择本机已安装的浏览器，查看已配置的网站账号，再次确认后启动后台登录队列。每个账号使用独立、持久化的浏览器配置，尝试恢复已有会话并执行支持的登录检查，不发送模型对话。不复制个人浏览器配置或密码库。首次登录、MFA、验证码和 SSO 授权仍需手动完成；不支持检查的站点保持未验证，网页登录不等于 API／模型调用可用。
+
+Cookie 和站点存储由浏览器保存在专用配置目录，不属于应用的账号加密资料文件。详见[登录状态审计](docs/LOGIN_STATE_AUDIT.md)、[浏览器登录](docs/BROWSER_LOGIN.md)和[账号存储](docs/CREDENTIAL_STORAGE.md)。
 
 ## 路由与运行时行为
 

@@ -2,7 +2,7 @@
 const $ = id => document.getElementById(id);
 const S = {config:null, revision:0, catalog:[], descriptors:[], schema:[], credentials:[], status:{sources:[]}, history:[], restart:[]};
 const pages = [
- ['Workspace',['overview','providers','accounts','credentials','sources','models']],
+ ['Workspace',['overview','providers','accounts','sources','models']],
  ['Traffic',['groups','routing','health','metrics']],
  ['Environment',['browsers','devices','sessions']],
  ['System',['config','logs','implementation','about']]
@@ -89,7 +89,7 @@ function select(values,value,empty=false){
  input.value=value??'';return input;
 }
 async function api(path,options={}){
- if(options.method==='POST' && (/^\/admin\/(sources\/[^/]+\/(validate|discover)|accounts\/[^/]+\/(validate|check-login|login)|providers\/[^/]+\/validate|credentials\/[^/]+\/(check|refresh))$/.test(path)||['/admin/device/check','/admin/discovery/accounts','/admin/browser_profiles/status','/admin/browser_profiles/discover','/admin/browser_profiles/setup-login','/admin/credentials/import-browser'].includes(path)))return managementJob(path,options);
+ if(options.method==='POST' && (/^\/admin\/(sources\/[^/]+\/(validate|discover)|accounts\/[^/]+\/(verify|fill-login|validate|check-login|login)|providers\/[^/]+\/validate|credentials\/[^/]+\/(check|refresh))$/.test(path)||['/admin/device/check','/admin/discovery/accounts','/admin/browser_profiles/status','/admin/browser_profiles/discover','/admin/browser_profiles/setup-login','/admin/credentials/import-browser'].includes(path)))return managementJob(path,options);
 	const response=await fetch(path,{...options,headers:{'Content-Type':'application/json',...(options.headers||{})},cache:'no-store'});
  const data=await response.json();
  if(!response.ok)throw Error(data.error?.message||'Request failed ('+response.status+').');
@@ -136,7 +136,7 @@ document.addEventListener('visibilitychange',()=>{clearTimeout(runtimeTimer);run
 runtimeTimer=setTimeout(refreshRuntime,3000);
 async function refresh(){
  const [current,catalog,descriptors,schema,status,credentials,history,evidence]=await Promise.all([
-  api('/admin/config'),api('/admin/catalog'),api('/admin/descriptors'),api('/admin/config/schema'),api('/admin/status'),api('/admin/credentials'),api('/admin/config/history'),api('/admin/evidence')
+  api('/admin/config'),api('/admin/catalog'),api('/admin/descriptors'),api('/admin/config/schema'),api('/admin/status'),api('/admin/accounts/materials'),api('/admin/config/history'),api('/admin/evidence')
  ]);
  Object.assign(S,{config:current.config,revision:current.revision,restart:current.restart_required||[],catalog,descriptors,schema,status,credentials,history,evidence});
  $('access').textContent='Local';render();message('Updated at '+new Date().toLocaleTimeString()+'. Configuration revision '+S.revision+'.');
@@ -416,7 +416,15 @@ function remove(kind,item){
  dialog('Delete '+label,[h('p',{class:'warning'},'Delete '+item.id+' from the configuration? Existing requests can finish under their retained configuration.'),table(['Affected configuration','Entries'],[['Groups',groups.map(g=>g.id).join(', ')||'None'],['Accounts',accounts.map(a=>a.display_name||a.id).join(', ')||'None']]),kind==='sources'&&groups.length?h('p',{class:'muted'},'The source will be removed from these group memberships in the same transaction.'):null,kind==='browser_profiles'&&accounts.length?h('p',{class:'muted'},'Bound accounts must be migrated before this profile can be deleted.'):null],[button('Cancel',()=>$('dialog').close()),button('Review deletion',review,'danger')]);
 }
 function addAccount(provider=''){
- accountWizard({provider_id:provider});
+ const choice=select(S.catalog.map(p=>p.id),provider,true),name=h('input',{});
+ dialog(importText('Add provider account','添加服务商账号'),[field('Provider',choice),field('Display Name',name),h('p',{},importText('Account passwords and keys are encrypted under this account, not saved in a separate credential library.','账号密码和 Key 加密保存在该账号下，不另存到独立凭据库。'))],[button(importText('Create and fill account','创建并填写账号'),async()=>{
+  if(!choice.value)throw Error(importText('Choose a provider.','请选择服务商。'));
+  const next=clone(S.config),id='account-'+crypto.randomUUID();
+  next.providers=next.providers||[];if(!next.providers.some(p=>p.id===choice.value))next.providers.push({id:choice.value,enabled:true,auto_approved:false,pool_strategy:'round-robin'});
+  const account={id,provider_id:choice.value,display_name:name.value.trim()||choice.value,quota_domain:id,max_inflight:1,weight:1,enabled:false,auto_approved:false,verification_state:'unfilled',created_at:new Date().toISOString()};
+  next.accounts=next.accounts||[];next.accounts.push(account);
+  await preview(next,'Create provider account',()=>addAccount(choice.value),clone(S.config),S.revision,()=>editAccountMaterial(account));
+ },'primary')]);
 }
 function accountWizard(draft={}){
  const provider=select([...new Set([...S.catalog.map(p=>p.id),...(S.config.providers||[]).map(p=>p.id)])],draft.provider_id||'',true);
@@ -434,11 +442,10 @@ function accountWizard(draft={}){
  const hints=h('p',{class:'muted'});
  const authNotice=h('p',{},draft.authenticated?'Login detected for this selected profile. Review and save the account.':'Choose a protected credential or a browser profile. Import actions return here with the new reference.');
  const capture=()=>({...draft,id:id.value.trim(),display_name:name.value.trim(),quota_domain:quota.value.trim(),provider_id:provider.value,credential_ref:credential.value,login_credential_ref:loginCredential.value,expected_identity:expectedIdentity.value.trim(),credential_type_override:credentialOverride.checked,browser_profile_id:profile.value,base_url:baseURL.value.trim(),organization:organization.value.trim(),project:project.value.trim(),newProfile:draft.newProfile?.id===profile.value?draft.newProfile:undefined});
- const hint=()=>{const modes=allowedModes()||[];hints.textContent='Compatible credential types: '+(modes.join(', ')||'any declared type')+'. '+(credentialOverride.checked?'Reviewed override is enabled; incompatible protected references may be selected and the server keeps the explicit risk flag. ':'Incompatible protected references are hidden until reviewed override is enabled. ')+'Password imports are login material, not API keys. Base URL, organization and project are optional account defaults; a source may override them. Accounts are saved disabled and excluded from Auto routing.'};
+ const hint=()=>{const modes=allowedModes()||[];hints.textContent='Compatible credential types: '+(modes.join(', ')||'any declared type')+'. '+(credentialOverride.checked?'Reviewed override is enabled; incompatible protected references may be selected and the server keeps the explicit risk flag. ':'Incompatible protected references are hidden until reviewed override is enabled. ')+'Base URL, organization and project are optional account defaults; a source may override them. Accounts are saved disabled and excluded from Auto routing.'};
  const updateCredentialOptions=()=>{const current=credential.value,options=compatibleCredentials();credential.replaceChildren(h('option',{value:''},'Choose…'),...options.map(c=>h('option',{value:c.id},c.id+' · '+c.kind)));credential.value=options.some(c=>c.id===current)?current:''};
  credentialOverride.addEventListener('change',()=>{updateCredentialOptions();hint()});
  const newCredentialAction=button('New credential',()=>credentialForm(undefined,imported,allowedModes,providerDescriptor));
- const passwordImportAction=button('Import password manager',()=>importCredentials(imported));
  const tokenImportAction=button('Import token',()=>importToken(imported,allowedModes));
  const browserCookieAction=button('Import browser cookies',()=>importBrowserCookies(imported));
  const newProfileAction=button('New isolated profile',()=>newWizardProfile(capture()));
@@ -448,8 +455,8 @@ function accountWizard(draft={}){
   const check=()=>loginEvidence({id:next.id},true,'Finish signing in to the selected provider. The account has not been saved yet.',{path:'/admin/browser_profiles/setup-login',payload:{...payload,action:'check'},authenticated:()=>accountWizard({...next,authenticated:true}),back:()=>accountWizard(next)});
   try{await api('/admin/browser_profiles/setup-login',{method:'POST',body:JSON.stringify(payload)});check()}catch(e){if(!e.message.includes('port is already in use'))throw e;dialog('Browser port occupied',h('p',{},'Confirm that the selected connection belongs to the intended browser profile before checking login.'),[button('Back',()=>accountWizard(next)),button('Use running browser',check)])}
  });
- const setupActions=[newCredentialAction,passwordImportAction,tokenImportAction,browserCookieAction,newProfileAction,loginAction];
- const updateSetupActions=()=>{const d=providerDescriptor(),browser=!!(d?.browser_required||d?.browser_auth_check||allowedModes()?.includes('browser_profile'));passwordImportAction.hidden=!supports('username_password');tokenImportAction.hidden=!supports('api_key','oauth');browserCookieAction.hidden=!(browser&&supports('cookie'));newProfileAction.hidden=!browser;loginAction.hidden=!browser;newCredentialAction.hidden=!!allowedModes()&&(!allowedModes().length||!d?.credential_fields?.length)};
+ const setupActions=[newCredentialAction,tokenImportAction,browserCookieAction,newProfileAction,loginAction];
+ const updateSetupActions=()=>{const d=providerDescriptor(),browser=!!(d?.browser_required||d?.browser_auth_check||allowedModes()?.includes('browser_profile'));tokenImportAction.hidden=!supports('api_key','oauth');browserCookieAction.hidden=!(browser&&supports('cookie'));newProfileAction.hidden=!browser;loginAction.hidden=!browser;newCredentialAction.hidden=!!allowedModes()&&(!allowedModes().length||!d?.credential_fields?.length)};
  provider.onchange=()=>{draft.authenticated=false;updateCredentialOptions();authNotice.textContent='Selection changed. Check login again for this selection.';hint();updateSetupActions()};profile.onchange=()=>{draft.authenticated=false;authNotice.textContent='Selection changed. Check login again for this selection.'};hint();updateSetupActions();
  const imported=saved=>{const next=capture(),items=Array.isArray(saved)?saved:[saved];if(items.length===1)next[items[0].kind==="username_password"?"login_credential_ref":"credential_ref"]=items[0].id;accountWizard(next)};
  dialog('Set up account',[h('div',{class:'form-grid'},field('Provider',provider),field('ID',id),field('Display Name',name),field('Quota domain',quota),field('Base URL',baseURL),field('Organization',organization),field('Project',project),field('Credential',credential),field('Login material',loginCredential),field('Expected browser identity',expectedIdentity),field('Browser Profile Id',profile),h('label',{class:'boolean'},credentialOverride,'Reviewed credential type override')),hints,authNotice,h('div',{class:'toolbar'},setupActions)],[button('Review changes',async()=>{
@@ -560,11 +567,8 @@ async function providerDetail(provider){
   h('p',{class:'muted'},provider.notes||''),
   h('h3',{},'Configured runtime'),table(['Measure','Value'],[['Provider enabled',configured?(configured.enabled?'Yes':'No'):'Not configured'],['Provider Auto approval',configured?(configured.auto_approved?'Yes':'No'):'Not configured'],['Pool strategy',providerHealth.pool_strategy||configured?.pool_strategy||'round-robin'],['Provider health',providerHealth.health||'untested'],['Provider auth status',providerHealth.auth_status||'not_checked'],['Catalog implementation',providerHealth.catalog_implemented?(providerHealth.catalog_live_verified?'Live catalog':'Implemented catalog'):'Not implemented'],['Verified sources',String(providerHealth.verified_sources||0)+' / '+sources.length],['Last generation validation',providerHealth.last_validated_at?(new Date(providerHealth.last_validated_at).toLocaleString()+' · '+(providerHealth.last_validation_state||'recorded')):'Not checked'],['Last auth check',providerHealth.last_auth_checked_at?new Date(providerHealth.last_auth_checked_at).toLocaleString():'Not checked'],['Accounts / sources / models',accounts.length+' / '+sources.length+' / '+sources.reduce((n,s)=>n+s.models.length,0)],['Sources with matching generation evidence',verified.size+' / '+sources.length],['Successful / failed requests',completed+' / '+failed],['Observed success rate',completed+failed?(completed*100/(completed+failed)).toFixed(1)+'%':'No completed requests']]),
   h('p',{class:'muted'},'A source counts as verified when at least one configured model/protocol has matching generation evidence. This does not verify every model, capability, account or future request. Runtime counters include explicit checks; shared quota is not a sum of source capacities.'),
-  h('h3',{},'Accounts'),table(['Account','Enabled / Auto','Credential','Credential state','Reviewed override','Browser authentication','In flight / limit','Actions'],accounts.map(a=>{
-   const capacity=(S.status.accounts||[]).find(c=>c.id===a.id);
-   const credentialState=capacity?.credential_state||'not_configured';
-   const credentialVersion=capacity?.credential_version?(' · v'+capacity.credential_version):'';
-   return [a.display_name||a.id,(a.enabled?'Yes':'No')+' / '+(a.auto_approved?'Yes':'No'),a.credential_ref||'Not bound',credentialState+credentialVersion,a.credential_type_override?'Yes':'No',accountAuth(a),(capacity?.active||0)+' / '+a.max_inflight,[button('Edit account',()=>edit('accounts',a)),a.browser_profile_id?button('Login',()=>launchAccountLogin(a)):null,a.browser_profile_id?button('Refresh session',()=>loginEvidence(a)):null,button('Delete account',()=>removeAccount(a),'danger')]];
+  h('h3',{},'Accounts'),table(['Account',importText('Account state','账号状态'),importText('Enabled','启用'),importText('Login data','登录资料'),'Actions'],accounts.map(a=>{
+   return [a.display_name||a.id,accountStateLabel(a),accountEnabled(a)?importText('Yes','是'):importText('No','否'),accountSetupLabel(a),[button(importText('Fill / replace','填写／修改'),()=>editAccountMaterial(a)),button(importText('Try login','尝试登录'),()=>launchAccountLogin(a)),button(importText('Verify','验证'),()=>verifyAccountState(a)),button('Delete account',()=>removeAccount(a),'danger')]];
   }),'No accounts. Add an account to keep credentials and routing policy together.'),
   h('h3',{},'Sources'),table(['Source','Account','Routing state','Models','Matching generation evidence','Actions'],sources.map(s=>[s.id,s.account_id||'No account',state(s),s.models.length,verified.has(s.id)?'At least one model/protocol':'Not established',[button('Source details',()=>sourceDetail(s)),button('Validate source',()=>validateSource(s)),button('Discover models',()=>discoverModels(s))]]),'No sources configured.'),
   h('h3',{},'Provider routing eligibility'),h('p',{class:'muted'},'Read-only simulation for a 100-byte text request. Results explain eligibility, not final candidate selection.'),field('Provider group',group),field('Provider protocol',protocol),explain,explanations
@@ -599,10 +603,10 @@ async function validateProvider(provider){
 }
 function overview(){
  const c=S.config,status=S.status,sources=c.sources||[],accounts=c.accounts||[];
- const importSpotlight=h('section',{class:'import-spotlight'},h('div',{},h('h2',{},importText('Import browser passwords','导入浏览器账密')),h('p',{},importText('Find your browsers automatically. Import every saved login with one confirmation.','自动发现本机浏览器，二次确认后整批导入已保存账密。'))),button('One-click import',oneClickImport,'primary'));
+ const importSpotlight=h('section',{class:'import-spotlight'},h('div',{},h('h2',{},importText('Browser login','浏览器登录')),h('p',{},importText('Choose an installed browser, review the sites, then start sign-in. No password import.','选择本机浏览器，确认站点后开始登录；不再导入浏览器账密。'))),button(importText('Choose browser','选择浏览器'),()=>selectLoginBrowser(),'primary'));
  const flow=h('div',{class:'flow'},[
   ['Providers',S.catalog.length,translate((c.providers||[]).length+' configured')],
-  ['Accounts',accounts.length,translate(accounts.filter(a=>a.enabled).length+' enabled')],
+  ['Accounts',accounts.length,translate(accounts.filter(accountEnabled).length+' enabled')],
   ['Sources',sources.length,translate(status.sources.filter(s=>s.enabled).length+' enabled')],
   ['In flight',status.workload?.active??0,translate('Global source leases, including finishing old configurations')]
  ].map(([label,n,sub])=>h('div',{class:'flow-cell'},h('span',{},label),h('strong',{},n),h('p',{},sub))));
@@ -623,7 +627,7 @@ function providers(){
  const type=select(['all',...new Set(S.catalog.map(providerTypeLabel))].sort((a,b)=>a==='all'?-1:b==='all'?1:a.localeCompare(b)),'all');
  const target=h('div',{});
  function draw(){
-  const entries=S.catalog.filter(p=>(type.value==='all'||providerTypeLabel(p)===type.value)&&p.id.toLowerCase().includes(query.value.toLowerCase()));
+  const entries=S.catalog.filter(p=>(type.value==='all'||providerTypeLabel(p)===type.value)&&p.id.toLowerCase().includes(query.value.toLowerCase())).sort((a,b)=>Number((S.config.accounts||[]).some(x=>x.provider_id===b.id))-Number((S.config.accounts||[]).some(x=>x.provider_id===a.id))||a.id.localeCompare(b.id));
   target.replaceChildren(table(['Provider','Type','Protocols','Accounts','Implementation','State / actions'],entries.map(p=>{
    const configured=(S.config.providers||[]).find(x=>x.id===p.id);
   return [button(p.id,()=>providerDetail(p)),badge(providerTypeLabel(p)),(p.protocols||[]).join(', '),(S.config.accounts||[]).filter(a=>a.provider_id===p.id).length,p.implementation,[configured?button(configured.enabled?'Disable':'Enable',()=>toggle('providers',configured)):badge('Not configured'),configured?button(configured.auto_approved?'Remove Auto':'Allow Auto',()=>toggleAuto('providers',configured)):null,configured?button('Validate',()=>validateProvider(p)):null,button('Open',()=>providerDetail(p))]];
@@ -637,9 +641,66 @@ function accountAuth(a){
  if(!last)return 'Not checked';
  return last.status+' · '+new Date(last.checked_at).toLocaleString()+(last.revision===S.revision?'':' · historical configuration');
 }
-async function launchAccountLogin(a){
- const result=await api('/admin/accounts/'+encodeURIComponent(a.id)+'/login',{method:'POST'});
- loginEvidence(a,true,result.message);
+async function launchAccountLogin(a){return selectLoginBrowser([a.id])}
+async function selectLoginBrowser(accounts){
+ const status=await api('/admin/accounts/browser-login');
+ if(status.batch?.state==='running'){return showLoginBatch()}
+ const choice=select(status.browsers||[],status.browsers?.[0]||'');
+ for(const option of choice.options)option.textContent=({chrome:'Chrome',edge:'Microsoft Edge',firefox:'Firefox',brave:'Brave',vivaldi:'Vivaldi',opera:'Opera',chromium:'Chromium',arc:'Arc'})[option.value]||option.value;
+ const start=button(importText('Review sites','查看并确认站点'),async()=>{
+  const preview=await api('/admin/accounts/browser-login/preview',{method:'POST',body:JSON.stringify({browser:choice.value,accounts:accounts||[]})});
+  dialog(importText('Confirm browser login','确认浏览器登录'),[
+   h('p',{},importText('Start '+preview.sites.length+' accounts using '+preview.browser+'?', '使用 '+preview.browser+' 尝试登录 '+preview.sites.length+' 个账号？')),
+   table([importText('Account','账号'),importText('Website','站点')],preview.sites.map(s=>[s.name||s.provider+' / '+s.account,s.destination])),
+   h('p',{},importText('Reuse isolated account sessions. Never copy personal browser profiles or passwords.','复用账号的独立持久会话，不读取或复制个人浏览器配置与密码库。')),
+   h('p',{class:'warning'},importText('First sign-in and security checks may need you. Unsupported sites remain unverified. No model prompts are sent.','首次登录与安全验证可能需手动完成；不支持的站点保持未验证，不发送模型对话。')),
+   h('details',{},h('summary',{},importText('Session storage and API access','会话存储与 API 可用性')),h('p',{class:'muted'},importText('The browser persists cookies and site storage in its workspace profile; these are not protected by the app account-secret mechanism. Website login does not prove API access.','Cookie 和站点存储由浏览器保存在工作区专用配置目录，不属于应用的账号加密资料文件。网页登录不等于 API 可用。')))
+  ],[button('Cancel',()=>$('dialog').close()),button(importText('Confirm and start','确认并开始'),async()=>{
+   await api('/admin/accounts/browser-login/start',{method:'POST',body:JSON.stringify({ticket:preview.ticket,confirm:true})});return showLoginBatch();
+  },'primary')]);
+ },'primary');
+ start.disabled=!(status.browsers||[]).length||!(status.sites||[]).length;
+ dialog(importText('Choose browser','选择浏览器'),[
+  field(importText('Installed browser','本机已安装浏览器'),choice),
+  h('p',{},importText('Only configured website accounts are included. No passwords are imported.','仅处理已配置的网站账号，不导入账密。')),
+  !(status.browsers||[]).length?h('p',{class:'warning'},importText('No supported browser installation found.','未发现支持的浏览器安装。')):null,
+  !(status.sites||[]).length?h('p',{},importText('Add a provider account first.','请先添加服务商账号。')):null
+ ],[start,status.batch?.id?button(importText('Last run','上次登录进度'),showLoginBatch):null].filter(Boolean));
+}
+function showLoginBatch(){
+ let live=true,timer;
+ const target=h('div',{'aria-live':'polite'});
+ const names={queued:['Queued','等待'],running:['Checking','检查中'],verified:['Verified','已验证'],needs_login:['Sign-in needed','需完成登录'],manual_check:['Automatic check unsupported','暂不支持自动验证'],failed:['Failed','失败'],not_attempted:['Not attempted','未尝试']};
+ const draw=async()=>{
+  try{
+   const result=await api('/admin/accounts/browser-login');if(!live)return;
+   const batch=result.batch||{};
+   target.replaceChildren(h('p',{},batch.browser+' · '+importText(batch.state==='running'?'Running':'Finished',batch.state==='running'?'处理中':'已结束')),
+    table([importText('Account','账号'),importText('Login result','登录结果'),importText('Action','操作')],(batch.sites||[]).map(s=>[s.name||s.provider+' / '+s.account,importText(...(names[s.state]||[s.state,s.state])),s.state==='needs_login'||s.state==='manual_check'?button(importText('I signed in: verify','已完成登录，验证'),async()=>{
+     const r=await api('/admin/accounts/'+encodeURIComponent(s.account)+'/verify-login',{method:'POST',body:'{}'});await refresh();
+     message(r.verified?importText('Browser login verified.','浏览器登录已验证。'):importText('Not verified. This site may need a supported verifier or more sign-in steps.','尚未验证；可能需要站点验证器或继续完成登录。'));
+    }):null])),
+    h('p',{class:'muted'},importText('Closing this panel does not stop the queue. A gateway restart stops the queue, but browser profile data is retained.','关闭此面板不停止后台队列。网关重启会停止队列，浏览器配置数据会保留。')));
+   if(batch.state==='running')timer=setTimeout(draw,2000);else await refresh();
+  }catch(e){if(live)target.replaceChildren(h('p',{class:'warning'},e.message))}
+ };
+ dialog(importText('Browser login progress','浏览器登录进度'),target,[button(importText('Stop remaining attempts','停止后续尝试'),async()=>{await api('/admin/accounts/browser-login/cancel',{method:'POST',body:'{}'});clearTimeout(timer);await draw()}),button('Close',()=>$('dialog').close())]);
+ dialogCleanup=()=>{live=false;clearTimeout(timer)};draw();
+}
+function accountEnabled(a){return (S.status.account_health||[]).find(x=>x.id===a.id)?.enabled??a.enabled}
+function accountStateLabel(a){const value=(S.status.account_health||[]).find(x=>x.id===a.id)?.state||'unverified';return importText(...({verified:['Verified','已验证'],unverified:['Unverified','未验证'],unfilled:['Unfilled','未填'],invalid:['Invalid','失效']}[value]||['Unverified','未验证']))}
+async function verifyAccountState(a){const result=await api('/admin/accounts/'+encodeURIComponent(a.id)+'/verify',{method:'POST',body:'{}'});await refresh();message(result.verified?importText('Verified and enabled.','已验证并启用。'):importText('Not verified. Complete account setup or try login.','尚未验证通过，请补充账号资料或尝试登录。'));return result}
+function editAccountMaterial(a){
+ const provider=S.catalog.find(p=>p.id===a.provider_id),descriptor=S.descriptors.find(d=>d.id===provider?.adapter);
+ const kind=select([...new Set(['username_password',...(descriptor?.invoke_credentials||['api_key']).filter(k=>!['anonymous','browser_profile'].includes(k))])],'username_password');
+ const username=h('input',{autocomplete:'off'}),password=h('input',{type:'password',autocomplete:'new-password'}),value=h('textarea',{autocomplete:'off'});
+ const login=h('div',{},field(importText('Username','用户名'),username),field(importText('Password','密码'),password));
+ const token=field(importText('API key / session value','API Key／会话值'),value);token.hidden=true;
+ kind.onchange=()=>{login.hidden=kind.value!=='username_password';token.hidden=kind.value==='username_password'};
+ dialog(importText('Account login data','账号登录资料'),[h('p',{},a.provider_id+' / '+(a.display_name||a.id)),field(importText('Material type','资料类型'),kind),login,token,h('p',{},importText('Encrypted within this provider account. No separate credential library is created. Existing values are never shown.','加密保存在此服务商账号下，不创建独立凭据库；不回显已有账密。'))],[button('Cancel',()=>$('dialog').close()),button(importText('Save and verify','保存并验证'),async()=>{
+  await api('/admin/accounts/'+encodeURIComponent(a.id)+'/material',{method:'POST',body:JSON.stringify({kind:kind.value,username:username.value,password:password.value,value:value.value})});
+  password.value='';value.value='';$('dialog').close();await verifyAccountState(a);
+ },'primary')]);dialogCleanup=()=>{username.value='';password.value='';value.value=''};
 }
 function acquireAccountSession(a){
  const provider=S.catalog.find(p=>p.id===a.provider_id);
@@ -649,6 +710,12 @@ function acquireAccountSession(a){
   if(!result.session_ready)throw Error('Session not bound: '+result.status);
   await refresh();dialog('Session ready',[h('p',{},'Invocation session bound at revision '+result.revision+'. No prompt has been submitted.')],[button('Open sources',()=>{$('dialog').close();location.hash='sources'})]);
  },'primary')]);
+}
+function accountSetupLabel(a){
+ if(a.credential_ref)return a.credential_ref;
+ if(!a.login_credential_ref)return translate('Not bound');
+ const p=S.catalog.find(p=>p.id===a.provider_id),d=S.descriptors.find(d=>d.id===p?.adapter);
+ return importText('Login material linked · ','已关联登录材料 · ')+credentialSetupStatus(p?.implementation==='not_implemented'?'adapter_unavailable':d?.browser_required||d?.browser_auth_check?'needs_browser_login':'needs_api_credential');
 }
 function loginEvidence(a,watch=false,launchMessage='',setup){
  let live=true,busy=false,timer,deadline,controller;
@@ -681,9 +748,9 @@ function accounts(){
   dialog('Account validation',[h('p',{class:'muted'},'One explicit check was performed using the first configured source/model, or browser authentication for a browser-only account. This does not approve Auto routing or prove every model capability.'),table(['Field','Value'],[['Account',a.display_name||a.id],['Status',status],['Source',result.source||'Browser profile'],['Model',result.model||'Not applicable'],['Protocol',result.protocol||'Not applicable'],['Output observed',result.output_observed===undefined?'Not reported':result.output_observed?'Yes':'No'],['History saved',result.history_recorded?'Yes':'No']])]);
   await refresh();
  };
- return [pageHead('Accounts','Account switches and capacity apply across their sources.',button('Discover candidates',discoverAccounts),button('Account pools',accountPools),button('Refresh capacity',refresh),button('Add account',()=>addAccount(),'primary')),table(['Account','Provider','Health','Auth status','Browser authentication','Credential','Credential state','Routing defaults','Reviewed override','Quota / in flight','Auto','Actions'],(S.config.accounts||[]).map(a=>[
-  a.display_name||a.id,a.provider_id,badge(healthFor(a).health||'untested',healthFor(a).health==='healthy'?'good':healthFor(a).health==='disabled'?'':'warn'),healthFor(a).auth_status||'not_checked',accountAuth(a),a.credential_ref||'Not bound',(healthFor(a).credential_state||'not_configured')+(healthFor(a).credential_version?' · v'+healthFor(a).credential_version:''),[a.base_url&&'Base URL: '+a.base_url,a.organization&&'Organization: '+a.organization,a.project&&'Project: '+a.project].filter(Boolean).join(' · ')||'Not set',a.credential_type_override?'Yes':'No',a.quota_domain+' · '+((S.status.accounts||[]).find(x=>x.id===a.id)?.active||0)+' / '+a.max_inflight,badge(a.auto_approved?'Approved':'Manual',a.auto_approved?'accent':''),
-   [button(a.enabled?'Disable':'Enable',()=>toggle('accounts',a)),button(a.auto_approved?'Remove Auto':'Allow Auto',()=>toggleAuto('accounts',a)),button('Edit',()=>edit('accounts',a)),button('Validate account',()=>validateAccount(a)),a.browser_profile_id?button('Re-authenticate',()=>launchAccountLogin(a)):null,a.browser_profile_id?button('Check login',()=>loginEvidence(a)):null,a.browser_profile_id&&['chatgpt-web','claude-web'].includes(S.catalog.find(p=>p.id===a.provider_id)?.adapter)?button('Bind session',()=>acquireAccountSession(a)):null,button('Delete',()=>removeAccount(a),'danger')]
+ return [pageHead('Accounts',importText('Encrypted account data belongs to each provider. Verified accounts are enabled automatically.','账密加密归属到服务商账号；验证通过后自动启用。'),button(importText('Browser login','浏览器登录'),()=>selectLoginBrowser()),button('Add account',()=>addAccount(),'primary')),table([importText('Account','账号'),'Provider',importText('Account state','账号状态'),importText('Enabled','启用'),importText('Login data','登录资料'),'Actions'],(S.config.accounts||[]).map(a=>[
+  a.display_name||a.id,a.provider_id,badge(accountStateLabel(a),healthFor(a).state==='verified'?'good':healthFor(a).state==='invalid'?'bad':'warn'),accountEnabled(a)?importText('Yes','是'):importText('No','否'),accountSetupLabel(a),
+   [button(importText('Fill / replace','填写／修改'),()=>editAccountMaterial(a)),button(importText('Try login','尝试登录'),()=>launchAccountLogin(a)),button(importText('Verify','验证'),()=>verifyAccountState(a)),button('Edit',()=>edit('accounts',a)),a.enabled?button('Disable',()=>toggle('accounts',a)):null,a.browser_profile_id&&['chatgpt-web','claude-web'].includes(S.catalog.find(p=>p.id===a.provider_id)?.adapter)?button('Bind session',()=>acquireAccountSession(a)):null,button('Delete',()=>removeAccount(a),'danger')]
  ]),'No accounts. Add an account and bind a credential before enabling its sources.')];
 }
 async function discoverAccounts(){
@@ -695,89 +762,7 @@ async function discoverAccounts(){
  };
  dialog('Discover accounts',[field('Scan installed browser profile metadata',scan),h('p',{class:'muted'},'Stored credential references and configured environment names are included without exposing their values. Enable the scan only when you want to inspect local browser profile metadata.'),button('Discover',run,'primary')]);
 }
-function oneClickImport(){
- const target=h('div',{class:'browser-import-list','aria-live':'polite'});
- let live=true,busy=false;
- const controller=new AbortController();
- const run=async()=>{
-  if(busy)return;busy=true;
-  target.replaceChildren(h('p',{},importText('Finding browsers and saved logins…','正在发现浏览器和已保存的账密…')));
-  try{
-   const result=await api('/admin/credentials/browser-passwords/discover',{method:'POST',body:'{}',signal:controller.signal});
-   if(!live)return;
-   const browsers=result.browsers||[];
-   target.replaceChildren(...browsers.map(browser=>{
-    const direct=browser.status==='ready',empty=browser.status==='empty';
-    const action=button(direct?importText('Import all '+browser.count+' logins','导入全部 '+browser.count+' 项'):empty?importText('No saved passwords','没有已保存的密码'):importText('Import browser export','导出后全部导入'),()=>direct?previewBrowserImport(browser):browserExportImport(browser),'primary');
-    action.disabled=empty;
-    const countKnown=direct||empty||browser.status==='browser_protected_passwords';
-    const summary=countKnown?importText(browser.count+' saved logins',browser.count+' 条已保存账密'):importText('Login count unavailable','账密数量未知');
-    return h('section',{class:'browser-import-row'},h('div',{},h('h3',{},browser.name),h('p',{class:'muted'},importText(browser.profiles.length+' profiles · ',browser.profiles.length+' 个用户配置 · ')+summary),direct||empty?null:h('p',{class:'browser-import-reason'},browserImportError(browser.status))),action);
-   }));
-   if(!browsers.length)target.append(h('p',{},importText('No browser profiles found. You can import a browser export below.','未发现浏览器配置。可以通过下方入口导入浏览器导出文件。')));
-  }catch(error){if(live)target.replaceChildren(h('p',{class:'warning'},browserImportError(error.message)))}
-  finally{busy=false}
- };
- dialog('One-click import',[h('p',{},importText('Choose a browser. All its profiles are included; confirm once to import every saved login.','选择一个浏览器，包含其全部用户配置；二次确认后导入全部已保存账密。')),target],[button(importText('Scan again','重新发现'),run),button(importText('Import a CSV / JSON file','已有 CSV / JSON 文件'),()=>browserExportImport())]);
- dialogCleanup=()=>{live=false;controller.abort()};run();
-}
 function importText(en,zh){return language==='zh'?zh:en}
-function browserImportError(code){
- const messages={
-  browser_protected_passwords:['This browser requires its own password export. Export once, then confirm to import the entire file.','此浏览器的加密密码需要通过浏览器导出。导出一次后，可确认导入整个文件。'],
-  browser_export_required:['Use this browser’s password export to import all logins.','该浏览器需要先导出密码，再全部导入。'],
-  browser_database_unavailable:['The password store could not be read. Close this browser and scan again, or use its password export.','暂时无法读取密码库。关闭该浏览器后重新发现，或使用浏览器导出文件。'],
-  browser_import_limit:['This browser exceeds the import size limit; nothing was imported.','该浏览器的数据超过导入上限，尚未导入任何账密。'],
-  browser_not_found:['The selected browser was not found. Scan again.','所选浏览器已不可用，请重新发现。'],
-  browser_preview_expired:['This confirmation expired. Select the browser again.','本次确认已过期，请重新选择浏览器。']
- };
- return messages[code]?importText(...messages[code]):code;
-}
-async function previewBrowserImport(browser){
- let live=true;const controller=new AbortController();
- dialog(importText('Preparing '+browser.name+' import','准备导入 '+browser.name),h('p',{role:'status'},importText('Reading saved logins. Your confirmation is required before saving.','正在读取已保存账密，确认后才会写入。')));
- dialogCleanup=()=>{live=false;controller.abort()};
- try{
-  const report=await api('/admin/credentials/browser-passwords/preview',{method:'POST',body:JSON.stringify({browser:browser.id}),signal:controller.signal});
-  if(live)confirmBrowserImport(browser,report);
- }catch(error){if(live)browserExportImport(browser,browserImportError(error.message))}
-}
-function confirmBrowserImport(browser,report){
- if(!report.count){dialog(importText('Nothing to import','没有可导入的账密'),h('p',{},importText('No supported website passwords were found.','未发现可导入的网站账密。')),[button(importText('Choose another browser','选择其他浏览器'),oneClickImport)]);return}
- const name=browser?.name||importText('Selected file','所选文件');
- const count=report.count,existing=report.existing||0;
- const body=[h('p',{class:'import-confirm-count'},importText('Import '+count+' logins from '+name+'?', '确认导入 '+name+' 的 '+count+' 项账密？')),h('p',{},importText('Existing logins for the same website and username are kept ('+existing+'). New logins are saved together.','相同网站和用户名的已有账密保留（'+existing+' 项），其余账密一次性保存。'))];
- if(report.duplicates||report.skipped)body.push(h('p',{class:'muted'},importText((report.duplicates||0)+' duplicate logins combined; '+(report.skipped||0)+' non-website or empty records excluded.','已合并 '+(report.duplicates||0)+' 条重复账密，排除 '+(report.skipped||0)+' 条非网站或空记录。')));
- const confirm=button(importText('Confirm import','确认全部导入'),async()=>{
-  try{
-   const result=await api('/admin/credentials/browser-passwords/apply',{method:'POST',body:JSON.stringify({ticket:report.ticket,confirm:true})});
-   await refresh().catch(()=>{});
-   dialog(importText('Import complete','导入完成'),h('p',{class:'import-confirm-count'},importText(result.imported+' imported · '+result.kept+' existing logins kept', '已导入 '+result.imported+' 项 · 保留已有 '+result.kept+' 项')),[button(importText('View credentials','查看已导入账密'),()=>{$('dialog').close();$('search').value='';location.hash='credentials';render()},'primary'),button(importText('Import another browser','继续导入其他浏览器'),oneClickImport)]);
-  }catch(error){message(browserImportError(error.message),true)}
- },'primary');
- dialog(importText('Confirm browser import','确认浏览器账密导入'),body,[button('Cancel',()=>$('dialog').close()),confirm]);
- dialogCleanup=()=>{api('/admin/credentials/import-preview/'+encodeURIComponent(report.ticket),{method:'DELETE'}).catch(()=>{})};
-}
-function browserExportImport(browser,reason=''){
- let live=true;const controller=new AbortController();
- const file=h('input',{type:'file',accept:'.csv,.json','aria-label':importText('Browser password export','浏览器密码导出文件')});
- const tips={firefox:'about:logins',edge:'edge://wallet/passwords',chrome:'chrome://password-manager/settings',brave:'brave://password-manager/settings',chromium:'chrome://password-manager/settings'};
- const address=tips[browser?.id];
- const body=[reason?h('p',{class:'warning'},reason):null,h('p',{},importText('Export passwords from your browser, then choose that file. Every login is selected automatically.','从浏览器导出密码后选择文件，系统自动选择全部账密。'))];
- body.push(h('p',{class:'muted'},importText('Exports contain readable passwords. Keep the file private. For multiple browser profiles, export and import each profile.','导出文件包含明文密码，请妥善保管。若有多个浏览器用户配置，请分别导出并导入。')));
- if(address)body.push(h('p',{},importText('Browser password settings: ','浏览器密码设置地址：'),h('code',{},address)));
- if(address)body.push(button(importText('Open '+browser.name+' password manager','打开 '+browser.name+' 密码管理器'),async()=>{await api('/admin/credentials/browser-passwords/open-export',{method:'POST',body:JSON.stringify({browser:browser.id})})}));
- body.push(field(importText('Password export file','密码导出文件'),file));
- dialog(importText('Import all from '+(browser?.name||'file'),'从'+(browser?.name||'文件')+'全部导入'),body,[button(importText('Back','返回'),oneClickImport),button(importText('Continue','继续'),async()=>{
-  const chosen=file.files[0];if(!chosen)throw Error(importText('Choose a CSV or JSON file.','请选择 CSV 或 JSON 文件。'));
-  if(chosen.size>4*1024*1024)throw Error(importText('The export exceeds 4 MiB.','导出文件超过 4 MiB。'));
-  const format=chosen.name.toLowerCase().endsWith('.json')?'json':browser?.id?browser.id+'-csv':'csv';
-  const data=await chosen.text();if(!live)return;
-  const report=await api('/admin/credentials/browser-passwords/preview-file',{method:'POST',body:JSON.stringify({format,data}),signal:controller.signal});
-  if(live)confirmBrowserImport(browser,report);
- },'primary')]);
- dialogCleanup=()=>{live=false;controller.abort()};
-}
 function configureDiscoveredProfile(candidate){
  const engineName=browserEngines.includes(candidate.browser)?candidate.browser:'chrome';
  const existing=new Set((S.config.browser_profiles||[]).map(p=>p.id));
@@ -801,7 +786,7 @@ function importBrowserCookies(onSaved){
 function accountPools(){
  dialog('Account pools',table(['Provider','Strategy','Accounts','Enabled','In flight / limit','Weights','Actions'],(S.config.providers||[]).map(p=>{
   const accounts=(S.config.accounts||[]).filter(a=>a.provider_id===p.id),health=accounts.map(a=>(S.status.account_health||[]).find(x=>x.id===a.id)||{}),active=health.reduce((n,a)=>n+(a.active||0),0),limit=accounts.reduce((n,a)=>n+(a.max_inflight||0),0),weights=accounts.map(a=>(a.display_name||a.id)+': '+(a.weight||1)).join(', ')||'None';
-  return [p.id,p.pool_strategy||'round-robin',accounts.length,accounts.filter(a=>a.enabled).length,active+' / '+limit,weights,button('Edit pool',()=>editPool(p))];
+  return [p.id,p.pool_strategy||'round-robin',accounts.length,accounts.filter(accountEnabled).length,active+' / '+limit,weights,button('Edit pool',()=>editPool(p))];
  })));
 }
 function editPool(provider){
@@ -839,12 +824,11 @@ function reloginCredential(credential){
  if(!accounts.length)throw Error('No browser-bound account uses '+credential.id+'.');
  dialog('Re-login account',h('p',{class:'muted'},'Choose a browser-bound account. The login browser is isolated to its configured profile; this does not reveal or export the credential value.'),accounts.map(a=>button(a.display_name||a.id,async()=>{await launchAccountLogin(a)})));
 }
-function credentials(){
- const integrations=h('div',{class:'actions'},button('Add external manager reference',()=>externalCredentialForm()),button('Add OAuth lifecycle',()=>oauthCredentialForm()));
- return [pageHead('Credentials','Protected values are stored separately from configuration.',h('div',{},button('Import export',importCredentials),button('Import token',importToken),button('Import browser cookies',importBrowserCookies),button('Add credential',()=>credentialForm(),'primary'))),integrations,table(['Credential','Type','Used by','Imported from','Updated','Last used','Actions'],S.credentials.map(c=>[
-   c.id,[badge(c.kind),badge(c.state||'ready'),c.oauth?h('span',{},'Expires '+new Date(c.oauth.expires_at).toLocaleString()):null],(()=>{const accounts=(S.config.accounts||[]).filter(a=>a.credential_ref===c.id),ids=accounts.map(a=>a.id);return [...ids,...S.config.sources.filter(s=>s.credential_ref===c.id||(!s.credential_ref&&accounts.some(a=>a.id===s.account_id))).map(s=>s.id)].join(', ')||'Unbound'})(),c.source,new Date(c.updated_at).toLocaleString(),c.last_used_at?new Date(c.last_used_at).toLocaleString():'Not used', [button('Replace',()=>editCredential(c)),c.external?button('Check availability',async()=>{await api('/admin/credentials/'+encodeURIComponent(c.id.replace('cred://',''))+'/check',{method:'POST'});message('Selected field is available. Generation has not been verified.')}):null,c.oauth?.automatic_refresh?button('Refresh OAuth',async()=>{await api('/admin/credentials/'+encodeURIComponent(c.id.replace('cred://',''))+'/refresh',{method:'POST'});await refresh()}):null,(S.config.accounts||[]).some(a=>a.credential_ref===c.id&&a.browser_profile_id)?button('Re-login',()=>reloginCredential(c)):null,button('Unbind',()=>unbindCredential(c)),button('Delete',()=>deleteCredential(c),'danger')]
- ]),'No credentials. Add a key or session, then bind its reference to an account.')];
+function credentialSetupStatus(status){
+ const labels={needs_api_credential:['Needs API key / session','待补 API Key／会话'],needs_browser_login:['Needs browser login','待浏览器登录'],adapter_unavailable:['Adapter not implemented','适配器尚未实现'],already_configured:['Already linked','已关联'],ambiguous_provider:['Choose provider','需选择服务商'],account_id_conflict:['Account ID conflict','账号 ID 冲突'],no_provider_match:['No provider match','未匹配服务商']};
+ return labels[status]?importText(...labels[status]):status;
 }
+function credentials(){return accounts()}
 function externalCredentialForm(){
  const id=h('input',{autocomplete:'off'}),manager=select(['1password','bitwarden'],'1password'),reference=h('input',{autocomplete:'off',placeholder:'op://vault/item/field or Bitwarden item UUID'}),kind=select(['api_key','oauth','cookie'],'api_key'),managerField=select(['','password','username'],'');
  dialog('External manager reference',[field('Credential ID',id),field('Official manager',manager),field('Selected reference',reference),field('Bitwarden field',managerField),field('Invocation credential type',kind),h('p',{},'Only this selected field is read using the official CLI. Saving does not open or enumerate a vault. Use Check availability to authorize access after saving.')],[button('Save reference',async()=>{
@@ -861,42 +845,6 @@ function oauthCredentialForm(){
   $('dialog').close();await refresh();
  },'primary')]);
  dialogCleanup=()=>{access.value='';refreshToken.value='';secret.value=''};
-}
-function importCredentials(onSaved){
- const file=h('input',{type:'file',accept:'.csv,.json'});
- const formatChoice=select(['auto','chrome-csv','edge-csv','brave-csv','firefox-csv','opera-csv','vivaldi-csv','chromium-csv','arc-csv','safari-csv','apple-passwords-csv','google-passwords-csv','bitwarden-json','bitwarden-csv','1password-csv','keepass-csv','keepassxc-csv','protonpass-csv','dashlane-csv','nordpass-csv','lastpass-csv','enpass-csv'],'auto');
- dialog('Import selected export',[field('Export format',formatChoice),field('CSV or JSON file',file),h('p',{class:'muted'},'Auto accepts CSV columns name (optional), url, username, password, or a JSON array with those fields. Choose the matching manager format for its native export. Up to 4 MiB and 1,000 login candidates. Notes, TOTP, cards and password history are not imported.')],[button('Preview entries',async()=>{
-  const chosen=file.files[0];if(!chosen)throw new Error('Choose an export file.');
-  if(chosen.size>4*1024*1024)throw new Error('Export exceeds 4 MiB.');
-  const format=formatChoice.value==='auto'?(chosen.name.toLowerCase().endsWith('.json')?'json':'csv'):formatChoice.value;
-  let data=await chosen.text();
-  const report=await api('/admin/credentials/import',{method:'POST',body:JSON.stringify({format,data})}),rows=report.items;
-  data='';
-  const selected=new Set();
-  const choices=new Map();
-  const conflictChoice=row=>{
-   const options=[{value:'new',label:'New credential'}];
-   for(const c of row.conflicts||[])for(const action of ['keep','replace'])options.push({value:action+':'+c.id,label:title(action)+' '+c.id+' · v'+c.version});
-   const input=select(options,'new');choices.set(row.index,input);return input;
-  };
-  dialog('Select credentials to import',[h('p',{class:'muted'},'Skipped '+report.skipped+' non-web or non-password records. Only checked entries will be saved. Preview expires in 5 minutes. Keep or replace only matches the exact login URL and username; different products are never merged automatically.'),table(['Select','Name','Domain','Type','Provider match','Conflict action'],rows.map(row=>[h('input',{type:'checkbox','aria-label':'Import entry '+(row.index+1),onchange:e=>{if(e.target.checked)selected.add(row.index);else selected.delete(row.index)}}),row.name,row.domain,row.kind,(row.matches||[]).map(m=>m.provider+(m.compatible?' (compatible)':' (login or different credential required)')).join(', ')||'No exact domain match',conflictChoice(row)]))],[button('Cancel',()=>{$('dialog').close()}),button('Import selected',async()=>{
-   if(!selected.size)throw new Error('Select at least one entry.');
-   const selections=[...selected].map(index=>{const value=choices.get(index).value;if(value==='new')return {index,action:'new'};const split=value.indexOf(':'),action=value.slice(0,split),reference=value.slice(split+1),meta=rows.find(r=>r.index===index).conflicts.find(c=>c.id===reference);return {index,action,reference,version:meta.version}});
-   const saved=await api('/admin/credentials/import',{method:'POST',body:JSON.stringify({ticket:report.ticket,choices:selections,apply:true})});
-   const selectedRows=rows.filter(row=>selected.has(row.index));
-   const suggested=selectedRows.length===1?(selectedRows[0].matches||[]).find(match=>match.compatible)?.provider||'':'';
-   data='';$('dialog').close();await refresh();
-   if(saved.length===1&&suggested&&!onSaved){
-    message('Imported credential. Review the suggested provider binding before saving the account.');
-    onSaved?.(saved);
-    accountWizard({[saved[0].kind==='username_password'?'login_credential_ref':'credential_ref']:saved[0].id,provider_id:suggested});
-   }else{
-    message('Imported '+saved.length+' credentials. Bind their references from Accounts.');
-    onSaved?.(saved);
-   }
-  },'primary')]);
-  dialogCleanup=()=>{data='';api('/admin/credentials/import-preview/'+encodeURIComponent(report.ticket),{method:'DELETE'}).catch(()=>{})};
- },'primary')]);
 }
 function sources(){
  return [pageHead('Sources','A source binds an account to one or more model targets.',button('Add source',()=>addSource(),'primary')),table(['Source','Provider / account','Type','State','Models','Groups','Actions'],S.config.sources.map(s=>[

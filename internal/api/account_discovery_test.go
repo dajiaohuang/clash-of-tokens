@@ -22,7 +22,10 @@ func TestAccountDiscoveryIsMetadataOnlyAndExplicit(t *testing.T) {
 	if err = vault.Put("cred://openai", "api_key", "manual", "super-secret"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err = vault.ImportSelected([]credentials.ImportEntry{{URL: "https://chat.openai.com/login", Username: "user", Password: "private-password"}}, []int{0}); err != nil {
+	if err = vault.Put("cred://fixture", "username_password", "legacy", `{"username":"user","password":"private-password"}`); err != nil {
+		t.Fatal(err)
+	}
+	if err = vault.SetAccountDomain("cred://fixture", "chat.openai.com"); err != nil {
 		t.Fatal(err)
 	}
 	c := config.Default()

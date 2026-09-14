@@ -1,0 +1,899 @@
+{
+  "format": 1,
+  "versions": [
+    {
+      "revision": 1,
+      "created_at": "2026-09-14T15:44:16.8414347Z",
+      "summary": "Initial configuration",
+      "config": {
+        "schema_version": 1,
+        "listen": "127.0.0.1:18317",
+        "api_key_env": "COT_API_KEY",
+        "admin_key_env": "COT_ADMIN_KEY",
+        "runtime": {
+          "max_inflight": 128,
+          "max_queued": 128,
+          "max_body_bytes": 16777216,
+          "max_buffered_bytes": 134217728,
+          "max_output_bytes": 67108864,
+          "queue_timeout_ms": 5000,
+          "request_timeout_ms": 300000,
+          "write_timeout_ms": 15000,
+          "body_read_timeout_ms": 15000
+        },
+        "browser": {
+          "enabled": true,
+          "cdp_url": "http://127.0.0.1:9222",
+          "state_file": ".clash-tokens/sessions.json",
+          "max_sessions": 256,
+          "session_ttl_seconds": 86400,
+          "poll_ms": 1000,
+          "max_prompt_bytes": 65536,
+          "max_response_bytes": 1048576
+        },
+        "device": {
+          "enabled": false,
+          "adb_path": "",
+          "serial": "",
+          "state_dir": "",
+          "ocr_path": "",
+          "ocr_data_dir": "",
+          "clipboard_sync_ms": 0
+        },
+        "sources": [
+          {
+            "id": "chatgpt-web",
+            "provider": "chatgpt-web",
+            "adapter": "chatgpt-web",
+            "base_url": "https://chatgpt.com",
+            "enabled": true,
+            "auto_approved": false,
+            "local": false,
+            "paid": true,
+            "max_inflight": 1,
+            "quota_domain": "chatgpt-web-account",
+            "quota_max_inflight": 1,
+            "models": [
+              {
+                "id": "web",
+                "upstream": "auto",
+                "protocols": [
+                  "chat",
+                  "responses"
+                ],
+                "tier": "unrated",
+                "rating_basis": "",
+                "tools": "none",
+                "vision": false,
+                "max_input_bytes": 65536
+              }
+            ]
+          }
+        ],
+        "groups": [
+          {
+            "require_vision": false,
+            "id": "auto",
+            "type": "auto",
+            "sources": [],
+            "min_tier": "silver",
+            "allow_unrated": false,
+            "allow_paid": false,
+            "local_only": false,
+            "require_tools": false
+          }
+        ]
+      }
+    },
+    {
+      "revision": 2,
+      "created_at": "2026-09-14T15:44:33.6235849Z",
+      "summary": "Automatically match imported login credentials to provider accounts",
+      "config": {
+        "providers": [
+          {
+            "id": "huggingchat",
+            "enabled": true,
+            "auto_approved": false,
+            "pool_strategy": "round-robin"
+          },
+          {
+            "id": "deepseek-web",
+            "enabled": true,
+            "auto_approved": false,
+            "pool_strategy": "round-robin"
+          },
+          {
+            "id": "deepseek",
+            "enabled": true,
+            "auto_approved": false,
+            "pool_strategy": "round-robin"
+          }
+        ],
+        "accounts": [
+          {
+            "id": "import-fd25dd39cf123c660a3cc6a3",
+            "provider_id": "huggingchat",
+            "display_name": "huggingchat · fd25dd",
+            "enabled": false,
+            "auto_approved": false,
+            "login_credential_ref": "cred://import-22d7817cc963b1cde8efbfd2394907ce",
+            "quota_domain": "import-fd25dd39cf123c660a3cc6a3",
+            "max_inflight": 1,
+            "weight": 1,
+            "created_at": "2026-09-14T15:44:33.515279Z"
+          },
+          {
+            "id": "import-ff21886994e702686022153b",
+            "provider_id": "huggingchat",
+            "display_name": "huggingchat · ff2188",
+            "enabled": false,
+            "auto_approved": false,
+            "login_credential_ref": "cred://import-78fb32810b8b9bdf9e93fa37c95d02c6",
+            "quota_domain": "import-ff21886994e702686022153b",
+            "max_inflight": 1,
+            "weight": 1,
+            "created_at": "2026-09-14T15:44:33.5515606Z"
+          },
+          {
+            "id": "import-67ffbe08ca43eb30d7cab222",
+            "provider_id": "deepseek-web",
+            "display_name": "deepseek-web · 67ffbe",
+            "enabled": false,
+            "auto_approved": false,
+            "login_credential_ref": "cred://import-dd8b5531085f3a4145d1df7da896b61e",
+            "quota_domain": "import-67ffbe08ca43eb30d7cab222",
+            "max_inflight": 1,
+            "weight": 1,
+            "created_at": "2026-09-14T15:44:33.6030731Z"
+          },
+          {
+            "id": "import-b7233688c637002916e9f6d5",
+            "provider_id": "deepseek",
+            "display_name": "deepseek · b72336",
+            "enabled": false,
+            "auto_approved": false,
+            "login_credential_ref": "cred://import-ef800822572580b646de498aa38c2542",
+            "quota_domain": "import-b7233688c637002916e9f6d5",
+            "max_inflight": 1,
+            "weight": 1,
+            "created_at": "2026-09-14T15:44:33.6135843Z"
+          }
+        ],
+        "schema_version": 1,
+        "listen": "127.0.0.1:18317",
+        "api_key_env": "COT_API_KEY",
+        "admin_key_env": "COT_ADMIN_KEY",
+        "runtime": {
+          "max_inflight": 128,
+          "max_queued": 128,
+          "max_body_bytes": 16777216,
+          "max_buffered_bytes": 134217728,
+          "max_output_bytes": 67108864,
+          "queue_timeout_ms": 5000,
+          "request_timeout_ms": 300000,
+          "write_timeout_ms": 15000,
+          "body_read_timeout_ms": 15000
+        },
+        "browser": {
+          "enabled": true,
+          "cdp_url": "http://127.0.0.1:9222",
+          "state_file": ".clash-tokens/sessions.json",
+          "max_sessions": 256,
+          "session_ttl_seconds": 86400,
+          "poll_ms": 1000,
+          "max_prompt_bytes": 65536,
+          "max_response_bytes": 1048576
+        },
+        "device": {
+          "enabled": false,
+          "adb_path": "",
+          "serial": "",
+          "state_dir": "",
+          "ocr_path": "",
+          "ocr_data_dir": "",
+          "clipboard_sync_ms": 0
+        },
+        "sources": [
+          {
+            "id": "chatgpt-web",
+            "provider": "chatgpt-web",
+            "adapter": "chatgpt-web",
+            "base_url": "https://chatgpt.com",
+            "enabled": true,
+            "auto_approved": false,
+            "local": false,
+            "paid": true,
+            "max_inflight": 1,
+            "quota_domain": "chatgpt-web-account",
+            "quota_max_inflight": 1,
+            "models": [
+              {
+                "id": "web",
+                "upstream": "auto",
+                "protocols": [
+                  "chat",
+                  "responses"
+                ],
+                "tier": "unrated",
+                "rating_basis": "",
+                "tools": "none",
+                "vision": false,
+                "max_input_bytes": 65536
+              }
+            ]
+          }
+        ],
+        "groups": [
+          {
+            "require_vision": false,
+            "id": "auto",
+            "type": "auto",
+            "sources": [],
+            "min_tier": "silver",
+            "allow_unrated": false,
+            "allow_paid": false,
+            "local_only": false,
+            "require_tools": false
+          }
+        ]
+      }
+    },
+    {
+      "revision": 3,
+      "created_at": "2026-09-14T16:05:05.4361307Z",
+      "summary": "Verify provider account and update availability",
+      "config": {
+        "providers": [
+          {
+            "id": "huggingchat",
+            "enabled": true,
+            "auto_approved": false,
+            "pool_strategy": "round-robin"
+          },
+          {
+            "id": "deepseek-web",
+            "enabled": true,
+            "auto_approved": false,
+            "pool_strategy": "round-robin"
+          },
+          {
+            "id": "deepseek",
+            "enabled": true,
+            "auto_approved": false,
+            "pool_strategy": "round-robin"
+          }
+        ],
+        "accounts": [
+          {
+            "verification_state": "unverified",
+            "verification_version": 1,
+            "verification_binding": "58b305cc0a781020b807f18f0c3d506497a902c7dfada67d4c15ac0623f30047",
+            "verification_at": "2026-09-14T16:05:05.4361307Z",
+            "id": "import-fd25dd39cf123c660a3cc6a3",
+            "provider_id": "huggingchat",
+            "display_name": "huggingchat · fd25dd",
+            "enabled": false,
+            "auto_approved": false,
+            "login_credential_ref": "cred://import-22d7817cc963b1cde8efbfd2394907ce",
+            "quota_domain": "import-fd25dd39cf123c660a3cc6a3",
+            "max_inflight": 1,
+            "weight": 1,
+            "created_at": "2026-09-14T15:44:33.515279Z"
+          },
+          {
+            "id": "import-ff21886994e702686022153b",
+            "provider_id": "huggingchat",
+            "display_name": "huggingchat · ff2188",
+            "enabled": false,
+            "auto_approved": false,
+            "login_credential_ref": "cred://import-78fb32810b8b9bdf9e93fa37c95d02c6",
+            "quota_domain": "import-ff21886994e702686022153b",
+            "max_inflight": 1,
+            "weight": 1,
+            "created_at": "2026-09-14T15:44:33.5515606Z"
+          },
+          {
+            "id": "import-67ffbe08ca43eb30d7cab222",
+            "provider_id": "deepseek-web",
+            "display_name": "deepseek-web · 67ffbe",
+            "enabled": false,
+            "auto_approved": false,
+            "login_credential_ref": "cred://import-dd8b5531085f3a4145d1df7da896b61e",
+            "quota_domain": "import-67ffbe08ca43eb30d7cab222",
+            "max_inflight": 1,
+            "weight": 1,
+            "created_at": "2026-09-14T15:44:33.6030731Z"
+          },
+          {
+            "id": "import-b7233688c637002916e9f6d5",
+            "provider_id": "deepseek",
+            "display_name": "deepseek · b72336",
+            "enabled": false,
+            "auto_approved": false,
+            "login_credential_ref": "cred://import-ef800822572580b646de498aa38c2542",
+            "quota_domain": "import-b7233688c637002916e9f6d5",
+            "max_inflight": 1,
+            "weight": 1,
+            "created_at": "2026-09-14T15:44:33.6135843Z"
+          }
+        ],
+        "schema_version": 1,
+        "listen": "127.0.0.1:18317",
+        "api_key_env": "COT_API_KEY",
+        "admin_key_env": "COT_ADMIN_KEY",
+        "runtime": {
+          "max_inflight": 128,
+          "max_queued": 128,
+          "max_body_bytes": 16777216,
+          "max_buffered_bytes": 134217728,
+          "max_output_bytes": 67108864,
+          "queue_timeout_ms": 5000,
+          "request_timeout_ms": 300000,
+          "write_timeout_ms": 15000,
+          "body_read_timeout_ms": 15000
+        },
+        "browser": {
+          "enabled": true,
+          "cdp_url": "http://127.0.0.1:9222",
+          "state_file": ".clash-tokens/sessions.json",
+          "max_sessions": 256,
+          "session_ttl_seconds": 86400,
+          "poll_ms": 1000,
+          "max_prompt_bytes": 65536,
+          "max_response_bytes": 1048576
+        },
+        "device": {
+          "enabled": false,
+          "adb_path": "",
+          "serial": "",
+          "state_dir": "",
+          "ocr_path": "",
+          "ocr_data_dir": "",
+          "clipboard_sync_ms": 0
+        },
+        "sources": [
+          {
+            "id": "chatgpt-web",
+            "provider": "chatgpt-web",
+            "adapter": "chatgpt-web",
+            "base_url": "https://chatgpt.com",
+            "enabled": true,
+            "auto_approved": false,
+            "local": false,
+            "paid": true,
+            "max_inflight": 1,
+            "quota_domain": "chatgpt-web-account",
+            "quota_max_inflight": 1,
+            "models": [
+              {
+                "id": "web",
+                "upstream": "auto",
+                "protocols": [
+                  "chat",
+                  "responses"
+                ],
+                "tier": "unrated",
+                "rating_basis": "",
+                "tools": "none",
+                "vision": false,
+                "max_input_bytes": 65536
+              }
+            ]
+          }
+        ],
+        "groups": [
+          {
+            "require_vision": false,
+            "id": "auto",
+            "type": "auto",
+            "sources": [],
+            "min_tier": "silver",
+            "allow_unrated": false,
+            "allow_paid": false,
+            "local_only": false,
+            "require_tools": false
+          }
+        ]
+      }
+    },
+    {
+      "revision": 4,
+      "created_at": "2026-09-14T16:05:05.4441864Z",
+      "summary": "Verify provider account and update availability",
+      "config": {
+        "providers": [
+          {
+            "id": "huggingchat",
+            "enabled": true,
+            "auto_approved": false,
+            "pool_strategy": "round-robin"
+          },
+          {
+            "id": "deepseek-web",
+            "enabled": true,
+            "auto_approved": false,
+            "pool_strategy": "round-robin"
+          },
+          {
+            "id": "deepseek",
+            "enabled": true,
+            "auto_approved": false,
+            "pool_strategy": "round-robin"
+          }
+        ],
+        "accounts": [
+          {
+            "verification_state": "unverified",
+            "verification_version": 1,
+            "verification_binding": "58b305cc0a781020b807f18f0c3d506497a902c7dfada67d4c15ac0623f30047",
+            "verification_at": "2026-09-14T16:05:05.4361307Z",
+            "id": "import-fd25dd39cf123c660a3cc6a3",
+            "provider_id": "huggingchat",
+            "display_name": "huggingchat · fd25dd",
+            "enabled": false,
+            "auto_approved": false,
+            "login_credential_ref": "cred://import-22d7817cc963b1cde8efbfd2394907ce",
+            "quota_domain": "import-fd25dd39cf123c660a3cc6a3",
+            "max_inflight": 1,
+            "weight": 1,
+            "created_at": "2026-09-14T15:44:33.515279Z"
+          },
+          {
+            "verification_state": "unverified",
+            "verification_version": 1,
+            "verification_binding": "7f7ed3e86586c237e5ac1d7f1f1c89fd5a0e5ad1be9d85c627276e9bc6d5316e",
+            "verification_at": "2026-09-14T16:05:05.4441864Z",
+            "id": "import-ff21886994e702686022153b",
+            "provider_id": "huggingchat",
+            "display_name": "huggingchat · ff2188",
+            "enabled": false,
+            "auto_approved": false,
+            "login_credential_ref": "cred://import-78fb32810b8b9bdf9e93fa37c95d02c6",
+            "quota_domain": "import-ff21886994e702686022153b",
+            "max_inflight": 1,
+            "weight": 1,
+            "created_at": "2026-09-14T15:44:33.5515606Z"
+          },
+          {
+            "id": "import-67ffbe08ca43eb30d7cab222",
+            "provider_id": "deepseek-web",
+            "display_name": "deepseek-web · 67ffbe",
+            "enabled": false,
+            "auto_approved": false,
+            "login_credential_ref": "cred://import-dd8b5531085f3a4145d1df7da896b61e",
+            "quota_domain": "import-67ffbe08ca43eb30d7cab222",
+            "max_inflight": 1,
+            "weight": 1,
+            "created_at": "2026-09-14T15:44:33.6030731Z"
+          },
+          {
+            "id": "import-b7233688c637002916e9f6d5",
+            "provider_id": "deepseek",
+            "display_name": "deepseek · b72336",
+            "enabled": false,
+            "auto_approved": false,
+            "login_credential_ref": "cred://import-ef800822572580b646de498aa38c2542",
+            "quota_domain": "import-b7233688c637002916e9f6d5",
+            "max_inflight": 1,
+            "weight": 1,
+            "created_at": "2026-09-14T15:44:33.6135843Z"
+          }
+        ],
+        "schema_version": 1,
+        "listen": "127.0.0.1:18317",
+        "api_key_env": "COT_API_KEY",
+        "admin_key_env": "COT_ADMIN_KEY",
+        "runtime": {
+          "max_inflight": 128,
+          "max_queued": 128,
+          "max_body_bytes": 16777216,
+          "max_buffered_bytes": 134217728,
+          "max_output_bytes": 67108864,
+          "queue_timeout_ms": 5000,
+          "request_timeout_ms": 300000,
+          "write_timeout_ms": 15000,
+          "body_read_timeout_ms": 15000
+        },
+        "browser": {
+          "enabled": true,
+          "cdp_url": "http://127.0.0.1:9222",
+          "state_file": ".clash-tokens/sessions.json",
+          "max_sessions": 256,
+          "session_ttl_seconds": 86400,
+          "poll_ms": 1000,
+          "max_prompt_bytes": 65536,
+          "max_response_bytes": 1048576
+        },
+        "device": {
+          "enabled": false,
+          "adb_path": "",
+          "serial": "",
+          "state_dir": "",
+          "ocr_path": "",
+          "ocr_data_dir": "",
+          "clipboard_sync_ms": 0
+        },
+        "sources": [
+          {
+            "id": "chatgpt-web",
+            "provider": "chatgpt-web",
+            "adapter": "chatgpt-web",
+            "base_url": "https://chatgpt.com",
+            "enabled": true,
+            "auto_approved": false,
+            "local": false,
+            "paid": true,
+            "max_inflight": 1,
+            "quota_domain": "chatgpt-web-account",
+            "quota_max_inflight": 1,
+            "models": [
+              {
+                "id": "web",
+                "upstream": "auto",
+                "protocols": [
+                  "chat",
+                  "responses"
+                ],
+                "tier": "unrated",
+                "rating_basis": "",
+                "tools": "none",
+                "vision": false,
+                "max_input_bytes": 65536
+              }
+            ]
+          }
+        ],
+        "groups": [
+          {
+            "require_vision": false,
+            "id": "auto",
+            "type": "auto",
+            "sources": [],
+            "min_tier": "silver",
+            "allow_unrated": false,
+            "allow_paid": false,
+            "local_only": false,
+            "require_tools": false
+          }
+        ]
+      }
+    },
+    {
+      "revision": 5,
+      "created_at": "2026-09-14T16:05:05.4483963Z",
+      "summary": "Verify provider account and update availability",
+      "config": {
+        "providers": [
+          {
+            "id": "huggingchat",
+            "enabled": true,
+            "auto_approved": false,
+            "pool_strategy": "round-robin"
+          },
+          {
+            "id": "deepseek-web",
+            "enabled": true,
+            "auto_approved": false,
+            "pool_strategy": "round-robin"
+          },
+          {
+            "id": "deepseek",
+            "enabled": true,
+            "auto_approved": false,
+            "pool_strategy": "round-robin"
+          }
+        ],
+        "accounts": [
+          {
+            "verification_state": "unverified",
+            "verification_version": 1,
+            "verification_binding": "58b305cc0a781020b807f18f0c3d506497a902c7dfada67d4c15ac0623f30047",
+            "verification_at": "2026-09-14T16:05:05.4361307Z",
+            "id": "import-fd25dd39cf123c660a3cc6a3",
+            "provider_id": "huggingchat",
+            "display_name": "huggingchat · fd25dd",
+            "enabled": false,
+            "auto_approved": false,
+            "login_credential_ref": "cred://import-22d7817cc963b1cde8efbfd2394907ce",
+            "quota_domain": "import-fd25dd39cf123c660a3cc6a3",
+            "max_inflight": 1,
+            "weight": 1,
+            "created_at": "2026-09-14T15:44:33.515279Z"
+          },
+          {
+            "verification_state": "unverified",
+            "verification_version": 1,
+            "verification_binding": "7f7ed3e86586c237e5ac1d7f1f1c89fd5a0e5ad1be9d85c627276e9bc6d5316e",
+            "verification_at": "2026-09-14T16:05:05.4441864Z",
+            "id": "import-ff21886994e702686022153b",
+            "provider_id": "huggingchat",
+            "display_name": "huggingchat · ff2188",
+            "enabled": false,
+            "auto_approved": false,
+            "login_credential_ref": "cred://import-78fb32810b8b9bdf9e93fa37c95d02c6",
+            "quota_domain": "import-ff21886994e702686022153b",
+            "max_inflight": 1,
+            "weight": 1,
+            "created_at": "2026-09-14T15:44:33.5515606Z"
+          },
+          {
+            "verification_state": "unverified",
+            "verification_version": 1,
+            "verification_binding": "9d214a5501bc54a670c69ae9fea45f30f47047bd3776fcc88c58e7ff59011e31",
+            "verification_at": "2026-09-14T16:05:05.4483963Z",
+            "id": "import-67ffbe08ca43eb30d7cab222",
+            "provider_id": "deepseek-web",
+            "display_name": "deepseek-web · 67ffbe",
+            "enabled": false,
+            "auto_approved": false,
+            "login_credential_ref": "cred://import-dd8b5531085f3a4145d1df7da896b61e",
+            "quota_domain": "import-67ffbe08ca43eb30d7cab222",
+            "max_inflight": 1,
+            "weight": 1,
+            "created_at": "2026-09-14T15:44:33.6030731Z"
+          },
+          {
+            "id": "import-b7233688c637002916e9f6d5",
+            "provider_id": "deepseek",
+            "display_name": "deepseek · b72336",
+            "enabled": false,
+            "auto_approved": false,
+            "login_credential_ref": "cred://import-ef800822572580b646de498aa38c2542",
+            "quota_domain": "import-b7233688c637002916e9f6d5",
+            "max_inflight": 1,
+            "weight": 1,
+            "created_at": "2026-09-14T15:44:33.6135843Z"
+          }
+        ],
+        "schema_version": 1,
+        "listen": "127.0.0.1:18317",
+        "api_key_env": "COT_API_KEY",
+        "admin_key_env": "COT_ADMIN_KEY",
+        "runtime": {
+          "max_inflight": 128,
+          "max_queued": 128,
+          "max_body_bytes": 16777216,
+          "max_buffered_bytes": 134217728,
+          "max_output_bytes": 67108864,
+          "queue_timeout_ms": 5000,
+          "request_timeout_ms": 300000,
+          "write_timeout_ms": 15000,
+          "body_read_timeout_ms": 15000
+        },
+        "browser": {
+          "enabled": true,
+          "cdp_url": "http://127.0.0.1:9222",
+          "state_file": ".clash-tokens/sessions.json",
+          "max_sessions": 256,
+          "session_ttl_seconds": 86400,
+          "poll_ms": 1000,
+          "max_prompt_bytes": 65536,
+          "max_response_bytes": 1048576
+        },
+        "device": {
+          "enabled": false,
+          "adb_path": "",
+          "serial": "",
+          "state_dir": "",
+          "ocr_path": "",
+          "ocr_data_dir": "",
+          "clipboard_sync_ms": 0
+        },
+        "sources": [
+          {
+            "id": "chatgpt-web",
+            "provider": "chatgpt-web",
+            "adapter": "chatgpt-web",
+            "base_url": "https://chatgpt.com",
+            "enabled": true,
+            "auto_approved": false,
+            "local": false,
+            "paid": true,
+            "max_inflight": 1,
+            "quota_domain": "chatgpt-web-account",
+            "quota_max_inflight": 1,
+            "models": [
+              {
+                "id": "web",
+                "upstream": "auto",
+                "protocols": [
+                  "chat",
+                  "responses"
+                ],
+                "tier": "unrated",
+                "rating_basis": "",
+                "tools": "none",
+                "vision": false,
+                "max_input_bytes": 65536
+              }
+            ]
+          }
+        ],
+        "groups": [
+          {
+            "require_vision": false,
+            "id": "auto",
+            "type": "auto",
+            "sources": [],
+            "min_tier": "silver",
+            "allow_unrated": false,
+            "allow_paid": false,
+            "local_only": false,
+            "require_tools": false
+          }
+        ]
+      }
+    },
+    {
+      "revision": 6,
+      "created_at": "2026-09-14T16:05:05.4530132Z",
+      "summary": "Verify provider account and update availability",
+      "config": {
+        "providers": [
+          {
+            "id": "huggingchat",
+            "enabled": true,
+            "auto_approved": false,
+            "pool_strategy": "round-robin"
+          },
+          {
+            "id": "deepseek-web",
+            "enabled": true,
+            "auto_approved": false,
+            "pool_strategy": "round-robin"
+          },
+          {
+            "id": "deepseek",
+            "enabled": true,
+            "auto_approved": false,
+            "pool_strategy": "round-robin"
+          }
+        ],
+        "accounts": [
+          {
+            "verification_state": "unverified",
+            "verification_version": 1,
+            "verification_binding": "58b305cc0a781020b807f18f0c3d506497a902c7dfada67d4c15ac0623f30047",
+            "verification_at": "2026-09-14T16:05:05.4361307Z",
+            "id": "import-fd25dd39cf123c660a3cc6a3",
+            "provider_id": "huggingchat",
+            "display_name": "huggingchat · fd25dd",
+            "enabled": false,
+            "auto_approved": false,
+            "login_credential_ref": "cred://import-22d7817cc963b1cde8efbfd2394907ce",
+            "quota_domain": "import-fd25dd39cf123c660a3cc6a3",
+            "max_inflight": 1,
+            "weight": 1,
+            "created_at": "2026-09-14T15:44:33.515279Z"
+          },
+          {
+            "verification_state": "unverified",
+            "verification_version": 1,
+            "verification_binding": "7f7ed3e86586c237e5ac1d7f1f1c89fd5a0e5ad1be9d85c627276e9bc6d5316e",
+            "verification_at": "2026-09-14T16:05:05.4441864Z",
+            "id": "import-ff21886994e702686022153b",
+            "provider_id": "huggingchat",
+            "display_name": "huggingchat · ff2188",
+            "enabled": false,
+            "auto_approved": false,
+            "login_credential_ref": "cred://import-78fb32810b8b9bdf9e93fa37c95d02c6",
+            "quota_domain": "import-ff21886994e702686022153b",
+            "max_inflight": 1,
+            "weight": 1,
+            "created_at": "2026-09-14T15:44:33.5515606Z"
+          },
+          {
+            "verification_state": "unverified",
+            "verification_version": 1,
+            "verification_binding": "9d214a5501bc54a670c69ae9fea45f30f47047bd3776fcc88c58e7ff59011e31",
+            "verification_at": "2026-09-14T16:05:05.4483963Z",
+            "id": "import-67ffbe08ca43eb30d7cab222",
+            "provider_id": "deepseek-web",
+            "display_name": "deepseek-web · 67ffbe",
+            "enabled": false,
+            "auto_approved": false,
+            "login_credential_ref": "cred://import-dd8b5531085f3a4145d1df7da896b61e",
+            "quota_domain": "import-67ffbe08ca43eb30d7cab222",
+            "max_inflight": 1,
+            "weight": 1,
+            "created_at": "2026-09-14T15:44:33.6030731Z"
+          },
+          {
+            "verification_state": "unverified",
+            "verification_version": 1,
+            "verification_binding": "9b9b302608d1857f553034f662f2128080657b24efb6654eb8cfd4a03ba4306f",
+            "verification_at": "2026-09-14T16:05:05.4530132Z",
+            "id": "import-b7233688c637002916e9f6d5",
+            "provider_id": "deepseek",
+            "display_name": "deepseek · b72336",
+            "enabled": false,
+            "auto_approved": false,
+            "login_credential_ref": "cred://import-ef800822572580b646de498aa38c2542",
+            "quota_domain": "import-b7233688c637002916e9f6d5",
+            "max_inflight": 1,
+            "weight": 1,
+            "created_at": "2026-09-14T15:44:33.6135843Z"
+          }
+        ],
+        "schema_version": 1,
+        "listen": "127.0.0.1:18317",
+        "api_key_env": "COT_API_KEY",
+        "admin_key_env": "COT_ADMIN_KEY",
+        "runtime": {
+          "max_inflight": 128,
+          "max_queued": 128,
+          "max_body_bytes": 16777216,
+          "max_buffered_bytes": 134217728,
+          "max_output_bytes": 67108864,
+          "queue_timeout_ms": 5000,
+          "request_timeout_ms": 300000,
+          "write_timeout_ms": 15000,
+          "body_read_timeout_ms": 15000
+        },
+        "browser": {
+          "enabled": true,
+          "cdp_url": "http://127.0.0.1:9222",
+          "state_file": ".clash-tokens/sessions.json",
+          "max_sessions": 256,
+          "session_ttl_seconds": 86400,
+          "poll_ms": 1000,
+          "max_prompt_bytes": 65536,
+          "max_response_bytes": 1048576
+        },
+        "device": {
+          "enabled": false,
+          "adb_path": "",
+          "serial": "",
+          "state_dir": "",
+          "ocr_path": "",
+          "ocr_data_dir": "",
+          "clipboard_sync_ms": 0
+        },
+        "sources": [
+          {
+            "id": "chatgpt-web",
+            "provider": "chatgpt-web",
+            "adapter": "chatgpt-web",
+            "base_url": "https://chatgpt.com",
+            "enabled": true,
+            "auto_approved": false,
+            "local": false,
+            "paid": true,
+            "max_inflight": 1,
+            "quota_domain": "chatgpt-web-account",
+            "quota_max_inflight": 1,
+            "models": [
+              {
+                "id": "web",
+                "upstream": "auto",
+                "protocols": [
+                  "chat",
+                  "responses"
+                ],
+                "tier": "unrated",
+                "rating_basis": "",
+                "tools": "none",
+                "vision": false,
+                "max_input_bytes": 65536
+              }
+            ]
+          }
+        ],
+        "groups": [
+          {
+            "require_vision": false,
+            "id": "auto",
+            "type": "auto",
+            "sources": [],
+            "min_tier": "silver",
+            "allow_unrated": false,
+            "allow_paid": false,
+            "local_only": false,
+            "require_tools": false
+          }
+        ]
+      }
+    }
+  ]
+}

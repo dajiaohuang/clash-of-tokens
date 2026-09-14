@@ -28,6 +28,7 @@ type generation struct {
 
 // ControlPlane owns durable configuration and request-pinned runtime snapshots.
 type ControlPlane struct {
+	loginBatch loginBatchQueue
 	jobs       managementJobs
 	browsers   browserProcesses
 	runtimeID  string
@@ -56,7 +57,7 @@ func NewControlPlane(path string, c config.Config, key, admin string, vault *cre
 	p.service = svc
 	desired := svc.Current().Config
 	p.startup = desired
-	server, err := NewWithVault(desired, key, admin, vault)
+	server, err := NewWithVault(p.withVerifiedAccountPolicy(desired), key, admin, vault)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +66,7 @@ func NewControlPlane(path string, c config.Config, key, admin string, vault *cre
 }
 
 func (p *ControlPlane) prepare(desired config.Config) (func(), func(), error) {
-	effective := desired
+	effective := p.withVerifiedAccountPolicy(desired)
 	effective.Listen = p.startup.Listen
 	effective.APIKeyEnv = p.startup.APIKeyEnv
 	effective.AdminKeyEnv = p.startup.AdminKeyEnv
@@ -112,6 +113,7 @@ func (p *ControlPlane) release(g *generation) {
 	}
 }
 func (p *ControlPlane) Close() {
+	p.loginBatch.close()
 	p.jobs.close()
 	p.browsers.close()
 	p.changes.Lock()
@@ -204,6 +206,18 @@ func (p *ControlPlane) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if managedResource(r.URL.Path) {
+			if p.browserLoginBatchAdmin(w, r) {
+				return
+			}
+			if p.accountFillAdmin(w, r) {
+				return
+			}
+			if p.accountMaterialAdmin(w, r) {
+				return
+			}
+			if p.accountVerifyAdmin(w, r, g.server) {
+				return
+			}
 			if p.implementationAdmin(w, r, g.server) {
 				return
 			}

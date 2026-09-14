@@ -37,6 +37,7 @@ type sourceVerification struct {
 }
 
 type accountHealth struct {
+	State                  string     `json:"state"`
 	ID                     string     `json:"id"`
 	Provider               string     `json:"provider"`
 	CredentialRef          string     `json:"credential_ref,omitempty"`
@@ -584,6 +585,7 @@ func (p *ControlPlane) accountHealth(s *Server, entries []audit.Entry) []account
 				health.Health = "degraded"
 			}
 		}
+		health.State = p.accountState(account)
 		out = append(out, health)
 	}
 	return out

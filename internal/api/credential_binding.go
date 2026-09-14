@@ -12,8 +12,10 @@ import (
 
 func validateCredentialBindings(c config.Config, metadata []credentials.Metadata) error {
 	kinds := map[string]string{}
+	byRef := map[string]credentials.Metadata{}
 	for _, m := range metadata {
 		kinds[m.ID] = m.Kind
+		byRef[m.ID] = m
 	}
 	accounts := map[string]struct {
 		ref      string
@@ -37,7 +39,19 @@ func validateCredentialBindings(c config.Config, metadata []credentials.Metadata
 			}
 			d, ok := providerdef.Lookup(providerAdapters[account.ProviderID])
 			if !ok || !slices.Contains(d.LoginMaterials, kind) {
-				return fmt.Errorf("account %s: provider does not support this login material", account.ID)
+				// Imported console passwords may be retained for account setup on
+				// an exact catalog domain even if the adapter requires an API key.
+				// This never expands invocation support or sends the password.
+				matched := false
+				for _, match := range catalog.MatchCredentials(byRef[account.LoginCredentialRef].Domain, kind) {
+					if match.Provider == account.ProviderID {
+						matched = true
+						break
+					}
+				}
+				if !ok || !matched {
+					return fmt.Errorf("account %s: provider does not support this login material", account.ID)
+				}
 			}
 		}
 		if account.CredentialRef == "" {

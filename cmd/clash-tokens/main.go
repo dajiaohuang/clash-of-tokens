@@ -109,9 +109,12 @@ func run() error {
 		}
 		return json.NewEncoder(os.Stdout).Encode(data)
 	}
-	vault, e := credentials.Open(filepath.Join(filepath.Dir(c.Browser.StateFile), "credentials.vault"))
+	vault, migrationBackup, e := credentials.OpenProviderAccounts(filepath.Dir(c.Browser.StateFile), c)
 	if e != nil {
 		return e
+	}
+	if migrationBackup != "" {
+		fmt.Fprintln(os.Stderr, "Legacy credential storage migrated to provider accounts; encrypted recovery copy:", migrationBackup)
 	}
 	handler, e := api.NewControlPlane(*path, c, "", "", vault)
 	if e != nil {

@@ -37,6 +37,7 @@ type record struct {
 	ImportURL string      `json:"import_url,omitempty"`
 }
 type Store struct {
+	accountOwners  map[string][]AccountOwner
 	refreshes      map[string]*refreshFlight
 	refreshBackoff map[string]time.Time
 	mu             sync.RWMutex
@@ -184,6 +185,13 @@ func (s *Store) putRecord(id, kind, source, value string, external *ExternalRefe
 		}
 	}
 	next[id] = record{Metadata: Metadata{Version: version, ID: id, Kind: kind, Source: source, CreatedAt: created, UpdatedAt: now, External: external}, Value: value, OAuth: oauth}
+	if prior, exists := s.records[id]; exists && prior.Kind == "username_password" && kind == prior.Kind {
+		// Replacing a saved login changes its value, not its website identity.
+		// Preserve import provenance used by duplicate detection and account setup.
+		updated := next[id]
+		updated.Domain, updated.ImportURL = prior.Domain, prior.ImportURL
+		next[id] = updated
+	}
 	if oauth != nil {
 		record := next[id]
 		record.OAuthInfo = &OAuthMetadata{ExpiresAt: oauth.ExpiresAt, Scope: oauth.Scope, AccountID: oauth.AccountID, AutomaticRefresh: oauth.RefreshToken != ""}
@@ -237,7 +245,15 @@ func (s *Store) copy() map[string]record {
 	return next
 }
 func (s *Store) save(next map[string]record) error {
-	plain, err := json.Marshal(next)
+	var payload any = next
+	if s.accountOwners != nil {
+		grouped, err := groupAccountRecords(next, s.accountOwners)
+		if err != nil {
+			return err
+		}
+		payload = grouped
+	}
+	plain, err := json.Marshal(payload)
 	if err != nil {
 		return errors.New("cannot encode credential vault")
 	}

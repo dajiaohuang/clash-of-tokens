@@ -164,7 +164,7 @@ func (p *ControlPlane) bindAcquiredSession(revision uint64, accountID, cookie st
 	var meta credentials.Metadata
 	var err error
 	if cookie != "" {
-		meta, err = p.vault.Create("cookie", "session:"+accountID, cookie)
+		meta, err = p.vault.CreateAccountMaterial(credentials.AccountOwner{Account: accountID, Provider: next.Accounts[index].ProviderID}, "cookie", cookie)
 		if err != nil {
 			return config.Version{}, meta, err
 		}

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"clash-of-tokens/catalog"
 	"clash-of-tokens/internal/config"
 	"clash-of-tokens/internal/credentials"
 	"encoding/json"
@@ -11,6 +10,9 @@ import (
 )
 
 func NewWithVault(c config.Config, key, admin string, vault *credentials.Store) (*Server, error) {
+	if err := vault.ValidateAccountOwners(c); err != nil {
+		return nil, err
+	}
 	if err := validateCredentialBindings(c, vault.List()); err != nil {
 		return nil, err
 	}
@@ -33,81 +35,15 @@ func (s *Server) credentialAdmin(w http.ResponseWriter, r *http.Request) {
 	if s.credentialLifecycleAdmin(w, r) {
 		return
 	}
-	if s.browserPasswordImport(w, r) {
+	if r.URL.Path == "/admin/credentials/import" || r.URL.Path == "/admin/credentials/auto-configure" || strings.HasPrefix(r.URL.Path, "/admin/credentials/browser-passwords/") || strings.HasPrefix(r.URL.Path, "/admin/credentials/import-preview/") {
+		fail(w, 410, "Password import was removed; use browser login from Accounts")
 		return
 	}
-	if r.Method == "DELETE" && strings.HasPrefix(r.URL.Path, "/admin/credentials/import-preview/") {
-		s.imports.Drop(strings.TrimPrefix(r.URL.Path, "/admin/credentials/import-preview/"))
-		reply(w, map[string]string{"status": "discarded"})
+	if s.vault.AccountOwned() {
+		fail(w, 410, "Independent credential storage was removed; edit the provider account instead")
 		return
 	}
-	if s.tokenImport(w, r) {
-		return
-	}
-	if s.browserCookieImport(w, r) {
-		return
-	}
-	if r.URL.Path == "/admin/credentials/import" && r.Method == "POST" {
-		var p struct {
-			Format   string                        `json:"format"`
-			Data     string                        `json:"data"`
-			Selected []int                         `json:"selected"`
-			Apply    bool                          `json:"apply"`
-			Ticket   string                        `json:"ticket,omitempty"`
-			Choices  []credentials.ImportSelection `json:"choices,omitempty"`
-		}
-		d := json.NewDecoder(http.MaxBytesReader(w, r.Body, 8<<20))
-		d.DisallowUnknownFields()
-		if d.Decode(&p) != nil || d.Decode(new(any)) != io.EOF {
-			fail(w, 400, "invalid import request")
-			return
-		}
-		var entries []credentials.ImportEntry
-		var skipped int
-		var err error
-		if p.Ticket != "" {
-			if !p.Apply || p.Data != "" {
-				fail(w, 400, "ticket applies only to a selected preview")
-				return
-			}
-			entries, err = s.imports.Take(p.Ticket)
-		} else {
-			entries, skipped, err = credentials.ParseExport(p.Format, []byte(p.Data))
-		}
-		if err != nil {
-			fail(w, 400, err.Error())
-			return
-		}
-		if !p.Apply {
-			type preview struct {
-				credentials.ImportPreview
-				Matches   []catalog.CredentialMatch `json:"matches"`
-				Conflicts []credentials.Metadata    `json:"conflicts,omitempty"`
-			}
-			out := []preview{}
-			conflicts := s.vault.ImportConflicts(entries)
-			for _, item := range credentials.PreviewImport(entries) {
-				out = append(out, preview{item, catalog.MatchCredentials(item.Domain, item.Kind), conflicts[item.Index]})
-			}
-			ticket, err := s.imports.Add(entries)
-			if err != nil {
-				fail(w, 429, err.Error())
-				return
-			}
-			reply(w, map[string]any{"items": out, "skipped": skipped, "ticket": ticket, "expires_in_seconds": int(credentials.PreviewTTL.Seconds())})
-			return
-		}
-		var items []credentials.Metadata
-		if len(p.Choices) > 0 {
-			items, err = s.vault.ImportWithConflicts(entries, p.Choices)
-		} else {
-			items, err = s.vault.ImportSelected(entries, p.Selected)
-		}
-		if err != nil {
-			fail(w, 400, err.Error())
-			return
-		}
-		reply(w, items)
+	if s.tokenImport(w, r) || s.browserCookieImport(w, r) {
 		return
 	}
 	if r.URL.Path == "/admin/credentials" && r.Method == "GET" {
