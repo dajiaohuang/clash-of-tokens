@@ -19,3 +19,10 @@ func TestCookieHeader(t *testing.T) {
 		}
 	}
 }
+
+func TestSnapshotOmitsPartitionedCookies(t *testing.T) {
+	value, count, err := CookieSnapshot([]*network.Cookie{nil, {Name: "session", Value: "fixture"}, {Name: "partitioned", Value: "secret", PartitionKey: &network.CookiePartitionKey{}}, {Name: "opaque", Value: "secret", PartitionKeyOpaque: true}})
+	if err != nil || count != 1 || value != "session=fixture" {
+		t.Fatal("partitioned cookies escaped their scope")
+	}
+}

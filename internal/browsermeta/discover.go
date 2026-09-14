@@ -27,6 +27,11 @@ type Candidate struct {
 func StandardRoots() []Root {
 	home, _ := os.UserHomeDir()
 	base := filepath.Join(home, ".config")
+	if runtime.GOOS != "windows" && runtime.GOOS != "darwin" {
+		if xdg := os.Getenv("XDG_CONFIG_HOME"); filepath.IsAbs(xdg) {
+			base = xdg
+		}
+	}
 	rel := []Root{{"chrome", "google-chrome"}, {"edge", "microsoft-edge"}, {"brave", "BraveSoftware/Brave-Browser"}, {"chromium", "chromium"}, {"vivaldi", "vivaldi"}, {"opera", "opera"}, {"firefox", "../.mozilla/firefox"}}
 	if runtime.GOOS == "windows" {
 		base = os.Getenv("LOCALAPPDATA")

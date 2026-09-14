@@ -139,6 +139,10 @@ func (p *ControlPlane) browserLoginAdmin(w http.ResponseWriter, r *http.Request)
 		}{result, account.ID, profile.ID, revision, recorded})
 		return true
 	}
+	if profile.External {
+		fail(w, 409, "Open the selected existing browser and authorize the session scan; external profiles are never launched or replaced")
+		return true
+	}
 	destination := ""
 	for _, entry := range catalog.All() {
 		if entry.ID == account.ProviderID {
@@ -211,6 +215,10 @@ func (p *ControlPlane) setupBrowserLogin(w http.ResponseWriter, r *http.Request)
 	}
 	c := p.service.Current().Config
 	validation := config.Config{BrowserProfiles: []config.BrowserProfile{input.Profile}}
+	if input.Profile.External && input.Action == "launch" {
+		fail(w, 409, "External browser profiles must be opened and authorized by their owner")
+		return true
+	}
 	for _, profile := range c.BrowserProfiles {
 		if profile != input.Profile {
 			validation.BrowserProfiles = append(validation.BrowserProfiles, profile)

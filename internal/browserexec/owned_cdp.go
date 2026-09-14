@@ -16,6 +16,15 @@ import (
 // Initial target creation has a separate three-second bound so cancellation
 // cannot discard a successfully created target before ownership is recorded.
 func OpenCDP(parent context.Context, endpoint string, private ...bool) (context.Context, func(), error) {
+	return openCDP(parent, endpoint, 3*time.Second, private...)
+}
+
+// OpenAuthorizedCDP permits the user's native browser authorization dialog to
+// complete. The connection and one new tab are retained for the whole scan.
+func OpenAuthorizedCDP(parent context.Context, endpoint string) (context.Context, func(), error) {
+	return openCDP(parent, endpoint, 45*time.Second)
+}
+func openCDP(parent context.Context, endpoint string, wait time.Duration, private ...bool) (context.Context, func(), error) {
 	allocator, stopAllocator := chromedp.NewRemoteAllocator(context.Background(), endpoint)
 	options := []chromedp.ContextOption{}
 	if len(private) > 0 && private[0] {
@@ -23,7 +32,7 @@ func OpenCDP(parent context.Context, endpoint string, private ...bool) (context.
 	}
 	root, stopRoot := chromedp.NewContext(allocator, options...)
 	tab, stopTab := root, func() {}
-	err := initializeCDP(tab)
+	err := initializeCDPWithTimeout(tab, wait)
 	if err != nil && len(private) > 0 && private[0] && strings.Contains(err.Error(), "no browser is open") {
 		current := chromedp.FromContext(root)
 		if current != nil && current.Browser != nil && current.BrowserContextID != "" {
@@ -76,11 +85,14 @@ func OpenCDP(parent context.Context, endpoint string, private ...bool) (context.
 }
 
 func initializeCDP(ctx context.Context) error {
+	return initializeCDPWithTimeout(ctx, 3*time.Second)
+}
+func initializeCDPWithTimeout(ctx context.Context, wait time.Duration) error {
 	// chromedp binds its browser/target reader loops to the first Run context.
 	// That context must survive initialization and remain alive until cleanup.
 	done := make(chan error, 1)
 	go func() { done <- chromedp.Run(ctx) }()
-	timer := time.NewTimer(3 * time.Second)
+	timer := time.NewTimer(wait)
 	defer timer.Stop()
 	select {
 	case err := <-done:

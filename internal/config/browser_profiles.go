@@ -5,14 +5,16 @@ import (
 	"net"
 	"net/url"
 	"path/filepath"
+	"regexp"
 	"strconv"
 )
 
 type BrowserProfile struct {
-	ID      string `json:"id"`
-	Enabled bool   `json:"enabled"`
-	Engine  string `json:"engine"`
-	CDPURL  string `json:"cdp_url"`
+	External bool   `json:"external,omitempty"`
+	ID       string `json:"id"`
+	Enabled  bool   `json:"enabled"`
+	Engine   string `json:"engine"`
+	CDPURL   string `json:"cdp_url"`
 }
 
 // BrowserEngines is the set of browser families supported by profile
@@ -49,8 +51,10 @@ func (c Config) ValidateBrowserProfiles() error {
 		}
 		ip := net.ParseIP(u.Hostname())
 		port, _ := strconv.Atoi(u.Port())
-		if u.Scheme != "http" || ip == nil || !ip.IsLoopback() || port < 1024 || port > 65535 || u.User != nil || u.RawQuery != "" || u.Fragment != "" || (u.Path != "" && u.Path != "/") {
-			return fmt.Errorf("profile %s: CDP must be explicit loopback HTTP with port 1024..65535", p.ID)
+		normal := u.Scheme == "http" && (u.Path == "" || u.Path == "/")
+		externalWS := p.External && p.Engine != "firefox" && u.Scheme == "ws" && regexp.MustCompile(`^/devtools/browser/[A-Za-z0-9-]{8,128}$`).MatchString(u.Path)
+		if (!normal && !externalWS) || ip == nil || !ip.IsLoopback() || port < 1024 || port > 65535 || u.User != nil || u.RawQuery != "" || u.Fragment != "" {
+			return fmt.Errorf("profile %s: CDP must be loopback HTTP or an external browser WebSocket with port 1024..65535", p.ID)
 		}
 		// Ports must differ even when equivalent loopback aliases are used.
 		if endpoints[u.Port()] {

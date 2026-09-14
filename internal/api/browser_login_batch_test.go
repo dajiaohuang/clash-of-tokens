@@ -20,20 +20,30 @@ func fakeInstalledChrome(t *testing.T) {
 	t.Helper()
 	root := t.TempDir()
 	path := filepath.Join(root, "google-chrome")
+	metadata := filepath.Join(root, "google-chrome", "DevToolsActivePort")
 	if runtime.GOOS == "windows" {
 		for _, name := range []string{"ProgramFiles", "ProgramFiles(x86)", "LOCALAPPDATA"} {
 			t.Setenv(name, root)
 		}
 		path = filepath.Join(root, `Google\Chrome\Application\chrome.exe`)
+		metadata = filepath.Join(root, `Google\Chrome\User Data\DevToolsActivePort`)
 	} else if runtime.GOOS == "darwin" {
 		t.Skip("fixed application paths; tested on Windows and Linux")
 	} else {
-		t.Setenv("PATH", root)
+		path = filepath.Join(root, "bin", "google-chrome")
+		t.Setenv("XDG_CONFIG_HOME", root)
+		t.Setenv("PATH", filepath.Dir(path))
 	}
 	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(path, []byte("inert test fixture"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Dir(metadata), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(metadata, []byte("19999\n/devtools/browser/fixture-connection\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -89,7 +99,7 @@ func TestLoginBatchPreviewConfirmationAndStaleness(t *testing.T) {
 		Ticket string      `json:"ticket"`
 		Sites  []loginSite `json:"sites"`
 	}
-	if json.Unmarshal(w.Body.Bytes(), &preview) != nil || preview.Ticket == "" || len(preview.Sites) != 1 {
+	if json.Unmarshal(w.Body.Bytes(), &preview) != nil || preview.Ticket == "" || len(preview.Sites) < 100 {
 		t.Fatal("bad preview")
 	}
 	if len(p.service.Current().Config.BrowserProfiles) != 0 || len(p.browsers.list()) != 0 {
@@ -111,7 +121,7 @@ func TestLoginBatchPreviewConfirmationAndStaleness(t *testing.T) {
 		t.Fatal("stale preview launched browser")
 	}
 	w = batchRequest(p, "/preview", `{"browser":"powershell"}`)
-	if w.Code != 400 {
+	if w.Code != 409 {
 		t.Fatal("unknown browser accepted")
 	}
 	w = batchRequest(p, "/preview", `{"browser":"chrome","accounts":["missing"]}`)

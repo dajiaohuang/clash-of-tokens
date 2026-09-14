@@ -2,18 +2,18 @@
 const $ = id => document.getElementById(id);
 const S = {config:null, revision:0, catalog:[], descriptors:[], schema:[], credentials:[], status:{sources:[]}, history:[], restart:[]};
 const pages = [
- ['Workspace',['overview','providers','accounts','sources','models']],
+ ['Workspace',['overview','login-state','providers','accounts','sources','models']],
  ['Traffic',['groups','routing','health','metrics']],
  ['Environment',['browsers','devices','sessions']],
  ['System',['config','logs','implementation','about']]
 ];
-const labels = {overview:'Overview',providers:'Providers',accounts:'Accounts',credentials:'Credentials',sources:'Sources',models:'Models',groups:'Groups',routing:'Routing',health:'Health',metrics:'Metrics',browsers:'Browsers',devices:'Devices',sessions:'Sessions',config:'Configuration',logs:'Activity',implementation:'Implementation',about:'About'};
+const labels = {'login-state':'Login states',overview:'Overview',providers:'Providers',accounts:'Accounts',credentials:'Credentials',sources:'Sources',models:'Models',groups:'Groups',routing:'Routing',health:'Health',metrics:'Metrics',browsers:'Browsers',devices:'Devices',sessions:'Sessions',config:'Configuration',logs:'Activity',implementation:'Implementation',about:'About'};
 const names = {id:'ID',provider_id:'Provider',account_id:'Account',credential_ref:'Credential',login_credential_ref:'Login material',expected_identity:'Expected browser identity',credential_type_override:'Reviewed credential type override',base_url:'Base URL',key_env:'Legacy credential environment variable',account_id_env:'Legacy account ID environment variable',organization:'Organization',auto_approved:'Allow Auto routing',allow_paid:'Legacy paid-source policy',allow_unknown_cost:'Allow unknown costs',max_inflight:'Concurrent requests',quota_max_inflight:'Shared quota concurrency',quota_domain:'Quota domain',max_input_bytes:'Maximum input bytes',cdp_url:'Browser connection URL',source_kind:'Source type',tools:'Tool capability',local:'Loopback / local transport',paid:'Legacy paid flag'};
 const languageKey='clash-tokens-language';
 let language=localStorage.getItem(languageKey)==='zh'?'zh':'en';
 const translations={
  zh:{
-  'Workspace':'工作区','Traffic':'流量','Environment':'环境','System':'系统','Overview':'概览','Providers':'服务商','Accounts':'账号','Credentials':'凭据','Sources':'来源','Models':'模型','Groups':'分组','Routing':'路由','Health':'健康','Metrics':'指标','Browsers':'浏览器','Devices':'设备','Sessions':'会话','Configuration':'配置','Activity':'活动','Implementation':'实现状态','About':'关于',
+  'Login states':'登录态','Workspace':'工作区','Traffic':'流量','Environment':'环境','System':'系统','Overview':'概览','Providers':'服务商','Accounts':'账号','Credentials':'凭据','Sources':'来源','Models':'模型','Groups':'分组','Routing':'路由','Health':'健康','Metrics':'指标','Browsers':'浏览器','Devices':'设备','Sessions':'会话','Configuration':'配置','Activity':'活动','Implementation':'实现状态','About':'关于',
   'Management':'管理','Local provider control':'本地服务商控制台','Open chat':'打开聊天','Search everything':'搜索全部内容','Provider, account, source, group…':'服务商、账号、来源、分组…','Refresh':'刷新','Local':'本地','Close':'关闭','Cancel':'取消','Save':'保存','Edit':'编辑','Delete':'删除','Add account':'添加账号','Add source':'添加来源','Add credential':'添加凭据',
   'Overview':'概览','A direct view of your provider pool.':'服务商池的直接概览。','One-click import':'一键导入','Bring credentials into the protected vault, then bind them to an account.':'将凭据导入受保护的凭据库，再绑定到账号。','Import login export':'导入登录导出文件','Import token':'导入令牌','Import browser cookies':'导入浏览器 Cookie','Open credentials':'打开凭据','Providers':'服务商','Accounts':'账号','Sources':'来源','In flight':'处理中','configured':'已配置','enabled':'已启用','Needs attention':'需要关注','No recorded failures. Untested sources still need verification.':'暂无失败记录。尚未测试的来源仍需验证。','Routing groups':'路由分组','Workload and memory':'负载与内存','Current gateway':'当前网关',
   'Credentials':'凭据','Protected values are stored separately from configuration.':'受保护的值与配置分开存储。','Import export':'导入导出文件','Import selected export':'导入选中的导出文件','Import token':'导入令牌','Import browser cookies':'导入浏览器 Cookie','No credentials. Add a key or session, then bind its reference to an account.':'暂无凭据。添加密钥或会话后，将其引用绑定到账号。','Preview entries':'预览条目','Select credentials to import':'选择要导入的凭据','Import selected':'导入所选项','Save imported token':'保存导入令牌','Token import preview':'令牌导入预览','Preview token':'预览令牌','Save cookies':'保存 Cookie','Browser cookie preview':'浏览器 Cookie 预览','Add external manager reference':'添加外部管理器引用','Add OAuth lifecycle':'添加 OAuth 生命周期',
@@ -568,7 +568,7 @@ async function providerDetail(provider){
   h('h3',{},'Configured runtime'),table(['Measure','Value'],[['Provider enabled',configured?(configured.enabled?'Yes':'No'):'Not configured'],['Provider Auto approval',configured?(configured.auto_approved?'Yes':'No'):'Not configured'],['Pool strategy',providerHealth.pool_strategy||configured?.pool_strategy||'round-robin'],['Provider health',providerHealth.health||'untested'],['Provider auth status',providerHealth.auth_status||'not_checked'],['Catalog implementation',providerHealth.catalog_implemented?(providerHealth.catalog_live_verified?'Live catalog':'Implemented catalog'):'Not implemented'],['Verified sources',String(providerHealth.verified_sources||0)+' / '+sources.length],['Last generation validation',providerHealth.last_validated_at?(new Date(providerHealth.last_validated_at).toLocaleString()+' · '+(providerHealth.last_validation_state||'recorded')):'Not checked'],['Last auth check',providerHealth.last_auth_checked_at?new Date(providerHealth.last_auth_checked_at).toLocaleString():'Not checked'],['Accounts / sources / models',accounts.length+' / '+sources.length+' / '+sources.reduce((n,s)=>n+s.models.length,0)],['Sources with matching generation evidence',verified.size+' / '+sources.length],['Successful / failed requests',completed+' / '+failed],['Observed success rate',completed+failed?(completed*100/(completed+failed)).toFixed(1)+'%':'No completed requests']]),
   h('p',{class:'muted'},'A source counts as verified when at least one configured model/protocol has matching generation evidence. This does not verify every model, capability, account or future request. Runtime counters include explicit checks; shared quota is not a sum of source capacities.'),
   h('h3',{},'Accounts'),table(['Account',importText('Account state','账号状态'),importText('Enabled','启用'),importText('Login data','登录资料'),'Actions'],accounts.map(a=>{
-   return [a.display_name||a.id,accountStateLabel(a),accountEnabled(a)?importText('Yes','是'):importText('No','否'),accountSetupLabel(a),[button(importText('Fill / replace','填写／修改'),()=>editAccountMaterial(a)),button(importText('Try login','尝试登录'),()=>launchAccountLogin(a)),button(importText('Verify','验证'),()=>verifyAccountState(a)),button('Delete account',()=>removeAccount(a),'danger')]];
+   return [a.display_name||a.id,accountStateLabel(a),accountEnabled(a)?importText('Yes','是'):importText('No','否'),accountSetupLabel(a),[button(importText('Fill / replace','填写／修改'),()=>editAccountMaterial(a)),button(importText('Try login','尝试登录'),()=>launchAccountLogin(a)),button(importText('Validate and enable','验证并启用'),()=>confirmAccountValidation(a)),button('Delete account',()=>removeAccount(a),'danger')]];
   }),'No accounts. Add an account to keep credentials and routing policy together.'),
   h('h3',{},'Sources'),table(['Source','Account','Routing state','Models','Matching generation evidence','Actions'],sources.map(s=>[s.id,s.account_id||'No account',state(s),s.models.length,verified.has(s.id)?'At least one model/protocol':'Not established',[button('Source details',()=>sourceDetail(s)),button('Validate source',()=>validateSource(s)),button('Discover models',()=>discoverModels(s))]]),'No sources configured.'),
   h('h3',{},'Provider routing eligibility'),h('p',{class:'muted'},'Read-only simulation for a 100-byte text request. Results explain eligibility, not final candidate selection.'),field('Provider group',group),field('Provider protocol',protocol),explain,explanations
@@ -603,7 +603,7 @@ async function validateProvider(provider){
 }
 function overview(){
  const c=S.config,status=S.status,sources=c.sources||[],accounts=c.accounts||[];
- const importSpotlight=h('section',{class:'import-spotlight'},h('div',{},h('h2',{},importText('Browser login','浏览器登录')),h('p',{},importText('Choose an installed browser, review the sites, then start sign-in. No password import.','选择本机浏览器，确认站点后开始登录；不再导入浏览器账密。'))),button(importText('Choose browser','选择浏览器'),()=>selectLoginBrowser(),'primary'));
+ const importSpotlight=h('section',{class:'import-spotlight'},h('div',{},h('h2',{},importText('Browser login','浏览器登录')),h('p',{},importText('Use existing browser sessions to discover provider accounts.','选择现有浏览器，批量获取已登录站点的会话并关联服务商账号。'))),button(importText('Choose browser','选择浏览器'),()=>selectLoginBrowser(),'primary'));
  const flow=h('div',{class:'flow'},[
   ['Providers',S.catalog.length,translate((c.providers||[]).length+' configured')],
   ['Accounts',accounts.length,translate(accounts.filter(accountEnabled).length+' enabled')],
@@ -642,53 +642,126 @@ function accountAuth(a){
  return last.status+' · '+new Date(last.checked_at).toLocaleString()+(last.revision===S.revision?'':' · historical configuration');
 }
 async function launchAccountLogin(a){return selectLoginBrowser([a.id])}
-async function selectLoginBrowser(accounts){
+let loginWorkbenchSelection={connection:'',providers:null};
+function selectLoginBrowser(accounts){
+ loginWorkbenchSelection.providers=accounts?.map(id=>S.config.accounts.find(a=>a.id===id)?.provider_id).filter(Boolean)||null;
+ $('dialog').close();
+ if(location.hash==='#login-state')render();else location.hash='login-state';
+}
+let pageCleanup=null;
+async function reviewBrowserScan(accounts,preferred,providers){
  const status=await api('/admin/accounts/browser-login');
- if(status.batch?.state==='running'){return showLoginBatch()}
- const choice=select(status.browsers||[],status.browsers?.[0]||'');
- for(const option of choice.options)option.textContent=({chrome:'Chrome',edge:'Microsoft Edge',firefox:'Firefox',brave:'Brave',vivaldi:'Vivaldi',opera:'Opera',chromium:'Chromium',arc:'Arc'})[option.value]||option.value;
- const start=button(importText('Review sites','查看并确认站点'),async()=>{
-  const preview=await api('/admin/accounts/browser-login/preview',{method:'POST',body:JSON.stringify({browser:choice.value,accounts:accounts||[]})});
-  dialog(importText('Confirm browser login','确认浏览器登录'),[
-   h('p',{},importText('Start '+preview.sites.length+' accounts using '+preview.browser+'?', '使用 '+preview.browser+' 尝试登录 '+preview.sites.length+' 个账号？')),
-   table([importText('Account','账号'),importText('Website','站点')],preview.sites.map(s=>[s.name||s.provider+' / '+s.account,s.destination])),
-   h('p',{},importText('Reuse isolated account sessions. Never copy personal browser profiles or passwords.','复用账号的独立持久会话，不读取或复制个人浏览器配置与密码库。')),
-   h('p',{class:'warning'},importText('First sign-in and security checks may need you. Unsupported sites remain unverified. No model prompts are sent.','首次登录与安全验证可能需手动完成；不支持的站点保持未验证，不发送模型对话。')),
-   h('details',{},h('summary',{},importText('Session storage and API access','会话存储与 API 可用性')),h('p',{class:'muted'},importText('The browser persists cookies and site storage in its workspace profile; these are not protected by the app account-secret mechanism. Website login does not prove API access.','Cookie 和站点存储由浏览器保存在工作区专用配置目录，不属于应用的账号加密资料文件。网页登录不等于 API 可用。')))
-  ],[button('Cancel',()=>$('dialog').close()),button(importText('Confirm and start','确认并开始'),async()=>{
-   await api('/admin/accounts/browser-login/start',{method:'POST',body:JSON.stringify({ticket:preview.ticket,confirm:true})});return showLoginBatch();
-  },'primary')]);
- },'primary');
- start.disabled=!(status.browsers||[]).length||!(status.sites||[]).length;
- dialog(importText('Choose browser','选择浏览器'),[
-  field(importText('Installed browser','本机已安装浏览器'),choice),
-  h('p',{},importText('Only configured website accounts are included. No passwords are imported.','仅处理已配置的网站账号，不导入账密。')),
-  !(status.browsers||[]).length?h('p',{class:'warning'},importText('No supported browser installation found.','未发现支持的浏览器安装。')):null,
-  !(status.sites||[]).length?h('p',{},importText('Add a provider account first.','请先添加服务商账号。')):null
- ],[start,status.batch?.id?button(importText('Last run','上次登录进度'),showLoginBatch):null].filter(Boolean));
-}
-function showLoginBatch(){
- let live=true,timer;
- const target=h('div',{'aria-live':'polite'});
- const names={queued:['Queued','等待'],running:['Checking','检查中'],verified:['Verified','已验证'],needs_login:['Sign-in needed','需完成登录'],manual_check:['Automatic check unsupported','暂不支持自动验证'],failed:['Failed','失败'],not_attempted:['Not attempted','未尝试']};
- const draw=async()=>{
-  try{
-   const result=await api('/admin/accounts/browser-login');if(!live)return;
-   const batch=result.batch||{};
-   target.replaceChildren(h('p',{},batch.browser+' · '+importText(batch.state==='running'?'Running':'Finished',batch.state==='running'?'处理中':'已结束')),
-    table([importText('Account','账号'),importText('Login result','登录结果'),importText('Action','操作')],(batch.sites||[]).map(s=>[s.name||s.provider+' / '+s.account,importText(...(names[s.state]||[s.state,s.state])),s.state==='needs_login'||s.state==='manual_check'?button(importText('I signed in: verify','已完成登录，验证'),async()=>{
-     const r=await api('/admin/accounts/'+encodeURIComponent(s.account)+'/verify-login',{method:'POST',body:'{}'});await refresh();
-     message(r.verified?importText('Browser login verified.','浏览器登录已验证。'):importText('Not verified. This site may need a supported verifier or more sign-in steps.','尚未验证；可能需要站点验证器或继续完成登录。'));
-    }):null])),
-    h('p',{class:'muted'},importText('Closing this panel does not stop the queue. A gateway restart stops the queue, but browser profile data is retained.','关闭此面板不停止后台队列。网关重启会停止队列，浏览器配置数据会保留。')));
-   if(batch.state==='running')timer=setTimeout(draw,2000);else await refresh();
-  }catch(e){if(live)target.replaceChildren(h('p',{class:'warning'},e.message))}
+ if(status.batch?.state==='running')return showLoginBatch();
+ const connections=status.connections||[],names={chrome:'Chrome',edge:'Microsoft Edge',firefox:'Firefox',brave:'Brave',vivaldi:'Vivaldi',opera:'Opera',chromium:'Chromium',arc:'Arc'};
+ const choice=select(connections.map(c=>c.id),preferred||connections.find(c=>c.ready)?.id||connections[0]?.id||'');
+ for(const option of choice.options){const c=connections.find(c=>c.id===option.value);option.textContent=(names[c.browser]||c.browser)+importText(' · existing profile',' · 现有用户配置')}
+ const guide=h('div',{'aria-live':'polite'});
+ const prepare=async()=>{
+  const preview=await api('/admin/accounts/browser-login/preview',{method:'POST',body:JSON.stringify({connection:choice.value,accounts:accounts||[],providers:providers||[]})});
+  const supported=preview.sites.filter(s=>s.state==='queued'),skipped=preview.sites.filter(s=>s.state!=='queued');
+  const launch=button(importText('Confirm: scan and save sessions','确认：扫描并保存会话'),async()=>{
+   await api('/admin/accounts/browser-login/start',{method:'POST',body:JSON.stringify({ticket:preview.ticket,confirm:true})});$('dialog').close();return selectLoginBrowser();
+  },'primary');launch.disabled=!supported.length;
+  dialog(importText('Confirm existing-browser session scan','确认读取现有浏览器会话'),[
+   h('p',{},importText('Scan '+supported.length+' supported sites in '+preview.browser+'; '+skipped.length+' unsupported sites will be listed without access.','使用 '+(names[preview.browser]||preview.browser)+' 探测 '+supported.length+' 个支持的站点，另列出 '+skipped.length+' 个暂不支持的站点。')),
+   h('p',{},importText('Use the profile authorized by the running browser. No blank profile is created. Only new scan tabs are closed; your existing tabs are untouched.','使用正在运行的浏览器所授权的用户配置，不创建空白配置。只关闭扫描新建的标签页，不操作你已有的标签页。')),
+   h('p',{class:'warning'},importText('Save applicable site cookies as encrypted provider-account data, including unverified candidates. No password database or blanket local-storage export. Browser-only sessions retain a connection reference. No model prompts are sent.','将目标站点适用的 Cookie 加密保存到服务商账号，包括尚未验证的候选。不会读取密码库或整库导出本地存储；仅浏览器模式保存连接引用。不发送模型对话。')),
+   h('details',{},h('summary',{},importText('Sites to probe ('+supported.length+')','将探测的站点（'+supported.length+'）')),table(['Provider',importText('Website','站点')],supported.map(s=>[s.provider,s.destination]))),
+   h('details',{},h('summary',{},importText('Unsupported ('+skipped.length+')','暂不支持（'+skipped.length+'）')),h('p',{},skipped.map(s=>s.provider).join(', '))),
+   h('p',{class:'muted'},importText('You may need to approve the browser connection popup. Cookie presence is not login proof; API/model access still requires verification.','浏览器可能弹出连接授权，需要你允许。有 Cookie 不等于已登录，API／模型调用仍需验证。'))
+  ],[button('Cancel',()=>$('dialog').close()),launch]);
  };
- dialog(importText('Browser login progress','浏览器登录进度'),target,[button(importText('Stop remaining attempts','停止后续尝试'),async()=>{await api('/admin/accounts/browser-login/cancel',{method:'POST',body:'{}'});clearTimeout(timer);await draw()}),button('Close',()=>$('dialog').close())]);
- dialogCleanup=()=>{live=false;clearTimeout(timer)};draw();
+ if(preferred)return prepare();
+ const start=button(importText('Review scan','查看扫描范围'),prepare,'primary');
+ const update=()=>{
+  const c=connections.find(c=>c.id===choice.value);start.disabled=!c?.ready;
+  if(!c){guide.replaceChildren(h('p',{},importText('No supported browser installation found.','未找到支持的浏览器安装。')));return}
+  if(c.ready){guide.replaceChildren(h('p',{},importText('Authorization metadata found. Confirmation will connect to the existing browser and may display its permission prompt.','已发现授权连接信息。确认后连接现有浏览器，可能弹出浏览器许可提示。')));return}
+  const address=c.browser==='edge'?'edge://inspect/#remote-debugging':'chrome://inspect/#remote-debugging';
+  guide.replaceChildren(h('p',{class:'warning'},importText('The existing profile is not connected yet.','现有用户配置尚未授权连接。')),
+   c.state==='existing_profile_connection_unsupported'?h('p',{},importText('This browser does not yet support existing-profile connection here. Choose a supported Chrome browser.','此浏览器暂不支持这里的现有配置连接，请选择支持授权连接的 Chrome。')):
+   h('ol',{},h('li',{},importText('Open your usual browser profile.','打开你平时使用、已经登录的浏览器用户配置。')),h('li',{},importText('Open this address and enable remote debugging (Chrome 144+).','打开以下地址，启用远程调试（Chrome 144 及以上）：'),h('code',{},address)),h('li',{},importText('Return here and rediscover. If the page has no authorization setting, this version or policy does not support this connection.','回到这里点击重新发现。若没有授权设置，该版本或策略暂不支持此连接。'))));
+ };
+ choice.onchange=update;update();
+ dialog(importText('Choose existing browser','选择现有浏览器'),[field(importText('Browser / existing profile','浏览器／现有用户配置'),choice),
+ h('p',{},importText('Scan the provider catalog, not only configured accounts. Use existing sessions; no password import or new profile.','扫描服务商目录，不限于已配置账号。复用现有登录态，不导入账密、不新建用户配置。')),guide],
+ [button(importText('Rediscover','重新发现'),()=>selectLoginBrowser(accounts)),start,status.batch?.id?button(importText('Last scan','上次扫描'),showLoginBatch):null].filter(Boolean));
 }
+
+function loginStateWorkbench(){
+ const t=importText,root=h('section',{class:'login-workbench'}),error=h('p',{class:'error',role:'alert'}),browserList=h('div',{class:'login-browser-list'}),connectionBody=h('div',{}),scopeBody=h('div',{}),results=h('section',{class:'login-results'}),inventory=h('section',{}),search=h('input',{type:'search',placeholder:t('Filter saved accounts','筛选已保存账号'),'aria-label':t('Filter saved accounts','筛选已保存账号')});
+ let live=true,timer,data,selected=new Set(loginWorkbenchSelection.providers||[]),custom=!!loginWorkbenchSelection.providers;
+ const names={chrome:'Chrome',edge:'Microsoft Edge',firefox:'Firefox',brave:'Brave',opera:'Opera',vivaldi:'Vivaldi',chromium:'Chromium',arc:'Arc'};
+ const stateLabel=s=>t(...({queued:['Queued','等待'],running:['Scanning','扫描中'],unsupported:['Unsupported','不支持'],session_saved:['Session saved','会话已保存'],candidate_saved:['Candidate only','仅有候选'],no_session:['No session','未取得会话'],site_unavailable:['Unavailable','站点不可用'],capture_failed:['Capture failed','采集失败'],save_failed:['Save failed','保存失败'],not_attempted:['Not attempted','未尝试']}[s]||['Unknown','未知']));
+ const review=button(t('Review selected sites','查看并确认站点'),()=>reviewBrowserScan(null,loginWorkbenchSelection.connection,[...selected]),'primary');
+ const updateButton=()=>{review.disabled=!data?.connections?.find(c=>c.id===loginWorkbenchSelection.connection)?.ready||!selected.size||data?.batch?.state==='running'};
+ const drawScope=()=>{
+  const sites=data.sites||[],eligible=sites.filter(s=>s.state==='queued');
+  const selectAll=button(t('All supported','全部支持站点'),()=>{selected=new Set(eligible.map(s=>s.provider));custom=false;drawScope()});
+  const selectMissing=button(t('Not yet saved','尚未保存'),()=>{selected=new Set(eligible.filter(s=>!S.config.accounts.some(a=>a.provider_id===s.provider&&a.browser_profile_id)).map(s=>s.provider));custom=true;drawScope()});
+  const items=eligible.map(s=>{
+   const check=h('input',{type:'checkbox',checked:selected.has(s.provider),onchange:()=>{custom=true;check.checked?selected.add(s.provider):selected.delete(s.provider);count.textContent=t(selected.size+' selected','已选 '+selected.size+' 项');updateButton()}});
+   return h('label',{class:'login-site-choice'},check,h('span',{},s.provider),h('small',{},s.mode==='cookie'?t('Cookie candidate','Cookie 候选'):t('Browser connection','浏览器连接')));
+  });
+  const count=h('span',{},t(selected.size+' selected','已选 '+selected.size+' 项'));
+  scopeBody.replaceChildren(h('h2',{},t('Choose scan scope','选择扫描范围')),h('p',{},t('Only supported sites are accessed. Choose all, missing sessions, or individual sites.','只访问支持的目标站点，可全选、补充未保存站点或单独勾选。')),h('div',{class:'actions'},selectAll,selectMissing,count),h('details',{},h('summary',{},t('Edit site selection','编辑站点选择')),h('div',{class:'login-site-grid'},items)),h('p',{class:'muted'},t((sites.length-eligible.length)+' unsupported catalog entries are excluded.','目录中 '+(sites.length-eligible.length)+' 项暂不支持采集，已排除。')),h('details',{},h('summary',{},t('See unsupported sites','查看不支持的站点')),h('div',{class:'login-site-grid'},sites.filter(s=>s.state!=='queued').map(s=>h('span',{},s.provider)))),review);
+  updateButton();
+ };
+ const drawConnection=()=>{
+  browserList.replaceChildren(...(data.connections||[]).map(c=>{
+   const b=button(names[c.browser]||c.browser,()=>{loginWorkbenchSelection.connection=c.id;drawConnection();updateButton()},'login-browser'+(c.id===loginWorkbenchSelection.connection?' selected':''));
+   b.setAttribute('aria-pressed',String(c.id===loginWorkbenchSelection.connection));b.append(h('small',{},c.ready?t('Authorization metadata found','已发现授权信息'):t('Authorization needed','需要授权')));return b;
+  }));
+  const c=data.connections.find(c=>c.id===loginWorkbenchSelection.connection);
+  if(!c){connectionBody.replaceChildren(h('h2',{},t('No browser detected','未检测到浏览器')),h('p',{},t('Install a supported browser, then rediscover. Custom profile paths are not scanned.','请安装支持的浏览器后重新发现；当前不扫描自定义配置路径。')));return}
+  connectionBody.replaceChildren(h('h2',{},t('Connect your existing '+names[c.browser], '连接你正在使用的 '+names[c.browser])),h('p',{},t('The selected browser keeps its tabs, passwords and profile. This app uses one new tab to read sessions for the sites you confirm.','保留原浏览器的标签页、密码和用户配置。应用只新建一个标签页，读取你确认的目标站点会话。')),
+   c.ready?h('p',{class:'login-ready'},t('Connection information found. Your browser may still ask for approval when scanning starts.','已找到连接信息。开始扫描时，浏览器仍可能要求你允许连接。')):
+   h('div',{class:'login-authorization'},h('strong',{},t('One-time browser setup required','首次使用需要浏览器授权')),c.state==='existing_profile_connection_unsupported'?h('p',{},t('Existing-profile access is not supported for this browser. Select Chrome.','此浏览器暂不支持现有配置连接，请选择 Chrome。')):h('ol',{},h('li',{},t('Open the browser profile where you are already signed in.','打开你平时已登录的浏览器配置。')),h('li',{},t('Enable remote debugging at ','在以下地址启用远程调试：'),h('code',{},c.browser==='edge'?'edge://inspect/#remote-debugging':'chrome://inspect/#remote-debugging')),h('li',{},t('Click Rediscover here, then review and confirm your sites.','回到这里点击重新发现，再查看并确认目标站点。'))),h('p',{class:'muted'},t('Chrome 144+ supports this opt-in. Other versions, browser families or enterprise policies may not. No security settings are changed automatically.','Chrome 144+ 支持此授权方式；其他版本、浏览器或企业策略可能不支持。应用不会自动修改安全设置。'))));
+ };
+ const drawResults=()=>{
+  const batch=data.batch||{},sites=batch.sites||[];
+  if(!batch.id){results.replaceChildren(h('h2',{},t('Scan activity','扫描记录')),h('p',{class:'muted'},t('No scan yet. Confirming a scope starts a scan; viewing this page does not access website sessions.','还没有扫描记录。确认范围后才会开始；打开本页不会读取网站会话。')));return}
+  const active=sites.filter(s=>s.state!=='unsupported'),done=active.filter(s=>!['queued','running'].includes(s.state)).length;
+  const endings={running:['Scanning / waiting for browser permission','扫描中／等待浏览器许可'],completed:['Finished','已完成'],canceled:['Canceled','已取消'],interrupted:['Interrupted by restart','重启中断'],connection_failed:['Connection failed — authorize the browser and retry','连接失败，请授权浏览器后重试'],configuration_changed:['Stopped because configuration changed','配置变化，已停止'],history_failed:['History could not be saved; scan stopped','记录保存失败，扫描已停止'],failed:['Failed','失败']};
+  results.replaceChildren(h('div',{class:'toolbar'},h('h2',{},t('Scan activity','扫描记录')),badge(t(...(endings[batch.state]||['Awaiting confirmation','等待确认'])))),h('p',{},done+' / '+active.length+' '+t('sites processed','个站点已处理')+' · '+sites.filter(s=>s.account).length+' '+t('saved','已保存')),h('progress',{max:Math.max(active.length,1),value:done,'aria-label':t('Scan progress','扫描进度')}),h('p',{class:'muted'},t('Started: ','开始：')+(batch.started_at?new Date(batch.started_at).toLocaleString():'—')),batch.history_error?h('p',{class:'warning'},t('History write failed. Current results may not survive restart.','记录写入失败，当前结果可能无法在重启后恢复。')):null,batch.state==='running'?button(t('Stop remaining sites','停止后续扫描'),async()=>{await api('/admin/accounts/browser-login/cancel',{method:'POST',body:'{}'});await load(false)}):null,h('details',{open:batch.state!=='running'},h('summary',{},t('Per-site results','逐站结果')),table(['Provider',t('Result','结果'),t('Saved account','已保存账号')],sites.map(s=>[s.provider,stateLabel(s.state),s.account||'—']))));
+ };
+ const drawInventory=()=>{
+  const q=search.value.toLowerCase(),accounts=S.config.accounts.filter(a=>(a.display_name+' '+a.id+' '+a.provider_id).toLowerCase().includes(q));
+  inventory.replaceChildren(table([t('Provider / account','服务商／账号'),t('Saved material','保存材料'),t('Website login','网页登录'),t('Account validation','账号验证'),t('Routing','调用开关'),'Actions'],accounts.map(a=>{
+   const health=(S.status.account_health||[]).find(x=>x.id===a.id)||{},meta=S.credentials.find(c=>c.id===a.credential_ref);
+   const material=meta?.kind==='cookie'?t('Protected Cookie candidate','加密 Cookie 候选'):a.browser_profile_id?t('Browser reference','浏览器引用'):a.credential_ref?t('Other credential','其他凭据'):t('No session','无会话');
+   const auth=(S.evidence||[]).filter(e=>e.kind==='authentication'&&e.resource===a.id).sort((a,b)=>b.sequence-a.sequence)[0];
+   const authText=!auth?t('Not checked','未检查'):auth.status==='authenticated'?t('Authentication observed','曾确认登录'):t('Not established','未确认登录');
+   return [h('div',{},h('strong',{},a.provider_id),h('p',{class:'muted'},a.display_name||a.id)),h('div',{},material,meta?.state==='expired'?h('p',{class:'warning'},t('Expired — reacquire','已过期，请重新获取')):null),h('div',{},authText,auth?h('p',{class:'muted'},new Date(auth.checked_at).toLocaleString()+(auth.revision!==S.revision?t(' · historical',' · 历史配置'):'')):null),accountStateLabel(a),accountEnabled(a)?t('Enabled','已启用'):t('Disabled','未启用'),[button(t('Manage','管理'),()=>sessionDetail(a)),button(t('Reacquire','重新获取'),()=>selectLoginBrowser([a.id]))]];
+  }),t('No saved accounts match. Scan a browser to discover sessions.','没有匹配账号。扫描浏览器可发现并保存会话。')));
+ };
+ const sessionDetail=a=>{
+  const profile=S.config.browser_profiles?.find(p=>p.id===a.browser_profile_id),sources=S.config.sources.filter(s=>s.account_id===a.id);
+  dialog(t('Manage session','管理登录态'),[h('h3',{},a.display_name||a.id),h('p',{},t('Provider: ','服务商：')+a.provider_id),h('p',{},t('Browser: ','浏览器：')+(profile?.engine||t('Not linked','未关联'))),h('p',{},t('Website authentication is a dated observation. Account validation can enable routing and may send a model request. Neither action approves Auto routing.','网页登录是某个时间点的证据。账号验证可能发送模型请求，并在通过后启用调用；这两项都不会批准自动路由。')),h('p',{},t('Configured sources: ','已配置来源：')+(sources.map(s=>s.id).join(', ')||t('None','无')))],
+  [profile?button(t('Check website login only','仅检查网页登录'),()=>loginEvidence(a)):null,button(t('Review account validation','查看账号验证操作'),()=>dialog(t('Confirm account validation','确认账号验证'),h('p',{},t('This check may submit a model request through configured sources, incur provider charges, and enable the account on success. Continue?','本次检查可能通过已配置来源发送模型请求、产生服务商费用，并在成功后启用账号。是否继续？')),[button('Cancel',()=>$('dialog').close()),button(t('Validate and enable on success','验证，成功后启用'),()=>verifyAccountState(a),'primary')])),button('Edit',()=>edit('accounts',a)),a.enabled?button('Disable',()=>toggle('accounts',a)):null,button(t('Reacquire','重新获取'),()=>selectLoginBrowser([a.id]))].filter(Boolean));
+ };
+ const load=async full=>{
+  clearTimeout(timer);
+  try{
+   const next=await api('/admin/accounts/browser-login');if(!live)return;const finished=data?.batch?.state==='running'&&next.batch?.state!=='running';data=next;error.textContent='';
+   if(finished){await refresh();return}
+   if(!data.connections.some(c=>c.id===loginWorkbenchSelection.connection))loginWorkbenchSelection.connection=data.connections.find(c=>c.ready)?.id||data.connections[0]?.id||'';
+   if(full){if(!custom)selected=new Set(data.sites.filter(s=>s.state==='queued').map(s=>s.provider));drawConnection();drawScope();drawInventory()}
+   drawResults();updateButton();localizeDOM(root);
+  }catch(e){if(live)error.textContent=t('Could not refresh. Last displayed data may be stale: ','刷新失败，当前显示可能已过时：')+e.message}
+  finally{if(live&&data?.batch?.state==='running')timer=setTimeout(()=>load(false),1500)}
+ };
+ search.oninput=drawInventory;
+ root.append(error,h('div',{class:'login-layout'},h('aside',{class:'login-browser-rail'},h('h2',{},t('Existing browsers','现有浏览器')),browserList,button(t('Rediscover','重新发现'),()=>load(true))),h('div',{class:'login-main'},connectionBody,scopeBody)),results,h('div',{class:'toolbar'},h('h2',{},t('Saved sessions and accounts','已保存会话与账号')),search),h('p',{class:'muted'},t('Cookie presence is not login proof. Website login is not model availability. Disabling an account does not sign out of its website.','有 Cookie 不等于已登录；网页登录不等于模型可用。停用账号不会退出原网站。')),inventory);
+ pageCleanup=()=>{live=false;clearTimeout(timer)};
+ setTimeout(()=>{if(live)load(true)},0);
+ return [pageHead('Login states',t('Connect once. Collect supported sessions. Verify before use.','连接现有浏览器，收集可用会话，验证后再调用。')),root];
+}
+
+function showLoginBatch(){return selectLoginBrowser()}
 function accountEnabled(a){return (S.status.account_health||[]).find(x=>x.id===a.id)?.enabled??a.enabled}
 function accountStateLabel(a){const value=(S.status.account_health||[]).find(x=>x.id===a.id)?.state||'unverified';return importText(...({verified:['Verified','已验证'],unverified:['Unverified','未验证'],unfilled:['Unfilled','未填'],invalid:['Invalid','失效']}[value]||['Unverified','未验证']))}
+function confirmAccountValidation(a){dialog(importText('Confirm account validation','确认账号验证'),h('p',{},importText('This can send a model request, incur provider charges, and enable the account on success. It is not a website-login-only check.','这可能发送模型请求、产生服务商费用，并在成功后启用账号，不是仅检查网页登录。')),[button('Cancel',()=>$('dialog').close()),button(importText('Validate and enable','验证并启用'),()=>verifyAccountState(a),'primary')])}
 async function verifyAccountState(a){const result=await api('/admin/accounts/'+encodeURIComponent(a.id)+'/verify',{method:'POST',body:'{}'});await refresh();message(result.verified?importText('Verified and enabled.','已验证并启用。'):importText('Not verified. Complete account setup or try login.','尚未验证通过，请补充账号资料或尝试登录。'));return result}
 function editAccountMaterial(a){
  const provider=S.catalog.find(p=>p.id===a.provider_id),descriptor=S.descriptors.find(d=>d.id===provider?.adapter);
@@ -697,9 +770,9 @@ function editAccountMaterial(a){
  const login=h('div',{},field(importText('Username','用户名'),username),field(importText('Password','密码'),password));
  const token=field(importText('API key / session value','API Key／会话值'),value);token.hidden=true;
  kind.onchange=()=>{login.hidden=kind.value!=='username_password';token.hidden=kind.value==='username_password'};
- dialog(importText('Account login data','账号登录资料'),[h('p',{},a.provider_id+' / '+(a.display_name||a.id)),field(importText('Material type','资料类型'),kind),login,token,h('p',{},importText('Encrypted within this provider account. No separate credential library is created. Existing values are never shown.','加密保存在此服务商账号下，不创建独立凭据库；不回显已有账密。'))],[button('Cancel',()=>$('dialog').close()),button(importText('Save and verify','保存并验证'),async()=>{
+ dialog(importText('Account login data','账号登录资料'),[h('p',{},a.provider_id+' / '+(a.display_name||a.id)),field(importText('Material type','资料类型'),kind),login,token,h('p',{},importText('Encrypted within this provider account. No separate credential library is created. Existing values are never shown.','加密保存在此服务商账号下，不创建独立凭据库；不回显已有账密。'))],[button('Cancel',()=>$('dialog').close()),button(importText('Save material','保存资料'),async()=>{
   await api('/admin/accounts/'+encodeURIComponent(a.id)+'/material',{method:'POST',body:JSON.stringify({kind:kind.value,username:username.value,password:password.value,value:value.value})});
-  password.value='';value.value='';$('dialog').close();await verifyAccountState(a);
+  password.value='';value.value='';$('dialog').close();await refresh();message(importText('Material saved. Validation is a separate action.','资料已保存；验证需要单独发起。'));
  },'primary')]);dialogCleanup=()=>{username.value='';password.value='';value.value=''};
 }
 function acquireAccountSession(a){
@@ -748,7 +821,7 @@ function accounts(){
   dialog('Account validation',[h('p',{class:'muted'},'One explicit check was performed using the first configured source/model, or browser authentication for a browser-only account. This does not approve Auto routing or prove every model capability.'),table(['Field','Value'],[['Account',a.display_name||a.id],['Status',status],['Source',result.source||'Browser profile'],['Model',result.model||'Not applicable'],['Protocol',result.protocol||'Not applicable'],['Output observed',result.output_observed===undefined?'Not reported':result.output_observed?'Yes':'No'],['History saved',result.history_recorded?'Yes':'No']])]);
   await refresh();
  };
- return [pageHead('Accounts',importText('Encrypted account data belongs to each provider. Verified accounts are enabled automatically.','账密加密归属到服务商账号；验证通过后自动启用。'),button(importText('Browser login','浏览器登录'),()=>selectLoginBrowser()),button('Add account',()=>addAccount(),'primary')),table([importText('Account','账号'),'Provider',importText('Account state','账号状态'),importText('Enabled','启用'),importText('Login data','登录资料'),'Actions'],(S.config.accounts||[]).map(a=>[
+ return [pageHead('Accounts',importText('Accounts configure routing identity. Manage browser sessions in Login states.','账号用于配置调用身份；浏览器会话请在登录态工作台管理。'),button(importText('Browser login','浏览器登录'),()=>selectLoginBrowser()),button('Add account',()=>addAccount(),'primary')),table([importText('Account','账号'),'Provider',importText('Account state','账号状态'),importText('Enabled','启用'),importText('Login data','登录资料'),'Actions'],(S.config.accounts||[]).map(a=>[
   a.display_name||a.id,a.provider_id,badge(accountStateLabel(a),healthFor(a).state==='verified'?'good':healthFor(a).state==='invalid'?'bad':'warn'),accountEnabled(a)?importText('Yes','是'):importText('No','否'),accountSetupLabel(a),
    [button(importText('Fill / replace','填写／修改'),()=>editAccountMaterial(a)),button(importText('Try login','尝试登录'),()=>launchAccountLogin(a)),button(importText('Verify','验证'),()=>verifyAccountState(a)),button('Edit',()=>edit('accounts',a)),a.enabled?button('Disable',()=>toggle('accounts',a)):null,a.browser_profile_id&&['chatgpt-web','claude-web'].includes(S.catalog.find(p=>p.id===a.provider_id)?.adapter)?button('Bind session',()=>acquireAccountSession(a)):null,button('Delete',()=>removeAccount(a),'danger')]
  ]),'No accounts. Add an account and bind a credential before enabling its sources.')];
@@ -1134,11 +1207,12 @@ function searchResults(query){
  return [pageHead('Search',results.length+' matching entries'),h('div',{class:'search-results'},results.map(([name,type,action])=>h('div',{class:'search-result'},button(name,action),h('span',{},type))))];
 }
 function render(){
+ pageCleanup?.();pageCleanup=null;
  const route=location.hash.slice(1).split('/')[0]||'overview';
  for(const a of $('navigation').querySelectorAll('a'))a.setAttribute('aria-current',a.hash==='#'+route?'page':'false');
  if(!S.config){$('view').replaceChildren(h('section',{class:'connection-panel'},h('h2',{},'Loading local gateway...'),h('p',{},'Reading the local control plane.')));return}
  if($('search').value){$('view').replaceChildren(...searchResults($('search').value));return}
- const renderers={overview,providers,accounts,credentials,sources,models,groups,routing,health,metrics,config:configuration,logs:activity,implementation,about,browsers,devices,sessions};
+ const renderers={'login-state':loginStateWorkbench,overview,providers,accounts,credentials,sources,models,groups,routing,health,metrics,config:configuration,logs:activity,implementation,about,browsers,devices,sessions};
  $('view').replaceChildren(...(renderers[route]||overview)().filter(x=>x!=null));
  localizeDOM(document.body);
 }

@@ -55,3 +55,14 @@ func cookieHeader(cookies []*network.Cookie) (string, int, error) {
 	}
 	return value, len(parts), nil
 }
+
+// CookieSnapshot exposes only the bounded serialization used for a selected URL.
+func CookieSnapshot(cookies []*network.Cookie) (string, int, error) {
+	plain := make([]*network.Cookie, 0, len(cookies))
+	for _, cookie := range cookies {
+		if cookie != nil && cookie.PartitionKey == nil && !cookie.PartitionKeyOpaque {
+			plain = append(plain, cookie)
+		}
+	}
+	return cookieHeader(plain)
+}

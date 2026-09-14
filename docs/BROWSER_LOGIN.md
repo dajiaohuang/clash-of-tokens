@@ -1,5 +1,18 @@
 # Browser login and authentication evidence
 
+## Existing-browser batch capture (preferred)
+
+Overview / Accounts → select an authorized existing browser → review the full
+catalog → confirm. This flow never launches an isolated profile. Cookie candidates
+are saved encrypted and linked to disabled accounts; browser-only sessions retain
+the connection. See [current scope and authorization](LOGIN_STATE_AUDIT.md).
+Chrome 144+ requires enabling chrome://inspect/#remote-debugging and accepting the
+native connection prompt. Missing authorization is shown, not replaced by a blank
+profile. Other Chromium implementations need compatible connection metadata;
+Firefox existing-profile scanning is unsupported.
+
+## Manual isolated-profile login (separate)
+
 Create an enabled profile under **Browsers**, then bind it to an account.
 **Accounts → Login** launches a dedicated Chrome, Edge, Brave, Firefox, Opera,
 Vivaldi, Chromium or Arc data
@@ -61,7 +74,7 @@ private endpoint behavior may change.
 
 **Accounts → Add account** combines provider selection, a protected credential
 reference, an existing or new isolated browser profile, and login checking.
-Manual credential entry, password-manager import, token import and selected
+Manual credential entry, token import and selected
 browser-cookie import return to the draft with its fields preserved. A single
 imported credential is selected automatically; multiple results require a
 selection. Provider-specific supplementary fields can be stored as account

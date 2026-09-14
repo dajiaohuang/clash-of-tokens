@@ -50,6 +50,9 @@ func NewControlPlane(path string, c config.Config, key, admin string, vault *cre
 		return nil, historyErr
 	}
 	p.evidence = history
+	if err := p.loginBatch.load(path + ".login-scan"); err != nil {
+		return nil, errors.New("cannot load login scan history; preserve the file for recovery")
+	}
 	svc, err := config.OpenService(path, c, p.prepare)
 	if err != nil {
 		return nil, err

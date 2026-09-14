@@ -110,15 +110,16 @@ Password-manager CSV/JSON imports and direct browser password scanning have
 been removed. Existing encrypted account material and recovery backups are not
 deleted by this feature removal. New password import endpoints return HTTP 410.
 
-From Overview or Accounts, choose an installed browser, review the configured
-website accounts, and confirm once more to start the background login queue.
-Each account uses a persistent, isolated browser profile. The queue attempts to
-restore existing sessions and performs supported authentication checks without
-sending model prompts. It does not copy personal browser profiles or passwords.
-First sign-in, MFA, CAPTCHA and SSO approval remain interactive. Unsupported
-checks stay unverified; website authentication is not API/generation proof.
-Browser cookies and site storage are managed by the browser in its profile,
-not by the encrypted account-material file.
+From Overview or Accounts, choose an authorized existing browser connection,
+review the full provider catalog, and confirm to start the background session scan.
+It never creates a blank profile. Compatible sites are visited sequentially;
+URL-applicable cookie candidates are saved in protected account storage and linked
+to disabled, unverified provider accounts. Browser-only sessions retain the selected
+connection. Unsupported sites are listed as skipped. No model prompts are sent.
+Chrome 144+ requires enabling existing-browser access at
+chrome://inspect/#remote-debugging and accepting its native connection prompt.
+Other browser compatibility is not guaranteed. MFA, CAPTCHA and new sign-ins
+remain interactive. Cookie capture is not proof of authentication or model access.
 
 See [login-state audit](docs/LOGIN_STATE_AUDIT.md),
 [browser login](docs/BROWSER_LOGIN.md), and [account storage](docs/CREDENTIAL_STORAGE.md).
@@ -375,9 +376,9 @@ Provider、Account、Source、Model 和 Auto 批准是独立开关。关闭父�
 
 已移除密码管理器 CSV/JSON 导入与浏览器密码扫描。功能删除不会清空已有账号的加密资料或恢复备份；旧账密导入接口返回 HTTP 410。
 
-从首页或账号页选择本机已安装的浏览器，查看已配置的网站账号，再次确认后启动后台登录队列。每个账号使用独立、持久化的浏览器配置，尝试恢复已有会话并执行支持的登录检查，不发送模型对话。不复制个人浏览器配置或密码库。首次登录、MFA、验证码和 SSO 授权仍需手动完成；不支持检查的站点保持未验证，网页登录不等于 API／模型调用可用。
+从首页或账号页选择已授权的现有浏览器连接，查看完整服务商目录，再次确认后逐站扫描。不会新建空白配置，也不限于已有账号。可获取的 Cookie 候选加密保存并关联未启用、未验证的服务商账号；浏览器专用会话保留连接引用。不支持的站点明确跳过，不发送模型对话。Chrome 144+ 需先在 chrome://inspect/#remote-debugging 开启访问并接受浏览器原生授权。其他浏览器兼容性尚未保证；首次登录、MFA、验证码仍需手动处理。
 
-Cookie 和站点存储由浏览器保存在专用配置目录，不属于应用的账号加密资料文件。详见[登录状态审计](docs/LOGIN_STATE_AUDIT.md)、[浏览器登录](docs/BROWSER_LOGIN.md)和[账号存储](docs/CREDENTIAL_STORAGE.md)。
+采集的 Cookie 候选保存在账号加密资料库；未导出的原生站点存储仍由浏览器管理。详见[登录状态审计](docs/LOGIN_STATE_AUDIT.md)、[浏览器登录](docs/BROWSER_LOGIN.md)和[账号存储](docs/CREDENTIAL_STORAGE.md)。
 
 ## 路由与运行时行为
 
